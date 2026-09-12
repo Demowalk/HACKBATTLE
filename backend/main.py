@@ -15,6 +15,11 @@ class GeneratePlanRequest(BaseModel):
     subjects: List[Subject]
     hours_available: int
 
+class GenerateQuizRequest(BaseModel):
+    subject: str
+    difficulty: str
+    count: int
+
 load_dotenv()
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
@@ -79,6 +84,22 @@ Respond ONLY with a valid JSON array, no other text. Example format:
 """
     return prompt
 
+def build_quiz_prompt(subject, difficulty, count):
+    prompt = f"""You are a quiz generator AI. Create {count} multiple-choice questions for the subject "{subject}" at {difficulty} difficulty.
+
+Each question must have exactly 4 options, with only one correct answer.
+
+Respond ONLY with a valid JSON array, no other text. Example format:
+[
+  {{
+    "question": "Solve for x: 2x + 4 = 10",
+    "options": ["x=2", "x=3", "x=4", "x=5"],
+    "correct_answer": "x=3"
+  }}
+]
+"""
+    return prompt
+
 
 @app.post("/generate-plan")
 def generate_plan(request: GeneratePlanRequest):
@@ -111,3 +132,44 @@ def generate_plan(request: GeneratePlanRequest):
         next_id += 1
 
     return {"tasks": tasks}
+
+quiz_questions = []
+
+@app.post("/generate-quiz")
+def generate_quiz(request: GenerateQuizRequest):
+    prompt = build_quiz_prompt(request.subject, request.difficulty, request.count)
+
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    ai_reply = response.choices[0].message.content
+    ai_questions = json.loads(ai_reply)
+
+    global quiz_questions
+    quiz_questions = []
+    next_id = 1
+    for ai_question in ai_questions:
+        new_question = {
+            "id": next_id,
+            "subject": request.subject,
+            "question": ai_question["question"],
+            "options": ai_question["options"],
+            "correct_answer": ai_question["correct_answer"]
+        }
+        quiz_questions.append(new_question)
+        next_id += 1
+
+    frontend_questions = []
+    for q in quiz_questions:
+        frontend_questions.append({
+            "id": q["id"],
+            "subject": q["subject"],
+            "question": q["question"],
+            "options": q["options"]
+        })
+
+    return {"questions": frontend_questions}
