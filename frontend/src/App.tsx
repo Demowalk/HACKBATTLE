@@ -550,12 +550,26 @@ export default function App() {
 
   // Full-Page Study Calendar State
   const [calendarModalOpen, setCalendarModalOpen] = useState<boolean>(false)
-  const [calViewMode, setCalViewMode] = useState<'month' | 'week' | 'day'>('month')
   const [calYear, setCalYear] = useState<number>(2026)
   const [calMonth, setCalMonth] = useState<number>(8) // September = 8 (0-indexed)
   const [selectedCalDay, setSelectedCalDay] = useState<number>(12)
-  const [calSubjectFilter, setCalSubjectFilter] = useState<'all' | 'Maths' | 'Chemistry' | 'Python' | 'AI Systems' | 'exams'>('all')
   const [calendarSyncActive, setCalendarSyncActive] = useState<boolean>(false)
+
+  // Google Calendar Inspired State
+  const [gcalView, setGcalView] = useState<'week' | 'month' | 'day' | 'agenda'>('week')
+  const [gcalSidebarOpen, setGcalSidebarOpen] = useState<boolean>(true)
+  const [miniCalYear, setMiniCalYear] = useState<number>(2026)
+  const [miniCalMonth, setMiniCalMonth] = useState<number>(8)
+  const [selectedSubjects, setSelectedSubjects] = useState<Record<string, boolean>>({
+    Maths: true,
+    Chemistry: true,
+    Python: true,
+    'AI Systems': true,
+    Exams: true,
+  })
+  const [gcalSearchQuery, setGcalSearchQuery] = useState<string>('')
+  const [gcalActiveEvent, setGcalActiveEvent] = useState<(CalTaskItem & { dateKey?: string }) | null>(null)
+  const [gcalQuickCreateOpen, setGcalQuickCreateOpen] = useState<boolean>(false)
 
   // New Calendar Task Form State
   const [newCalTaskTitle, setNewCalTaskTitle] = useState<string>('')
@@ -675,32 +689,120 @@ export default function App() {
   }
 
   const filterTask = (task: CalTaskItem) => {
-    if (calSubjectFilter === 'all') return true
-    if (calSubjectFilter === 'exams') {
-      return (
-        task.title.toLowerCase().includes('exam') ||
-        task.title.toLowerCase().includes('midterm') ||
-        task.priority === 'high'
-      )
+    if (gcalSearchQuery.trim()) {
+      const q = gcalSearchQuery.toLowerCase()
+      const matches =
+        task.title.toLowerCase().includes(q) ||
+        task.subject.toLowerCase().includes(q) ||
+        task.timeSlot.toLowerCase().includes(q)
+      if (!matches) return false
     }
-    return task.subject.toLowerCase().includes(calSubjectFilter.toLowerCase())
+
+    const isExam =
+      task.title.toLowerCase().includes('exam') ||
+      task.title.toLowerCase().includes('midterm')
+    if (isExam && !selectedSubjects['Exams']) return false
+
+    const sub = task.subject || 'Maths'
+    if (selectedSubjects[sub] === false) return false
+
+    return true
   }
 
-  const DAY_HOURLY_SLOTS = [
-    { hour: 8, label: '8:00 AM', period: 'Morning Focus & Prep' },
-    { hour: 9, label: '9:00 AM', period: 'Active Problem Set' },
-    { hour: 10, label: '10:00 AM', period: 'Spaced Recall Drill' },
-    { hour: 11, label: '11:00 AM', period: 'Deep Work Lab' },
-    { hour: 12, label: '12:00 PM', period: 'Lunch & Cognitive Reset 🥪' },
-    { hour: 13, label: '1:00 PM', period: 'Light Review Buffer' },
-    { hour: 14, label: '2:00 PM', period: 'Core Concept Mastery' },
-    { hour: 15, label: '3:00 PM', period: 'Applied Exercises' },
-    { hour: 16, label: '4:00 PM', period: 'Practice Questions' },
-    { hour: 17, label: '5:00 PM', period: 'Evening Booster Session' },
-    { hour: 18, label: '6:00 PM', period: 'Formula Synthesis' },
-    { hour: 19, label: '7:00 PM', period: 'Quiz & Mastery Evaluation' },
-    { hour: 20, label: '8:00 PM', period: 'Daily Wind-Down & Notes' },
+  const parseTimeSlot = (timeSlot: string) => {
+    let startMinutes = 9 * 60
+    let durationMinutes = 60
+
+    try {
+      const parts = timeSlot.split(/[–-]/)
+      if (parts.length >= 2) {
+        const startStr = parts[0].trim()
+        const endStr = parts[1].trim()
+
+        const isEndPM = endStr.toLowerCase().includes('pm')
+        const isStartPM =
+          startStr.toLowerCase().includes('pm') ||
+          (isEndPM && !startStr.toLowerCase().includes('am') && parseInt(startStr, 10) < 12 && parseInt(startStr, 10) >= 1 && parseInt(endStr, 10) !== 12)
+
+        const startMatch = startStr.match(/(\d+)(?::(\d+))?/)
+        const endMatch = endStr.match(/(\d+)(?::(\d+))?/)
+
+        if (startMatch) {
+          let h = parseInt(startMatch[1], 10)
+          const m = startMatch[2] ? parseInt(startMatch[2], 10) : 0
+          if (isStartPM && h < 12) h += 12
+          if (!isStartPM && h === 12 && startStr.toLowerCase().includes('am')) h = 0
+          startMinutes = h * 60 + m
+        }
+
+        if (endMatch) {
+          let h = parseInt(endMatch[1], 10)
+          const m = endMatch[2] ? parseInt(endMatch[2], 10) : 0
+          if (isEndPM && h < 12) h += 12
+          const endMinutes = h * 60 + m
+          if (endMinutes > startMinutes) {
+            durationMinutes = endMinutes - startMinutes
+          }
+        }
+      }
+    } catch {
+      // fallback
+    }
+
+    return { startMinutes, durationMinutes }
+  }
+
+  const GCAL_HOURS = [
+    { hour: 7, label: '7 AM' },
+    { hour: 8, label: '8 AM' },
+    { hour: 9, label: '9 AM' },
+    { hour: 10, label: '10 AM' },
+    { hour: 11, label: '11 AM' },
+    { hour: 12, label: '12 PM' },
+    { hour: 13, label: '1 PM' },
+    { hour: 14, label: '2 PM' },
+    { hour: 15, label: '3 PM' },
+    { hour: 16, label: '4 PM' },
+    { hour: 17, label: '5 PM' },
+    { hour: 18, label: '6 PM' },
+    { hour: 19, label: '7 PM' },
+    { hour: 20, label: '8 PM' },
+    { hour: 21, label: '9 PM' },
+    { hour: 22, label: '10 PM' },
   ]
+
+  const handleNavPrev = () => {
+    if (gcalView === 'week') {
+      setSelectedCalDay((prev) => Math.max(1, prev - 7))
+    } else if (gcalView === 'month') {
+      handlePrevMonth()
+    } else if (gcalView === 'day') {
+      setSelectedCalDay((prev) => Math.max(1, prev - 1))
+    }
+  }
+
+  const handleNavNext = () => {
+    if (gcalView === 'week') {
+      setSelectedCalDay((prev) => Math.min(daysInCalMonth, prev + 7))
+    } else if (gcalView === 'month') {
+      handleNextMonth()
+    } else if (gcalView === 'day') {
+      setSelectedCalDay((prev) => Math.min(daysInCalMonth, prev + 1))
+    }
+  }
+
+  const getGcalTitle = () => {
+    const weekDays = getWeekDays(calYear, calMonth, selectedCalDay)
+    if (gcalView === 'week') {
+      return `${MONTH_NAMES[weekDays[0].month].slice(0, 3)} ${weekDays[0].day} – ${MONTH_NAMES[weekDays[6].month].slice(0, 3)} ${weekDays[6].day}, ${calYear}`
+    } else if (gcalView === 'month') {
+      return `${MONTH_NAMES[calMonth]} ${calYear}`
+    } else if (gcalView === 'day') {
+      return `${MONTH_NAMES[calMonth]} ${selectedCalDay}, ${calYear}`
+    } else {
+      return `Schedule Overview • ${MONTH_NAMES[calMonth]} ${calYear}`
+    }
+  }
 
   // Schedule & Tasks
   const [tasks, setTasks] = useState<TimelineTask[]>([
@@ -2837,779 +2939,839 @@ export default function App() {
       {/* ==========================================================================
            FULL-PAGE STUDY CALENDAR & WORKSPACE (Month + Day View with Full Scroll)
            ========================================================================== */}
+      {/* ==========================================================================
+           GOOGLE CALENDAR WORKSPACE (Authentic Fullscreen Layout)
+           ========================================================================== */}
       <div
-        className={`calendar-fullpage-overlay ${calendarModalOpen ? 'active' : ''}`}
-        id="calendar-fullpage-view"
+        className={`gcal-overlay ${calendarModalOpen ? 'active' : ''}`}
+        id="google-calendar-workspace"
       >
-        {/* Sticky Full-Page Header */}
-        <header className="cal-fullpage-header">
-          <div className="cal-fullpage-header-left">
+        {/* 1. TOP APP BAR */}
+        <header className="gcal-topbar">
+          <div className="gcal-topbar-left">
+            {/* Hamburger button to toggle sidebar */}
             <button
               type="button"
-              className="btn-pill"
-              style={{ fontSize: '12px', padding: '6px 14px', background: 'var(--bg-surface-elevated)' }}
-              onClick={() => setCalendarModalOpen(false)}
+              className="gcal-menu-btn"
+              onClick={() => setGcalSidebarOpen((prev) => !prev)}
+              title="Main menu (Toggle Sidebar)"
             >
-              ← Back to Dashboard
+              ☰
             </button>
-            <div className="cal-fullpage-title">
-              <RevisoLogo size={24} />
-              <span>Study Calendar &amp; Schedule</span>
+
+            {/* Google Calendar Logo & Brand */}
+            <div className="gcal-logo" onClick={handleJumpToTodayMonth}>
+              <div className="gcal-logo-icon">
+                <span className="gcal-logo-icon-month">{MONTH_NAMES[calMonth].slice(0, 3)}</span>
+                <span className="gcal-logo-icon-day">{selectedCalDay}</span>
+              </div>
+              <span>Reviso Calendar</span>
+            </div>
+
+            {/* Nav Group: Today, Chevrons, Dynamic Date Title */}
+            <div className="gcal-nav-group">
+              <button
+                type="button"
+                className="gcal-today-btn"
+                onClick={handleJumpToTodayMonth}
+              >
+                Today
+              </button>
+
+              <div className="gcal-nav-arrows">
+                <button
+                  type="button"
+                  className="gcal-arrow-btn"
+                  onClick={handleNavPrev}
+                  title="Previous period"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="gcal-arrow-btn"
+                  onClick={handleNavNext}
+                  title="Next period"
+                >
+                  ›
+                </button>
+              </div>
+
+              <span className="gcal-title-range">{getGcalTitle()}</span>
             </div>
           </div>
 
-          <div className="cal-fullpage-header-right">
-            {/* View switcher: Month View, Week View, Day View */}
-            <div className="cal-segmented-control">
-              <button
-                type="button"
-                className={`cal-seg-btn ${calViewMode === 'month' ? 'active' : ''}`}
-                onClick={() => setCalViewMode('month')}
-              >
-                <span>📅</span>
-                <span>Month</span>
-              </button>
-              <button
-                type="button"
-                className={`cal-seg-btn ${calViewMode === 'week' ? 'active' : ''}`}
-                onClick={() => setCalViewMode('week')}
-              >
-                <span>📆</span>
-                <span>Week</span>
-              </button>
-              <button
-                type="button"
-                className={`cal-seg-btn ${calViewMode === 'day' ? 'active' : ''}`}
-                onClick={() => setCalViewMode('day')}
-              >
-                <span>📋</span>
-                <span>Day ({MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay})</span>
-              </button>
+          <div className="gcal-topbar-right">
+            {/* Real-time search bar */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type="text"
+                className="chat-input-field"
+                style={{
+                  width: '190px',
+                  padding: '6px 12px 6px 30px',
+                  fontSize: '12.5px',
+                  background: '#21262d',
+                  borderRadius: '8px',
+                  border: '1px solid #30363d',
+                }}
+                placeholder="Search schedule..."
+                value={gcalSearchQuery}
+                onChange={(e) => setGcalSearchQuery(e.target.value)}
+              />
+              <span style={{ position: 'absolute', left: '10px', fontSize: '12px', color: '#8b949e', pointerEvents: 'none' }}>
+                🔍
+              </span>
             </div>
 
-            {/* iCal / Google Calendar Export Button */}
+            {/* View Selector Dropdown */}
+            <select
+              className="gcal-view-selector"
+              value={gcalView}
+              onChange={(e) => setGcalView(e.target.value as any)}
+            >
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="day">Day</option>
+              <option value="agenda">Schedule</option>
+            </select>
+
+            {/* Sync / Export .ics */}
             <button
               type="button"
-              className="btn-pill btn-primary"
-              style={{ fontSize: '12px', padding: '6px 14px' }}
+              className="gcal-action-btn primary"
               onClick={handleSyncCalendar}
-              title="Download standard RFC-5545 .ics calendar file"
+              title="Download standard RFC-5545 .ics for Google Calendar"
             >
               <span>📥</span>
-              <span>{calendarSyncActive ? 'Exporting...' : 'Sync / Export .ics'}</span>
+              <span>{calendarSyncActive ? 'Exporting...' : 'Export .ics'}</span>
             </button>
 
             {/* Close X Button */}
             <button
               type="button"
-              className="btn-icon"
-              style={{ width: '36px', height: '36px', fontSize: '16px' }}
+              className="gcal-close-btn"
               onClick={() => setCalendarModalOpen(false)}
-              title="Close Calendar (Esc)"
+              title="Exit Calendar (Esc)"
             >
               ✕
             </button>
           </div>
         </header>
 
-        {/* Scrollable Body */}
-        <main className="cal-fullpage-body">
-          {/* Quick Subject Filter Bar */}
-          <div className="calendar-filter-bar">
-            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', marginRight: '4px' }}>
-              Filter:
-            </span>
-            {(
-              [
-                { key: 'all', label: 'All Subjects' },
-                { key: 'Maths', label: '📐 Maths' },
-                { key: 'Chemistry', label: '🧪 Chemistry' },
-                { key: 'Python', label: '🐍 Python' },
-                { key: 'AI Systems', label: '🤖 AI Systems' },
-                { key: 'exams', label: '🎯 Exams Only' },
-              ] as const
-            ).map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                className={`cal-filter-chip ${calSubjectFilter === f.key ? 'active' : ''}`}
-                onClick={() => {
-                  setCalSubjectFilter(f.key)
-                  soundSynth.playHarmonicChime()
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+        {/* 2. WORKSPACE CONTAINER (Sidebar + Main Grid Body) */}
+        <div className="gcal-workspace">
+          {/* Collapsible Left Sidebar */}
+          <aside className={`gcal-sidebar ${gcalSidebarOpen ? '' : 'collapsed'}`}>
+            {/* Google-style + Create Button */}
+            <button
+              type="button"
+              className="gcal-create-btn"
+              onClick={() => {
+                setNewCalTaskTitle('')
+                setGcalQuickCreateOpen(true)
+              }}
+            >
+              <span className="gcal-create-icon">＋</span>
+              <span>Create</span>
+            </button>
 
-          {/* Top Banner with Quick Highlights */}
-          <div className="cal-top-banner">
-            <div>
-              <div className="cal-top-banner-title">
-                <span>🗓️ {MONTH_NAMES[calMonth]} {calYear} Academic Schedule</span>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    padding: '3px 9px',
-                    borderRadius: '999px',
-                    background: 'rgba(0, 77, 64, 0.4)',
-                    color: '#80cbc4',
-                    border: '1px solid #00695c',
-                  }}
-                >
-                  Active Semester
+            {/* Mini-Month Datepicker Widget */}
+            <div className="gcal-mini-month">
+              <div className="gcal-mini-header">
+                <span className="gcal-mini-title">
+                  {MONTH_NAMES[miniCalMonth]} {miniCalYear}
                 </span>
+                <div className="gcal-mini-arrows">
+                  <button
+                    type="button"
+                    className="gcal-mini-arrow-btn"
+                    onClick={() => {
+                      if (miniCalMonth === 0) {
+                        setMiniCalMonth(11)
+                        setMiniCalYear((y) => y - 1)
+                      } else {
+                        setMiniCalMonth((m) => m - 1)
+                      }
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="gcal-mini-arrow-btn"
+                    onClick={() => {
+                      if (miniCalMonth === 11) {
+                        setMiniCalMonth(0)
+                        setMiniCalYear((y) => y + 1)
+                      } else {
+                        setMiniCalMonth((m) => m + 1)
+                      }
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
               </div>
-              <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                Automated spaced repetition schedules, dynamic exam prep milestones, and daily study blocks.
-              </p>
+
+              <div className="gcal-mini-grid">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                  <div key={i} className="gcal-mini-day-header">
+                    {d}
+                  </div>
+                ))}
+
+                {/* Empty cells */}
+                {Array.from({ length: new Date(miniCalYear, miniCalMonth, 1).getDay() }).map((_, i) => (
+                  <div key={`mini-empty-${i}`} />
+                ))}
+
+                {/* Day cells */}
+                {Array.from({ length: new Date(miniCalYear, miniCalMonth + 1, 0).getDate() }, (_, i) => i + 1).map((d) => {
+                  const isToday = miniCalYear === 2026 && miniCalMonth === 8 && d === 12
+                  const isSelected = miniCalYear === calYear && miniCalMonth === calMonth && d === selectedCalDay
+                  const dayTasks = getTasksForDate(miniCalYear, miniCalMonth, d)
+                  const hasTasks = dayTasks.length > 0
+
+                  let cls = 'gcal-mini-day-cell'
+                  if (isToday) cls += ' today'
+                  if (isSelected) cls += ' selected'
+                  if (hasTasks && !isToday) cls += ' has-tasks'
+
+                  return (
+                    <div
+                      key={d}
+                      className={cls}
+                      onClick={() => {
+                        setSelectedCalDay(d)
+                        setCalMonth(miniCalMonth)
+                        setCalYear(miniCalYear)
+                        soundSynth.playHarmonicChime()
+                      }}
+                    >
+                      {d}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
-            <div className="cal-stats-grid">
-              <div className="cal-stat-card">
-                <span className="cal-stat-val">{daysInCalMonth} Days</span>
-                <span className="cal-stat-label">Term Span</span>
+            {/* "My Calendars" Subject Category Checklist */}
+            <div className="gcal-calendars-section">
+              <div className="gcal-section-title">
+                <span>My Calendars</span>
+                <span style={{ fontSize: '10px', color: '#8b949e' }}>5 Active</span>
               </div>
-              <div className="cal-stat-card">
-                <span className="cal-stat-val" style={{ color: '#34d399' }}>
-                  {Object.values(calTasksByDate).flat().filter((t) => t.completed).length +
-                    tasks.filter((t) => t.completed).length}{' '}
-                  Done
-                </span>
-                <span className="cal-stat-label">Completed Tasks</span>
-              </div>
-              <div className="cal-stat-card">
-                <span className="cal-stat-val" style={{ color: '#f59e0b' }}>
-                  {
-                    Object.values(calTasksByDate)
-                      .flat()
-                      .filter(
-                        (t) =>
-                          t.title.toLowerCase().includes('exam') ||
-                          t.title.toLowerCase().includes('midterm')
-                      ).length
-                  }{' '}
-                  Exams
-                </span>
-                <span className="cal-stat-label">Milestones</span>
-              </div>
-              <button
-                type="button"
-                className="btn-pill"
-                style={{ fontSize: '12px', padding: '6px 14px' }}
-                onClick={handleSyncCalendar}
-              >
-                <span>🔄</span>
-                <span>{calendarSyncActive ? 'Exporting...' : 'Sync Calendar'}</span>
-              </button>
-            </div>
-          </div>
 
-          {/* VIEW 1: MONTH VIEW */}
-          {calViewMode === 'month' && (
-            <div className="cal-month-layout">
-              <div className="cal-grid-panel">
-                <div className="calendar-month-nav">
-                  <div className="cal-nav-buttons">
-                    <button
-                      type="button"
-                      className="cal-nav-btn"
-                      onClick={handlePrevMonth}
-                      title="Previous Month"
+              <div className="gcal-calendar-list">
+                {[
+                  { name: 'Maths', color: '#10b981', icon: '📐' },
+                  { name: 'Chemistry', color: '#38bdf8', icon: '🧪' },
+                  { name: 'Python', color: '#2dd4bf', icon: '🐍' },
+                  { name: 'AI Systems', color: '#a855f7', icon: '🤖' },
+                  { name: 'Exams', color: '#f59e0b', icon: '🎯' },
+                ].map((item) => {
+                  const isChecked = selectedSubjects[item.name] !== false
+                  return (
+                    <div
+                      key={item.name}
+                      className="gcal-calendar-item"
+                      onClick={() => {
+                        setSelectedSubjects((prev) => ({
+                          ...prev,
+                          [item.name]: !isChecked,
+                        }))
+                        soundSynth.playHarmonicChime()
+                      }}
                     >
-                      ◀
-                    </button>
-                    <span className="calendar-month-title">
-                      {MONTH_NAMES[calMonth]} {calYear}
-                    </span>
-                    <button
-                      type="button"
-                      className="cal-nav-btn"
-                      onClick={handleNextMonth}
-                      title="Next Month"
-                    >
-                      ▶
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-pill"
-                      style={{ fontSize: '11px', padding: '3px 10px', marginLeft: '6px' }}
-                      onClick={handleJumpToTodayMonth}
-                    >
-                      Today
-                    </button>
+                      <div
+                        className="gcal-checkbox-custom"
+                        style={{
+                          background: isChecked ? item.color : 'transparent',
+                          border: `1.5px solid ${item.color}`,
+                        }}
+                      >
+                        {isChecked ? '✓' : ''}
+                      </div>
+                      <span>{item.icon} {item.name}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Quick Stats Widget */}
+            <div style={{ marginTop: 'auto', background: '#21262d', padding: '12px 14px', borderRadius: '10px', border: '1px solid #30363d', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#8b949e', textTransform: 'uppercase' }}>
+                Study Velocity
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#34d399' }}>
+                {Object.values(calTasksByDate).flat().filter((t) => t.completed).length + tasks.filter((t) => t.completed).length} Tasks Done
+              </div>
+              <div style={{ fontSize: '11px', color: '#8b949e' }}>
+                Active Term • Sept 2026
+              </div>
+            </div>
+          </aside>
+
+          {/* 3. MAIN BODY: VIEW SWITCHER (Week / Month / Day / Agenda) */}
+          <main className="gcal-main-body">
+            {/* VIEW A: SIGNATURE GOOGLE CALENDAR WEEK VIEW */}
+            {gcalView === 'week' && (() => {
+              const weekDays = getWeekDays(calYear, calMonth, selectedCalDay)
+              const curHour = 14
+              const curMin = 25
+              const curTotalMin = curHour * 60 + curMin
+              const curTop = Math.max(0, curTotalMin - 420) // 7 AM = 420
+
+              return (
+                <div className="gcal-week-view">
+                  {/* Week Header Row */}
+                  <div className="gcal-week-header-row">
+                    <div className="gcal-tz-cell">GMT+5:30</div>
+                    {weekDays.map((wDay) => (
+                      <div
+                        key={wDay.dateKey}
+                        className={`gcal-week-header-day ${wDay.isToday ? 'today' : ''}`}
+                        onClick={() => {
+                          setSelectedCalDay(wDay.day)
+                          setCalMonth(wDay.month)
+                          setCalYear(wDay.year)
+                        }}
+                      >
+                        <span className="gcal-week-day-name">{wDay.weekday}</span>
+                        <span className="gcal-week-day-num">{wDay.day}</span>
+                      </div>
+                    ))}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      Click any date to inspect and manage its tasks
-                    </span>
+                  {/* All-Day Events Row */}
+                  <div className="gcal-all-day-row">
+                    <div className="gcal-all-day-label">all-day</div>
+                    {weekDays.map((wDay) => {
+                      const dayTasks = getTasksForDate(wDay.year, wDay.month, wDay.day).filter(filterTask)
+                      const exams = dayTasks.filter((t) =>
+                        t.title.toLowerCase().includes('exam') || t.title.toLowerCase().includes('midterm')
+                      )
+
+                      return (
+                        <div key={wDay.dateKey} className="gcal-all-day-col">
+                          {exams.map((ex) => (
+                            <div
+                              key={ex.id}
+                              className="gcal-all-day-badge"
+                              onClick={() => setGcalActiveEvent({ ...ex, dateKey: wDay.dateKey })}
+                              title={ex.title}
+                            >
+                              🎯 {ex.title}
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Scrollable Time Grid (7 AM to 10 PM) */}
+                  <div className="gcal-time-scroll">
+                    <div className="gcal-time-grid">
+                      {/* Left Time Gutter */}
+                      <div className="gcal-time-col">
+                        {GCAL_HOURS.map((h) => (
+                          <div key={h.hour} className="gcal-time-slot-label">
+                            {h.label}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* 7 Day Columns */}
+                      {weekDays.map((wDay) => {
+                        const dayTasks = getTasksForDate(wDay.year, wDay.month, wDay.day).filter(filterTask)
+
+                        return (
+                          <div key={wDay.dateKey} className="gcal-grid-day-col">
+                            {/* Horizontal Hour Guidelines */}
+                            {GCAL_HOURS.map((h) => (
+                              <div
+                                key={h.hour}
+                                className="gcal-hour-row-guide"
+                                onClick={() => {
+                                  setSelectedCalDay(wDay.day)
+                                  setCalMonth(wDay.month)
+                                  setCalYear(wDay.year)
+                                  const startHour12 = h.hour > 12 ? h.hour - 12 : h.hour
+                                  const endHour12 = (h.hour + 1) > 12 ? (h.hour + 1) - 12 : h.hour + 1
+                                  const ampm = h.hour >= 12 ? 'PM' : 'AM'
+                                  setNewCalTaskTime(`${startHour12}:00–${endHour12}:00 ${ampm}`)
+                                  setGcalQuickCreateOpen(true)
+                                }}
+                                title={`Click to schedule session at ${h.label}`}
+                              />
+                            ))}
+
+                            {/* Current Time Red Line on Today */}
+                            {wDay.isToday && (
+                              <div className="gcal-current-time-line" style={{ top: `${curTop}px` }}>
+                                <div className="gcal-current-time-dot" />
+                              </div>
+                            )}
+
+                            {/* Positioned Event Blocks */}
+                            {dayTasks.map((t) => {
+                              const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
+                              const topPx = Math.max(0, startMinutes - 420) // 7 AM = 420
+                              const heightPx = Math.max(34, durationMinutes)
+
+                              const subLower = (t.subject || '').toLowerCase()
+                              const isExam =
+                                t.title.toLowerCase().includes('exam') ||
+                                t.title.toLowerCase().includes('midterm')
+                              let cardClass = 'math'
+                              if (isExam) cardClass = 'exam'
+                              else if (subLower.includes('chem')) cardClass = 'chem'
+                              else if (subLower.includes('python')) cardClass = 'python'
+                              else if (subLower.includes('ai')) cardClass = 'ai'
+
+                              return (
+                                <div
+                                  key={t.id}
+                                  className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''}`}
+                                  style={{
+                                    top: `${topPx}px`,
+                                    height: `${heightPx}px`,
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setGcalActiveEvent({ ...t, dateKey: wDay.dateKey })
+                                    soundSynth.playHarmonicChime()
+                                  }}
+                                >
+                                  <div className="gcal-event-title">
+                                    {t.completed ? '✓ ' : ''}{t.title}
+                                  </div>
+                                  <div className="gcal-event-time">
+                                    {t.timeSlot}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
+              )
+            })()}
 
-                <div className="cal-large-grid">
+            {/* VIEW B: GOOGLE CALENDAR MONTH VIEW */}
+            {gcalView === 'month' && (
+              <div className="gcal-month-view">
+                <div className="gcal-month-header">
                   {WEEKDAY_NAMES.map((d) => (
-                    <div key={d} className="calendar-weekday">
+                    <div key={d} className="gcal-month-header-cell">
                       {d}
                     </div>
                   ))}
+                </div>
 
-                  {/* Empty padding cells for start of month */}
+                <div className="gcal-month-grid">
+                  {/* Empty cells */}
                   {Array.from({ length: startDayOfWeek }).map((_, i) => (
-                    <div key={`empty-${i}`} className="cal-large-cell empty" />
+                    <div key={`m-empty-${i}`} className="gcal-month-cell empty" />
                   ))}
 
-                  {Array.from({ length: daysInCalMonth }, (_, i) => i + 1).map((day) => {
-                    const isToday = calYear === 2026 && calMonth === 8 && day === 12
-                    const isSelected = day === selectedCalDay
-                    const rawTasks = getTasksForDate(calYear, calMonth, day)
-                    const dayTasksList = rawTasks.filter(filterTask)
+                  {/* Day cells */}
+                  {Array.from({ length: daysInCalMonth }, (_, i) => i + 1).map((d) => {
+                    const isToday = calYear === 2026 && calMonth === 8 && d === 12
+                    const isSelected = d === selectedCalDay
+                    const rawTasks = getTasksForDate(calYear, calMonth, d)
+                    const dayTasks = rawTasks.filter(filterTask)
                     const hasExam = rawTasks.some(
-                      (t) =>
-                        t.title.toLowerCase().includes('exam') ||
-                        t.title.toLowerCase().includes('midterm')
+                      (t) => t.title.toLowerCase().includes('exam') || t.title.toLowerCase().includes('midterm')
                     )
 
-                    let cellClass = 'cal-large-cell'
+                    let cellClass = 'gcal-month-cell'
                     if (isToday) cellClass += ' today'
                     if (isSelected) cellClass += ' selected'
 
                     return (
                       <div
-                        key={day}
+                        key={d}
                         className={cellClass}
                         onClick={() => {
-                          setSelectedCalDay(day)
+                          setSelectedCalDay(d)
                           soundSynth.playHarmonicChime()
                         }}
                       >
-                        <div className="cal-cell-header">
-                          <span className="cal-cell-day-num">{day}</span>
-                          {isToday && <span className="cal-cell-today-pill">Today</span>}
-                        </div>
-
-                        <div className="cal-cell-events">
+                        <div className="gcal-month-cell-header">
+                          <span className="gcal-month-day-num">{d}</span>
                           {hasExam && (
-                            <div className="cal-event-chip exam">
-                              🎯 Exam Milestone
-                            </div>
-                          )}
-                          {dayTasksList.slice(0, 2).map((t) => {
-                            const subjectLower = (t.subject || '').toLowerCase()
-                            const chipClass = subjectLower.includes('chem')
-                              ? 'chem'
-                              : subjectLower.includes('python')
-                              ? 'python'
-                              : subjectLower.includes('ai')
-                              ? 'ai'
-                              : 'math'
-
-                            return (
-                              <div
-                                key={t.id}
-                                className={`cal-event-chip ${chipClass}`}
-                                title={`${t.subject}: ${t.title}`}
-                              >
-                                {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
-                              </div>
-                            )
-                          })}
-                          {dayTasksList.length > 2 && (
-                            <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600 }}>
-                              +{dayTasksList.length - 2} more
+                            <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 800 }}>
+                              🎯 Exam
                             </span>
                           )}
                         </div>
+
+                        {dayTasks.slice(0, 3).map((t) => {
+                          const subLower = (t.subject || '').toLowerCase()
+                          const isExam =
+                            t.title.toLowerCase().includes('exam') ||
+                            t.title.toLowerCase().includes('midterm')
+                          let bg = 'rgba(16, 185, 129, 0.25)'
+                          let col = '#a7f3d0'
+                          if (isExam) {
+                            bg = 'rgba(245, 158, 11, 0.3)'
+                            col = '#fde68a'
+                          } else if (subLower.includes('chem')) {
+                            bg = 'rgba(56, 189, 248, 0.25)'
+                            col = '#bae6fd'
+                          } else if (subLower.includes('python')) {
+                            bg = 'rgba(45, 212, 191, 0.25)'
+                            col = '#99f6e4'
+                          } else if (subLower.includes('ai')) {
+                            bg = 'rgba(168, 85, 247, 0.25)'
+                            col = '#e9d5ff'
+                          }
+
+                          return (
+                            <div
+                              key={t.id}
+                              className="gcal-month-pill"
+                              style={{ background: bg, color: col }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setGcalActiveEvent({ ...t, dateKey: formatCalDateKey(calYear, calMonth, d) })
+                              }}
+                              title={`${t.subject}: ${t.title}`}
+                            >
+                              {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
+                            </div>
+                          )
+                        })}
+
+                        {dayTasks.length > 3 && (
+                          <span style={{ fontSize: '10px', color: '#8b949e', fontWeight: 700, paddingLeft: '4px' }}>
+                            +{dayTasks.length - 3} more
+                          </span>
+                        )}
                       </div>
                     )
                   })}
                 </div>
               </div>
+            )}
 
-              {/* Side Drawer in Month View */}
-              <div className="cal-side-drawer">
-                <div className="cal-side-header">
-                  <div className="cal-side-title">
-                    <span>
-                      Selected:{' '}
-                      <strong>
-                        {MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay}, {calYear}
-                      </strong>
-                    </span>
-                    {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
-                      <span className="cal-badge-today" style={{ marginLeft: '8px' }}>
-                        Today
+            {/* VIEW C: GOOGLE CALENDAR DAY VIEW */}
+            {gcalView === 'day' && (() => {
+              const dayTasks = getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask)
+              const curHour = 14
+              const curMin = 25
+              const curTop = Math.max(0, (curHour * 60 + curMin) - 420)
+
+              return (
+                <div className="gcal-week-view">
+                  <div className="gcal-week-header-row" style={{ gridTemplateColumns: '60px 1fr' }}>
+                    <div className="gcal-tz-cell">GMT+5:30</div>
+                    <div
+                      className="gcal-week-header-day today"
+                      style={{ borderRight: 'none', alignItems: 'flex-start', paddingLeft: '16px' }}
+                    >
+                      <span className="gcal-week-day-name">
+                        {WEEKDAY_NAMES[new Date(calYear, calMonth, selectedCalDay).getDay()]}
                       </span>
-                    )}
+                      <span className="gcal-week-day-num">{selectedCalDay}</span>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    className="btn-pill btn-primary"
-                    style={{ fontSize: '11px', padding: '4px 10px' }}
-                    onClick={() => setCalViewMode('day')}
-                  >
-                    Manage Day ➔
-                  </button>
-                </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    Scheduled Tasks ({getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask).length})
-                  </span>
-
-                  {getTasksForDate(calYear, calMonth, selectedCalDay)
-                    .filter(filterTask)
-                    .map((t) => (
-                      <div
-                        key={t.id}
-                        className="cal-task-row"
-                        style={{ padding: '10px 12px', cursor: 'pointer' }}
-                        onClick={() => handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)}
-                      >
-                        <button
-                          type="button"
-                          className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)
-                          }}
-                        >
-                          {t.completed ? '✓' : ''}
-                        </button>
-                        <div className="cal-task-info">
-                          <div className="cal-task-name" style={{ fontSize: '13px' }}>{t.title}</div>
-                          <div className="cal-task-sub" style={{ fontSize: '11px' }}>
-                            <span>{t.subject}</span>
-                            <span>•</span>
-                            <span>{t.timeSlot}</span>
+                  <div className="gcal-time-scroll">
+                    <div className="gcal-time-grid" style={{ gridTemplateColumns: '60px 1fr' }}>
+                      {/* Left Time Gutter */}
+                      <div className="gcal-time-col">
+                        {GCAL_HOURS.map((h) => (
+                          <div key={h.hour} className="gcal-time-slot-label">
+                            {h.label}
                           </div>
-                        </div>
-                      </div>
-                    ))}
-
-                  {getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask).length === 0 && (
-                    <div className="cal-empty-state" style={{ padding: '24px 12px' }}>
-                      No tasks scheduled for {MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay}.
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
-                  <button
-                    type="button"
-                    className="btn-pill btn-primary"
-                    style={{ width: '100%', justifyContent: 'center', padding: '9px 16px' }}
-                    onClick={() => setCalViewMode('day')}
-                  >
-                    <span>📋 Open Full Day Workspace &amp; Add Tasks</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* VIEW 2: WEEK VIEW */}
-          {calViewMode === 'week' && (
-            <div className="cal-week-layout">
-              {(() => {
-                const weekDays = getWeekDays(calYear, calMonth, selectedCalDay)
-                const startLabel = `${MONTH_NAMES[weekDays[0].month].slice(0, 3)} ${weekDays[0].day}`
-                const endLabel = `${MONTH_NAMES[weekDays[6].month].slice(0, 3)} ${weekDays[6].day}`
-
-                return (
-                  <>
-                    <div className="cal-day-nav" style={{ marginBottom: '8px' }}>
-                      <button
-                        type="button"
-                        className="btn-pill"
-                        style={{ padding: '6px 14px', fontSize: '12px' }}
-                        onClick={() => setSelectedCalDay((prev) => Math.max(1, prev - 7))}
-                      >
-                        ◀ Previous Week
-                      </button>
-
-                      <div className="cal-day-heading">
-                        <span className="cal-day-title">Week of {startLabel} – {endLabel}, {calYear}</span>
-                        <button
-                          type="button"
-                          className="btn-pill"
-                          style={{ fontSize: '11px', padding: '3px 9px' }}
-                          onClick={handleJumpToTodayMonth}
-                        >
-                          This Week
-                        </button>
+                        ))}
                       </div>
 
-                      <button
-                        type="button"
-                        className="btn-pill"
-                        style={{ padding: '6px 14px', fontSize: '12px' }}
-                        onClick={() => setSelectedCalDay((prev) => Math.min(daysInCalMonth, prev + 7))}
-                      >
-                        Next Week ▶
-                      </button>
-                    </div>
-
-                    <div className="cal-week-grid">
-                      {weekDays.map((wDay) => {
-                        const dayTasks = getTasksForDate(wDay.year, wDay.month, wDay.day).filter(filterTask)
-                        let colClass = 'cal-week-day-col'
-                        if (wDay.isToday) colClass += ' today'
-                        if (wDay.isSelected) colClass += ' selected'
-
-                        return (
+                      {/* Full-Width Day Column */}
+                      <div className="gcal-grid-day-col" style={{ borderRight: 'none' }}>
+                        {GCAL_HOURS.map((h) => (
                           <div
-                            key={wDay.dateKey}
-                            className={colClass}
+                            key={h.hour}
+                            className="gcal-hour-row-guide"
                             onClick={() => {
-                              setSelectedCalDay(wDay.day)
-                              setCalMonth(wDay.month)
-                              setCalYear(wDay.year)
+                              const startHour12 = h.hour > 12 ? h.hour - 12 : h.hour
+                              const endHour12 = (h.hour + 1) > 12 ? (h.hour + 1) - 12 : h.hour + 1
+                              const ampm = h.hour >= 12 ? 'PM' : 'AM'
+                              setNewCalTaskTime(`${startHour12}:00–${endHour12}:00 ${ampm}`)
+                              setGcalQuickCreateOpen(true)
                             }}
-                          >
-                            <div className="cal-week-col-header">
-                              <div>
-                                <div className="cal-week-col-name">{wDay.weekday}</div>
-                                <div className="cal-week-col-num">{wDay.day}</div>
-                              </div>
-                              {wDay.isToday && <span className="cal-badge-today">Today</span>}
-                            </div>
+                          />
+                        ))}
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                              {dayTasks.map((t) => (
-                                <div
-                                  key={t.id}
-                                  className={`cal-week-task-card ${t.completed ? 'completed' : ''}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleToggleCalTask(wDay.day, t.id, wDay.year, wDay.month)
-                                  }}
-                                  title={`${t.subject}: ${t.title} (${t.timeSlot})`}
-                                >
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <span
-                                      className={`task-tag ${t.tagClass}`}
-                                      style={{ fontSize: '9.5px', padding: '1px 6px' }}
-                                    >
-                                      {t.subject}
-                                    </span>
-                                    <span style={{ fontSize: '10.5px', color: 'var(--text-tertiary)' }}>
-                                      {t.completed ? '✓' : ''}
-                                    </span>
-                                  </div>
-                                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
-                                    {t.title}
-                                  </div>
-                                  <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
-                                    ⏰ {t.timeSlot}
-                                  </div>
-                                </div>
-                              ))}
+                        {/* Current Time Indicator */}
+                        {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
+                          <div className="gcal-current-time-line" style={{ top: `${curTop}px` }}>
+                            <div className="gcal-current-time-dot" />
+                          </div>
+                        )}
 
-                              {dayTasks.length === 0 && (
-                                <div className="cal-week-empty">No tasks</div>
-                              )}
-                            </div>
+                        {/* Event blocks */}
+                        {dayTasks.map((t) => {
+                          const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
+                          const topPx = Math.max(0, startMinutes - 420)
+                          const heightPx = Math.max(40, durationMinutes)
 
-                            <button
-                              type="button"
-                              className="btn-pill"
-                              style={{ width: '100%', justifyContent: 'center', fontSize: '10.5px', padding: '5px 8px', marginTop: 'auto' }}
+                          const subLower = (t.subject || '').toLowerCase()
+                          const isExam =
+                            t.title.toLowerCase().includes('exam') ||
+                            t.title.toLowerCase().includes('midterm')
+                          let cardClass = 'math'
+                          if (isExam) cardClass = 'exam'
+                          else if (subLower.includes('chem')) cardClass = 'chem'
+                          else if (subLower.includes('python')) cardClass = 'python'
+                          else if (subLower.includes('ai')) cardClass = 'ai'
+
+                          return (
+                            <div
+                              key={t.id}
+                              className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''}`}
+                              style={{
+                                top: `${topPx}px`,
+                                height: `${heightPx}px`,
+                                left: '12px',
+                                right: '12px',
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setSelectedCalDay(wDay.day)
-                                setCalMonth(wDay.month)
-                                setCalYear(wDay.year)
-                                setCalViewMode('day')
+                                setGcalActiveEvent({ ...t, dateKey: formatCalDateKey(calYear, calMonth, selectedCalDay) })
+                                soundSynth.playHarmonicChime()
                               }}
                             >
-                              + View Day
-                            </button>
-                          </div>
-                        )
-                      })}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span className="gcal-event-title" style={{ fontSize: '13px' }}>
+                                  {t.completed ? '✓ ' : ''}{t.title}
+                                </span>
+                                <span style={{ fontSize: '10.5px', opacity: 0.8 }}>{t.subject}</span>
+                              </div>
+                              <div className="gcal-event-time">{t.timeSlot} • {t.duration_minutes || 45} mins</div>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
-                  </>
-                )
-              })()}
-            </div>
-          )}
-
-          {/* VIEW 3: DAY VIEW WITH HOURLY TIMELINE & TASK COMPOSER */}
-          {calViewMode === 'day' && (
-            <div className="cal-day-layout">
-              {/* Left Column: Hourly Timeline & Task List */}
-              <div className="cal-day-main-panel">
-                {/* Day Navigation Header */}
-                <div className="cal-day-nav">
-                  <button
-                    type="button"
-                    className="btn-pill"
-                    style={{ padding: '6px 14px', fontSize: '12px' }}
-                    onClick={() => setSelectedCalDay((prev) => Math.max(1, prev - 1))}
-                  >
-                    ◀ Previous Day
-                  </button>
-
-                  <div className="cal-day-heading">
-                    <span className="cal-day-title">
-                      {MONTH_NAMES[calMonth]} {selectedCalDay}, {calYear}
-                    </span>
-                    {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
-                      <span className="cal-badge-today">Today</span>
-                    )}
-                    {!(calYear === 2026 && calMonth === 8 && selectedCalDay === 12) && (
-                      <button
-                        type="button"
-                        className="btn-pill"
-                        style={{ fontSize: '11px', padding: '3px 9px' }}
-                        onClick={handleJumpToTodayMonth}
-                      >
-                        Jump to Today
-                      </button>
-                    )}
                   </div>
-
-                  <button
-                    type="button"
-                    className="btn-pill"
-                    style={{ padding: '6px 14px', fontSize: '12px' }}
-                    onClick={() => setSelectedCalDay((prev) => Math.min(daysInCalMonth, prev + 1))}
-                  >
-                    Next Day ▶
-                  </button>
                 </div>
+              )
+            })()}
 
-                {/* Sub-header with completion stats */}
-                {(() => {
-                  const dayTasks = getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask)
-                  const completed = dayTasks.filter((t) => t.completed).length
+            {/* VIEW D: GOOGLE CALENDAR SCHEDULE / AGENDA VIEW */}
+            {gcalView === 'agenda' && (
+              <div className="gcal-agenda-view">
+                {Array.from({ length: daysInCalMonth }, (_, i) => i + 1).map((d) => {
+                  const dayTasks = getTasksForDate(calYear, calMonth, d).filter(filterTask)
+                  if (dayTasks.length === 0) return null
+                  const dateObj = new Date(calYear, calMonth, d)
+                  const isToday = calYear === 2026 && calMonth === 8 && d === 12
 
                   return (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '13px',
-                        color: 'var(--text-secondary)',
-                        fontWeight: 600,
-                      }}
-                    >
-                      <span>
-                        Tasks for {MONTH_NAMES[calMonth]} {selectedCalDay} ({completed} / {dayTasks.length} completed)
-                      </span>
-                      <span style={{ fontSize: '12px', color: '#80cbc4' }}>
-                        Click checkbox or card to mark complete ✓
-                      </span>
-                    </div>
-                  )
-                })()}
-
-                {/* Section A: Hourly Schedule Timeline (8 AM – 8 PM) */}
-                <div style={{ marginTop: '8px' }}>
-                  <div
-                    style={{
-                      fontSize: '13px',
-                      fontWeight: 800,
-                      color: 'var(--text-primary)',
-                      marginBottom: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>⏱️</span>
-                    <span>Hourly Schedule Timeline &amp; Time Blocks</span>
-                  </div>
-
-                  <div className="cal-timeline-container">
-                    {DAY_HOURLY_SLOTS.map((slot) => {
-                      const allDayTasks = getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask)
-                      // Match tasks scheduled for this hour
-                      const slotHour12 = slot.hour > 12 ? slot.hour - 12 : slot.hour
-                      const slotHourPrefix = `${slotHour12}:`
-                      const matchedTasks = allDayTasks.filter((t) => {
-                        const time = t.timeSlot.toLowerCase()
-                        return (
-                          time.includes(slotHourPrefix) ||
-                          time.includes(`${slot.hour}:`) ||
-                          (slot.hour === 9 && time.includes('9:00')) ||
-                          (slot.hour === 11 && time.includes('11:00')) ||
-                          (slot.hour === 14 && (time.includes('2:00') || time.includes('1:30'))) ||
-                          (slot.hour === 15 && time.includes('3:00')) ||
-                          (slot.hour === 17 && time.includes('5:00'))
-                        )
-                      })
-
-                      return (
-                        <div key={slot.hour} className="cal-timeline-hour-row">
-                          <div className="cal-hour-label">{slot.label}</div>
-                          <div className="cal-hour-content">
-                            {matchedTasks.length > 0 ? (
-                              matchedTasks.map((t) => {
-                                const subLower = (t.subject || '').toLowerCase()
-                                const isExam =
-                                  t.title.toLowerCase().includes('exam') ||
-                                  t.title.toLowerCase().includes('midterm')
-                                let cardType = 'math'
-                                if (isExam) cardType = 'exam'
-                                else if (subLower.includes('chem')) cardType = 'chem'
-                                else if (subLower.includes('python')) cardType = 'python'
-                                else if (subLower.includes('ai')) cardType = 'ai'
-
-                                return (
-                                  <div
-                                    key={t.id}
-                                    className={`cal-timeline-task-card ${cardType} ${t.completed ? 'completed' : ''}`}
-                                    onClick={() => handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)}
-                                  >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <button
-                                        type="button"
-                                        className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)
-                                        }}
-                                      >
-                                        {t.completed ? '✓' : ''}
-                                      </button>
-                                      <div>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '13px' }}>
-                                          {t.title}
-                                        </div>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                          {t.subject} • {t.timeSlot}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <span
-                                      className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}
-                                      style={{ fontSize: '10.5px' }}
-                                    >
-                                      {t.completed ? 'Done ✓' : 'Scheduled'}
-                                    </span>
-                                  </div>
-                                )
-                              })
-                            ) : (
-                              <div
-                                className="cal-timeline-empty-slot"
-                                onClick={() => {
-                                  setNewCalTaskTime(`${slot.label}–${slot.hour >= 12 ? (slot.hour === 12 ? '1:00 PM' : `${slot.hour - 11}:00 PM`) : `${slot.hour + 1}:00 AM`}`)
-                                  showToast(`Selected time slot ${slot.label}. Enter task details on the right!`, '⏰')
-                                }}
-                                title="Click to schedule a study session here"
-                              >
-                                <span>+ Open buffer ({slot.period})</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Section B: All Tasks Checklist for Selected Day */}
-                <div style={{ marginTop: '16px' }}>
-                  <div
-                    style={{
-                      fontSize: '13px',
-                      fontWeight: 800,
-                      color: 'var(--text-primary)',
-                      marginBottom: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <span>📋</span>
-                    <span>All Scheduled Tasks Checklist</span>
-                  </div>
-
-                  <div className="cal-task-list">
-                    {getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask).length === 0 ? (
-                      <div className="cal-empty-state">
-                        🏖️ No study tasks scheduled for {MONTH_NAMES[calMonth]} {selectedCalDay}. Add a new task using the form on the right!
+                    <div key={d} className="gcal-agenda-group">
+                      <div className="gcal-agenda-date-badge">
+                        <span className="gcal-agenda-date-name">
+                          {MONTH_NAMES[calMonth].slice(0, 3)} {d}
+                        </span>
+                        <span className="gcal-agenda-date-sub">
+                          {WEEKDAY_NAMES[dateObj.getDay()]} {isToday ? '• Today' : ''}
+                        </span>
                       </div>
-                    ) : (
-                      getTasksForDate(calYear, calMonth, selectedCalDay)
-                        .filter(filterTask)
-                        .map((t) => (
+
+                      <div className="gcal-agenda-tasks">
+                        {dayTasks.map((t) => (
                           <div
                             key={t.id}
-                            className={`cal-task-row ${t.completed ? 'completed' : ''}`}
-                            onClick={() => handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)}
+                            className="cal-task-row"
+                            style={{ padding: '10px 14px', cursor: 'pointer' }}
+                            onClick={() => setGcalActiveEvent({ ...t, dateKey: formatCalDateKey(calYear, calMonth, d) })}
                           >
                             <button
                               type="button"
                               className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)
+                                handleToggleCalTask(d, t.id, calYear, calMonth)
                               }}
-                              title={t.completed ? 'Mark upcoming' : 'Checkout task (Mark Done)'}
                             >
                               {t.completed ? '✓' : ''}
                             </button>
-
                             <div className="cal-task-info">
                               <div className="cal-task-name">{t.title}</div>
                               <div className="cal-task-sub">
-                                <span className={`task-tag ${t.tagClass}`} style={{ fontSize: '10.5px', padding: '2px 8px' }}>
-                                  {t.subject}
-                                </span>
+                                <span className={`task-tag ${t.tagClass}`}>{t.subject}</span>
                                 <span>⏰ {t.timeSlot}</span>
-                                {t.duration_minutes && <span>⏱️ {t.duration_minutes}m</span>}
                               </div>
                             </div>
-
-                            <div className="cal-task-actions">
-                              <span
-                                className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}
-                                style={{ fontSize: '11px', padding: '4px 10px' }}
-                              >
-                                {t.completed ? 'Completed ✓' : 'Upcoming'}
-                              </span>
-                              <button
-                                type="button"
-                                className="cal-btn-delete"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteCalTask(selectedCalDay, t.id, calYear, calMonth)
-                                }}
-                                title="Delete task"
-                              >
-                                ✕
-                              </button>
-                            </div>
+                            <span className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}>
+                              {t.completed ? 'Done ✓' : 'Scheduled'}
+                            </span>
                           </div>
-                        ))
-                    )}
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </main>
+        </div>
+
+        {/* 4. GOOGLE CALENDAR EVENT DETAIL POPOVER */}
+        {gcalActiveEvent && (
+          <div
+            className="gcal-popover-backdrop"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setGcalActiveEvent(null)
+            }}
+          >
+            <div className="gcal-popover-card">
+              <div
+                className={`gcal-popover-header ${
+                  gcalActiveEvent.title.toLowerCase().includes('exam')
+                    ? 'exam'
+                    : (gcalActiveEvent.subject || '').toLowerCase().includes('chem')
+                    ? 'chem'
+                    : (gcalActiveEvent.subject || '').toLowerCase().includes('python')
+                    ? 'python'
+                    : (gcalActiveEvent.subject || '').toLowerCase().includes('ai')
+                    ? 'ai'
+                    : 'math'
+                }`}
+              />
+
+              <div className="gcal-popover-body">
+                <div className="gcal-popover-title-row">
+                  <div className="gcal-popover-title">{gcalActiveEvent.title}</div>
+                  <button
+                    type="button"
+                    className="gcal-close-btn"
+                    onClick={() => setGcalActiveEvent(null)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="gcal-popover-meta">
+                  <div className="gcal-popover-meta-row">
+                    <span>🗓️</span>
+                    <span>{gcalActiveEvent.dateKey || `${MONTH_NAMES[calMonth]} ${selectedCalDay}, ${calYear}`}</span>
+                  </div>
+                  <div className="gcal-popover-meta-row">
+                    <span>⏰</span>
+                    <span>{gcalActiveEvent.timeSlot} ({gcalActiveEvent.duration_minutes || 45} mins)</span>
+                  </div>
+                  <div className="gcal-popover-meta-row">
+                    <span>🏷️</span>
+                    <span className={`task-tag ${gcalActiveEvent.tagClass}`}>{gcalActiveEvent.subject}</span>
+                    <span style={{ fontSize: '11px', color: '#8b949e', textTransform: 'capitalize' }}>
+                      • {gcalActiveEvent.priority || 'medium'} priority
+                    </span>
+                  </div>
+                </div>
+
+                <div className="gcal-popover-actions">
+                  <button
+                    type="button"
+                    className="btn-pill"
+                    style={{
+                      background: gcalActiveEvent.completed ? 'rgba(52, 211, 153, 0.2)' : 'var(--bg-surface-elevated)',
+                      color: gcalActiveEvent.completed ? '#34d399' : 'var(--text-primary)',
+                    }}
+                    onClick={() => {
+                      const dayNum = parseInt((gcalActiveEvent.dateKey || '').split('-')[2], 10) || selectedCalDay
+                      handleToggleCalTask(dayNum, gcalActiveEvent.id, calYear, calMonth)
+                      setGcalActiveEvent((prev) => (prev ? { ...prev, completed: !prev.completed } : null))
+                    }}
+                  >
+                    <span>{gcalActiveEvent.completed ? '✓ Completed' : 'Mark Complete'}</span>
+                  </button>
+
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn-pill btn-primary"
+                      onClick={() => {
+                        const title = gcalActiveEvent.title
+                        setGcalActiveEvent(null)
+                        setCalendarModalOpen(false)
+                        openPomodoroModal(title)
+                      }}
+                      title="Start deep work Pomodoro focus session"
+                    >
+                      <span>⏱️ Focus</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="cal-btn-delete"
+                      style={{ padding: '6px 12px', fontSize: '13px' }}
+                      onClick={() => {
+                        const dayNum = parseInt((gcalActiveEvent.dateKey || '').split('-')[2], 10) || selectedCalDay
+                        handleDeleteCalTask(dayNum, gcalActiveEvent.id, calYear, calMonth)
+                        setGcalActiveEvent(null)
+                      }}
+                      title="Delete event"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* Right Column: Add Task Form & Day Insights */}
-              <div className="cal-day-side-panel">
-                <form className="cal-add-form" onSubmit={handleAddCalendarTask}>
-                  <div className="cal-add-title">
-                    <span>➕</span>
-                    <span>Add Task to {MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay}</span>
+        {/* 5. QUICK EVENT CREATION MODAL */}
+        {gcalQuickCreateOpen && (
+          <div
+            className="gcal-popover-backdrop"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setGcalQuickCreateOpen(false)
+            }}
+          >
+            <div className="gcal-popover-card">
+              <div className="gcal-popover-header" />
+              <div className="gcal-popover-body">
+                <div className="gcal-popover-title-row">
+                  <div className="gcal-popover-title">
+                    <span>➕ New Study Session</span>
                   </div>
+                  <button
+                    type="button"
+                    className="gcal-close-btn"
+                    onClick={() => setGcalQuickCreateOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
 
-                  <div className="cal-add-row">
-                    <input
-                      type="text"
-                      className="chat-input-field"
-                      placeholder="Task title (e.g. Physics Quantum Mechanics recap)..."
-                      value={newCalTaskTitle}
-                      onChange={(e) => setNewCalTaskTitle(e.target.value)}
-                    />
-                  </div>
+                <form
+                  className="cal-add-form"
+                  style={{ background: 'transparent', padding: 0, border: 'none' }}
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    handleAddCalendarTask()
+                    setGcalQuickCreateOpen(false)
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="chat-input-field"
+                    placeholder="Add title (e.g. Physics Quantum recap)..."
+                    value={newCalTaskTitle}
+                    onChange={(e) => setNewCalTaskTitle(e.target.value)}
+                    autoFocus
+                    required
+                  />
 
                   <div className="cal-add-row controls">
                     <select
@@ -3626,16 +3788,15 @@ export default function App() {
                     <input
                       type="text"
                       className="cal-time-input"
-                      placeholder="Time slot (e.g. 5:00–6:00 PM)"
+                      placeholder="Time slot"
                       value={newCalTaskTime}
                       onChange={(e) => setNewCalTaskTime(e.target.value)}
                     />
                   </div>
 
-                  {/* Duration Presets */}
                   <div>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                      Target Duration:
+                    <span style={{ fontSize: '11px', color: '#8b949e', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                      Duration:
                     </span>
                     <div className="cal-duration-pills">
                       {[25, 45, 60, 90].map((dur) => (
@@ -3645,82 +3806,48 @@ export default function App() {
                           className={`cal-duration-pill ${newCalTaskDuration === dur ? 'active' : ''}`}
                           onClick={() => setNewCalTaskDuration(dur)}
                         >
-                          {dur} min
+                          {dur}m
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Priority Select */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      Priority:
-                    </span>
+                    <span style={{ fontSize: '11px', color: '#8b949e', fontWeight: 600 }}>Priority:</span>
                     <select
                       className="cal-select"
                       style={{ padding: '6px 10px', fontSize: '11.5px' }}
                       value={newCalTaskPriority}
                       onChange={(e) => setNewCalTaskPriority(e.target.value as any)}
                     >
-                      <option value="medium">Medium Priority</option>
-                      <option value="high">High Priority 🚨</option>
-                      <option value="low">Low Priority</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High 🚨</option>
+                      <option value="low">Low</option>
                     </select>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="btn-pill btn-primary"
-                    style={{ width: '100%', justifyContent: 'center', padding: '10px 18px', marginTop: '6px' }}
-                  >
-                    + Add to Day Schedule
-                  </button>
-                </form>
-
-                <div className="cal-tip-box">
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                    💡 Study Tips for {MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    <button
+                      type="submit"
+                      className="btn-pill btn-primary"
+                      style={{ flex: 1, justifyContent: 'center', padding: '9px 16px' }}
+                    >
+                      Save to Calendar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-pill"
+                      style={{ padding: '9px 16px' }}
+                      onClick={() => setGcalQuickCreateOpen(false)}
+                    >
+                      Cancel
+                    </button>
                   </div>
-                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    {calYear === 2026 && calMonth === 8 && selectedCalDay === 12
-                      ? 'Today has peak cognitive retention slots between 2:00 PM and 6:30 PM. Complete high-difficulty problem sets before 7 PM.'
-                      : selectedCalDay === 15 || selectedCalDay === 28
-                      ? 'Exam Milestone Day! Prioritize formula sheets, flashcard recall, and light review rather than learning heavy new concepts.'
-                      : 'Distribute study sessions with 25-minute Pomodoro bursts and active recall questions to retain maximum concepts.'}
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    type="button"
-                    className="btn-pill"
-                    style={{ flex: 1, justifyContent: 'center' }}
-                    onClick={() => setCalViewMode('month')}
-                  >
-                    📅 View Full Month
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-pill"
-                    style={{ flex: 1, justifyContent: 'center' }}
-                    onClick={() => setCalViewMode('week')}
-                  >
-                    📆 View Week
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn-pill"
-                  style={{ width: '100%', justifyContent: 'center', background: 'var(--bg-surface-elevated)' }}
-                  onClick={() => setCalendarModalOpen(false)}
-                >
-                  Exit Calendar
-                </button>
+                </form>
               </div>
             </div>
-          )}
-        </main>
+          </div>
+        )}
       </div>
 
       {/* Interactive Toast */}
