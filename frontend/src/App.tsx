@@ -6,13 +6,14 @@ import {
   getStoredUserName,
   setStoredUserName,
   updateTaskCompletion,
-  deleteTaskFromDb,
-  createTaskInDb,
   fetchChatHistory,
   sendChatMessage,
   recordStudySession,
   fetchGeneratedQuiz,
   submitQuizAnswers,
+  createBackendTask,
+  deleteBackendTask,
+  downloadCalendarIcs,
   type QuizQuestionItem,
 } from './services/api'
 
@@ -536,6 +537,171 @@ export default function App() {
     status: string
   }
 
+  type CalTaskItem = {
+    id: string
+    title: string
+    subject: string
+    tagClass: string
+    timeSlot: string
+    completed: boolean
+    priority?: string
+    duration_minutes?: number
+  }
+
+  // Full-Page Study Calendar State
+  const [calendarModalOpen, setCalendarModalOpen] = useState<boolean>(false)
+  const [calViewMode, setCalViewMode] = useState<'month' | 'week' | 'day'>('month')
+  const [calYear, setCalYear] = useState<number>(2026)
+  const [calMonth, setCalMonth] = useState<number>(8) // September = 8 (0-indexed)
+  const [selectedCalDay, setSelectedCalDay] = useState<number>(12)
+  const [calSubjectFilter, setCalSubjectFilter] = useState<'all' | 'Maths' | 'Chemistry' | 'Python' | 'AI Systems' | 'exams'>('all')
+  const [calendarSyncActive, setCalendarSyncActive] = useState<boolean>(false)
+
+  // New Calendar Task Form State
+  const [newCalTaskTitle, setNewCalTaskTitle] = useState<string>('')
+  const [newCalTaskTime, setNewCalTaskTime] = useState<string>('5:00–6:00 PM')
+  const [newCalTaskSubject, setNewCalTaskSubject] = useState<'Maths' | 'Chemistry' | 'Python' | 'AI Systems'>('Maths')
+  const [newCalTaskDuration, setNewCalTaskDuration] = useState<number>(45)
+  const [newCalTaskPriority, setNewCalTaskPriority] = useState<'high' | 'medium' | 'low'>('medium')
+
+  const [calTasksByDate, setCalTasksByDate] = useState<Record<string, CalTaskItem[]>>({
+    '2026-09-11': [
+      { id: 'd11-1', title: 'Calculus derivatives recap', subject: 'Maths', tagClass: 'task-tag-math', timeSlot: '10:00–11:00 AM', completed: true, duration_minutes: 60, priority: 'medium' },
+      { id: 'd11-2', title: 'Python recursion functions lab', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '2:00–3:00 PM', completed: true, duration_minutes: 60, priority: 'low' },
+    ],
+    '2026-09-13': [
+      { id: 'd13-1', title: 'Linear algebra vector spaces', subject: 'Maths', tagClass: 'task-tag-math', timeSlot: '10:00–11:30 AM', completed: false, duration_minutes: 90, priority: 'high' },
+      { id: 'd13-2', title: 'AI Transformer Attention Mechanisms', subject: 'AI Systems', tagClass: 'task-tag-ai', timeSlot: '3:00–4:15 PM', completed: false, duration_minutes: 75, priority: 'high' },
+    ],
+    '2026-09-14': [
+      { id: 'd14-1', title: 'Organic Chemistry reaction mechanisms review', subject: 'Chemistry', tagClass: 'task-tag-chem', timeSlot: '9:30–11:00 AM', completed: false, duration_minutes: 90, priority: 'high' },
+      { id: 'd14-2', title: 'Python hash maps & time complexity drill', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '1:30–2:45 PM', completed: false, duration_minutes: 75, priority: 'medium' },
+    ],
+    '2026-09-15': [
+      { id: 'd15-1', title: 'Linear Algebra Semester Exam (Hall A)', subject: 'Maths', tagClass: 'task-tag-math', timeSlot: '9:00 AM–12:00 PM', completed: false, duration_minutes: 180, priority: 'high' },
+      { id: 'd15-2', title: 'Post-exam recovery & light Python recap', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '3:30–4:15 PM', completed: false, duration_minutes: 45, priority: 'low' },
+    ],
+    '2026-09-18': [
+      { id: 'd18-1', title: 'Electrochemical Cells & Nernst Equation', subject: 'Chemistry', tagClass: 'task-tag-chem', timeSlot: '11:00 AM–12:30 PM', completed: false, duration_minutes: 90, priority: 'medium' },
+      { id: 'd18-2', title: 'Graph Algorithms & BFS/DFS in Python', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '4:00–5:30 PM', completed: false, duration_minutes: 90, priority: 'medium' },
+    ],
+    '2026-09-22': [
+      { id: 'd22-1', title: 'Deep Knowledge Tracing & LSTM Architectures', subject: 'AI Systems', tagClass: 'task-tag-ai', timeSlot: '2:00–3:30 PM', completed: false, duration_minutes: 90, priority: 'high' },
+    ],
+    '2026-09-28': [
+      { id: 'd28-1', title: 'Organic Chemistry Midterm (Hall B)', subject: 'Chemistry', tagClass: 'task-tag-chem', timeSlot: '10:00 AM–12:00 PM', completed: false, duration_minutes: 120, priority: 'high' },
+    ],
+  })
+
+  const MONTH_NAMES = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+  const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  const formatCalDateKey = (year: number, month: number, day: number) => {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  }
+
+  const getTasksForDate = (year: number, month: number, day: number): CalTaskItem[] => {
+    const dateKey = formatCalDateKey(year, month, day)
+    const stored = calTasksByDate[dateKey] || []
+    if (year === 2026 && month === 8 && day === 12) {
+      const primary: CalTaskItem[] = tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        subject: (t.subject as any) || 'Maths',
+        tagClass: t.tagClass,
+        timeSlot: t.timeSlot,
+        completed: t.completed,
+        priority: (t as any).priority || 'medium',
+        duration_minutes: (t as any).duration_minutes || 45,
+      }))
+      const ids = new Set(primary.map((p) => p.id))
+      return [...primary, ...stored.filter((s) => !ids.has(s.id))]
+    }
+    return stored
+  }
+
+  const daysInCalMonth = new Date(calYear, calMonth + 1, 0).getDate()
+  const startDayOfWeek = new Date(calYear, calMonth, 1).getDay()
+
+  const handlePrevMonth = () => {
+    if (calMonth === 0) {
+      setCalMonth(11)
+      setCalYear((y) => y - 1)
+    } else {
+      setCalMonth((m) => m - 1)
+    }
+  }
+
+  const handleNextMonth = () => {
+    if (calMonth === 11) {
+      setCalMonth(0)
+      setCalYear((y) => y + 1)
+    } else {
+      setCalMonth((m) => m + 1)
+    }
+  }
+
+  const handleJumpToTodayMonth = () => {
+    setCalYear(2026)
+    setCalMonth(8)
+    setSelectedCalDay(12)
+  }
+
+  const getWeekDays = (year: number, month: number, day: number) => {
+    const selectedDate = new Date(year, month, day)
+    const dayOfWeek = selectedDate.getDay()
+    const weekStart = new Date(selectedDate)
+    weekStart.setDate(selectedDate.getDate() - dayOfWeek)
+
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart)
+      d.setDate(weekStart.getDate() + i)
+      days.push({
+        dateObj: d,
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        day: d.getDate(),
+        weekday: WEEKDAY_NAMES[d.getDay()],
+        isToday: d.getFullYear() === 2026 && d.getMonth() === 8 && d.getDate() === 12,
+        isSelected: d.getDate() === selectedCalDay && d.getMonth() === calMonth,
+        dateKey: formatCalDateKey(d.getFullYear(), d.getMonth(), d.getDate()),
+      })
+    }
+    return days
+  }
+
+  const filterTask = (task: CalTaskItem) => {
+    if (calSubjectFilter === 'all') return true
+    if (calSubjectFilter === 'exams') {
+      return (
+        task.title.toLowerCase().includes('exam') ||
+        task.title.toLowerCase().includes('midterm') ||
+        task.priority === 'high'
+      )
+    }
+    return task.subject.toLowerCase().includes(calSubjectFilter.toLowerCase())
+  }
+
+  const DAY_HOURLY_SLOTS = [
+    { hour: 8, label: '8:00 AM', period: 'Morning Focus & Prep' },
+    { hour: 9, label: '9:00 AM', period: 'Active Problem Set' },
+    { hour: 10, label: '10:00 AM', period: 'Spaced Recall Drill' },
+    { hour: 11, label: '11:00 AM', period: 'Deep Work Lab' },
+    { hour: 12, label: '12:00 PM', period: 'Lunch & Cognitive Reset 🥪' },
+    { hour: 13, label: '1:00 PM', period: 'Light Review Buffer' },
+    { hour: 14, label: '2:00 PM', period: 'Core Concept Mastery' },
+    { hour: 15, label: '3:00 PM', period: 'Applied Exercises' },
+    { hour: 16, label: '4:00 PM', period: 'Practice Questions' },
+    { hour: 17, label: '5:00 PM', period: 'Evening Booster Session' },
+    { hour: 18, label: '6:00 PM', period: 'Formula Synthesis' },
+    { hour: 19, label: '7:00 PM', period: 'Quiz & Mastery Evaluation' },
+    { hour: 20, label: '8:00 PM', period: 'Daily Wind-Down & Notes' },
+  ]
+
   // Schedule & Tasks
   const [tasks, setTasks] = useState<TimelineTask[]>([
     {
@@ -616,6 +782,37 @@ export default function App() {
             }
           })
           setTasks(formattedTasks)
+
+          // Also merge into calTasksByDate across all scheduled dates
+          setCalTasksByDate((prev) => {
+            const next = { ...prev }
+            data.forEach((t) => {
+              const d = t.scheduled_date || '2026-09-12'
+              const sub = t.subject || 'Study'
+              const tagClass = sub.toLowerCase().includes('math')
+                ? 'task-tag-math'
+                : sub.toLowerCase().includes('python')
+                ? 'task-tag-python'
+                : sub.toLowerCase().includes('ai')
+                ? 'task-tag-ai'
+                : 'task-tag-chem'
+              const item: CalTaskItem = {
+                id: `task-${t.id}`,
+                title: t.title || t.topic || `${sub} Practice`,
+                subject: sub,
+                tagClass,
+                timeSlot: t.timeSlot || `${t.duration_minutes || 60} min`,
+                completed: !!t.completed,
+                duration_minutes: t.duration_minutes || 60,
+                priority: t.priority || 'medium',
+              }
+              const existingList = next[d] || []
+              if (!existingList.some((x) => x.id === item.id)) {
+                next[d] = [...existingList, item]
+              }
+            })
+            return next
+          })
         }
       })
       .catch((err) => console.error('Failed to fetch tasks from backend:', err))
@@ -711,41 +908,7 @@ export default function App() {
     adaptiveDifficulty: string
   } | null>(null)
 
-  // Calendar Modal & Day Tasks View
-  const [calendarModalOpen, setCalendarModalOpen] = useState<boolean>(false)
-  const [calViewMode, setCalViewMode] = useState<'month' | 'day'>('month')
-  const [selectedCalDay, setSelectedCalDay] = useState<number>(12)
-  const [calendarSyncActive, setCalendarSyncActive] = useState<boolean>(false)
-  const [newCalTaskTitle, setNewCalTaskTitle] = useState<string>('')
-  const [newCalTaskTime, setNewCalTaskTime] = useState<string>('5:00–6:00 PM')
-  const [newCalTaskSubject, setNewCalTaskSubject] = useState<'Maths' | 'Chemistry' | 'Python' | 'AI Systems'>('Maths')
 
-  // Other Day Tasks (for days other than 12)
-  const [otherDayTasks, setOtherDayTasks] = useState<Record<number, {
-    id: string
-    title: string
-    subject: string
-    tagClass: string
-    timeSlot: string
-    completed: boolean
-  }[]>>({
-    11: [
-      { id: 'd11-1', title: 'Calculus derivatives recap', subject: 'Maths', tagClass: 'task-tag-math', timeSlot: '10:00–11:00 AM', completed: true },
-      { id: 'd11-2', title: 'Python recursion functions lab', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '2:00–3:00 PM', completed: true },
-    ],
-    13: [
-      { id: 'd13-1', title: 'Linear algebra vector spaces', subject: 'Maths', tagClass: 'task-tag-math', timeSlot: '10:00–11:30 AM', completed: false },
-      { id: 'd13-2', title: 'AI Transformer Attention Mechanisms', subject: 'AI Systems', tagClass: 'task-tag-math', timeSlot: '3:00–4:15 PM', completed: false },
-    ],
-    14: [
-      { id: 'd14-1', title: 'Organic Chemistry reaction mechanisms review', subject: 'Chemistry', tagClass: 'task-tag-chem', timeSlot: '09:30–11:00 AM', completed: false },
-      { id: 'd14-2', title: 'Python hash maps & time complexity drill', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '1:30–2:45 PM', completed: false },
-    ],
-    15: [
-      { id: 'd15-1', title: 'Chemistry Midterm Exam (Hall B)', subject: 'Chemistry', tagClass: 'task-tag-chem', timeSlot: '11:00 AM–12:30 PM', completed: false },
-      { id: 'd15-2', title: 'Post-exam recovery & light Python recap', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '3:30–4:15 PM', completed: false },
-    ],
-  })
 
   // Apply Theme
   useEffect(() => {
@@ -948,39 +1111,51 @@ export default function App() {
     }
   }
 
-  // Toggle task in Calendar Day view
-  const handleToggleCalTask = (day: number, taskId: string) => {
-    if (day === 12) {
+  // Toggle task in Calendar
+  const handleToggleCalTask = (day: number, taskId: string, year = calYear, month = calMonth) => {
+    const dateKey = formatCalDateKey(year, month, day)
+    let isNowCompleted = false
+
+    setCalTasksByDate((prev) => {
+      const list = prev[dateKey] || []
+      const updated = list.map((t) => {
+        if (t.id === taskId) {
+          const next = !t.completed
+          isNowCompleted = next
+          return { ...t, completed: next }
+        }
+        return t
+      })
+      return { ...prev, [dateKey]: updated }
+    })
+
+    if (dateKey === '2026-09-12') {
       toggleTask(taskId)
     } else {
-      setOtherDayTasks((prev) => {
-        const list = prev[day] || []
-        const updated = list.map((t) => {
-          if (t.id === taskId) {
-            const next = !t.completed
-            if (next) {
-              soundSynth.playSuccessBeep()
-              showToast('Task marked complete!', '🎉')
-            }
-            return { ...t, completed: next }
-          }
-          return t
-        })
-        return { ...prev, [day]: updated }
-      })
+      if (isNowCompleted) {
+        soundSynth.playSuccessBeep()
+        showToast('Task marked complete!', '🎉')
+      }
+      const numId = parseInt(taskId.replace('task-', ''), 10)
+      if (!isNaN(numId)) {
+        updateTaskCompletion(numId)
+      }
     }
   }
 
-  // Add task in Calendar Day view
+  // Add task in Calendar
   const handleAddCalendarTask = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!newCalTaskTitle.trim()) return
 
+    const dateKey = formatCalDateKey(calYear, calMonth, selectedCalDay)
     const tagClass =
       newCalTaskSubject === 'Chemistry'
         ? 'task-tag-chem'
         : newCalTaskSubject === 'Python'
         ? 'task-tag-python'
+        : newCalTaskSubject === 'AI Systems'
+        ? 'task-tag-ai'
         : 'task-tag-math'
 
     const tagIcon =
@@ -988,63 +1163,100 @@ export default function App() {
         ? '🧪 Chemistry'
         : newCalTaskSubject === 'Python'
         ? '🐍 Python'
+        : newCalTaskSubject === 'AI Systems'
+        ? '🤖 AI Systems'
         : '📐 Maths'
 
-    if (selectedCalDay === 12) {
-      const newTask = {
-        id: `task-${Date.now()}`,
-        title: newCalTaskTitle.trim(),
-        subject: newCalTaskSubject,
-        tagClass,
-        tagIcon,
-        timeSlot: newCalTaskTime.trim() || '5:00–6:00 PM',
-        completed: false,
-        alarmActive: true,
-        status: 'Upcoming',
-      }
-      setTasks((prev) => [...prev, newTask])
-      createTaskInDb({
-        title: newCalTaskTitle.trim(),
-        subject: newCalTaskSubject,
-        topic: 'Self-Directed Review',
-        time_slot: newCalTaskTime.trim() || '5:00–6:00 PM',
-        scheduled_date: '2026-09-12',
-      })
-    } else {
-      const newTask = {
-        id: `cal-${Date.now()}`,
-        title: newCalTaskTitle.trim(),
-        subject: newCalTaskSubject,
-        tagClass,
-        timeSlot: newCalTaskTime.trim() || '5:00–6:00 PM',
-        completed: false,
-      }
-      setOtherDayTasks((prev) => ({
-        ...prev,
-        [selectedCalDay]: [...(prev[selectedCalDay] || []), newTask],
-      }))
+    const timeSlotStr = newCalTaskTime.trim() || '5:00–6:00 PM'
+    const newTaskId = `task-${Date.now()}`
+
+    const newTaskItem: CalTaskItem = {
+      id: newTaskId,
+      title: newCalTaskTitle.trim(),
+      subject: newCalTaskSubject,
+      tagClass,
+      timeSlot: timeSlotStr,
+      completed: false,
+      priority: newCalTaskPriority,
+      duration_minutes: newCalTaskDuration,
     }
 
+    setCalTasksByDate((prev) => ({
+      ...prev,
+      [dateKey]: [...(prev[dateKey] || []), newTaskItem],
+    }))
+
+    if (dateKey === '2026-09-12') {
+      setTasks((prev) => [
+        ...prev,
+        {
+          id: newTaskId,
+          title: newCalTaskTitle.trim(),
+          subject: newCalTaskSubject,
+          tagClass,
+          tagIcon,
+          timeSlot: timeSlotStr,
+          completed: false,
+          alarmActive: true,
+          status: 'Upcoming',
+        },
+      ])
+    }
+
+    createBackendTask({
+      title: newCalTaskTitle.trim(),
+      subject: newCalTaskSubject,
+      topic: newCalTaskTitle.trim(),
+      duration_minutes: newCalTaskDuration,
+      priority: newCalTaskPriority,
+      time_slot: timeSlotStr,
+      scheduled_date: dateKey,
+      alarm_active: true,
+      is_critical: newCalTaskPriority === 'high',
+      status_tag: 'Upcoming',
+    }).then((created) => {
+      if (created && created.id) {
+        setCalTasksByDate((prev) => {
+          const list = prev[dateKey] || []
+          return {
+            ...prev,
+            [dateKey]: list.map((item) => (item.id === newTaskId ? { ...item, id: `task-${created.id}` } : item)),
+          }
+        })
+      }
+    })
+
     soundSynth.playHarmonicChime()
-    showToast(`Added "${newCalTaskTitle.trim()}" to Sep ${selectedCalDay}!`, '📅')
+    showToast(`Added "${newCalTaskTitle.trim()}" to ${MONTH_NAMES[calMonth]} ${selectedCalDay}!`, '📅')
     setNewCalTaskTitle('')
   }
 
-  // Delete task from Calendar Day view
-  const handleDeleteCalTask = (day: number, taskId: string) => {
-    if (day === 12) {
+  // Delete task from Calendar
+  const handleDeleteCalTask = (day: number, taskId: string, year = calYear, month = calMonth) => {
+    const dateKey = formatCalDateKey(year, month, day)
+    setCalTasksByDate((prev) => ({
+      ...prev,
+      [dateKey]: (prev[dateKey] || []).filter((t) => t.id !== taskId),
+    }))
+
+    if (dateKey === '2026-09-12') {
       setTasks((prev) => prev.filter((t) => t.id !== taskId))
-      const numId = parseInt(taskId.replace('task-', ''), 10)
-      if (!isNaN(numId)) {
-        deleteTaskFromDb(numId)
-      }
-    } else {
-      setOtherDayTasks((prev) => ({
-        ...prev,
-        [day]: (prev[day] || []).filter((t) => t.id !== taskId),
-      }))
+    }
+
+    const numId = parseInt(taskId.replace('task-', ''), 10)
+    if (!isNaN(numId)) {
+      deleteBackendTask(numId)
     }
     showToast('Task removed from schedule', '🗑')
+  }
+
+  // Real Calendar Sync & iCal Export
+  const handleSyncCalendar = () => {
+    setCalendarSyncActive(true)
+    soundSynth.playSuccessBeep()
+    downloadCalendarIcs()
+    showToast('📅 Exported reviso_study_schedule.ics! Ready to import into Google or Apple Calendar.', '✨')
+    setTimeout(() => setCalendarSyncActive(false), 1200)
   }
 
   // Pomodoro handlers
@@ -2647,7 +2859,7 @@ export default function App() {
           </div>
 
           <div className="cal-fullpage-header-right">
-            {/* View switcher: Month View vs Day Tasks */}
+            {/* View switcher: Month View, Week View, Day View */}
             <div className="cal-segmented-control">
               <button
                 type="button"
@@ -2655,7 +2867,15 @@ export default function App() {
                 onClick={() => setCalViewMode('month')}
               >
                 <span>📅</span>
-                <span>Month View</span>
+                <span>Month</span>
+              </button>
+              <button
+                type="button"
+                className={`cal-seg-btn ${calViewMode === 'week' ? 'active' : ''}`}
+                onClick={() => setCalViewMode('week')}
+              >
+                <span>📆</span>
+                <span>Week</span>
               </button>
               <button
                 type="button"
@@ -2663,15 +2883,21 @@ export default function App() {
                 onClick={() => setCalViewMode('day')}
               >
                 <span>📋</span>
-                <span>Day View (Sep {selectedCalDay})</span>
+                <span>Day ({MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay})</span>
               </button>
             </div>
 
-            {/* Sync Badge */}
-            <div className="calendar-sync-badge">
-              <span style={{ color: '#34d399', fontSize: '10px' }}>●</span>
-              <span>Google Calendar &amp; iCal Connected</span>
-            </div>
+            {/* iCal / Google Calendar Export Button */}
+            <button
+              type="button"
+              className="btn-pill btn-primary"
+              style={{ fontSize: '12px', padding: '6px 14px' }}
+              onClick={handleSyncCalendar}
+              title="Download standard RFC-5545 .ics calendar file"
+            >
+              <span>📥</span>
+              <span>{calendarSyncActive ? 'Exporting...' : 'Sync / Export .ics'}</span>
+            </button>
 
             {/* Close X Button */}
             <button
@@ -2688,11 +2914,40 @@ export default function App() {
 
         {/* Scrollable Body */}
         <main className="cal-fullpage-body">
+          {/* Quick Subject Filter Bar */}
+          <div className="calendar-filter-bar">
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', marginRight: '4px' }}>
+              Filter:
+            </span>
+            {(
+              [
+                { key: 'all', label: 'All Subjects' },
+                { key: 'Maths', label: '📐 Maths' },
+                { key: 'Chemistry', label: '🧪 Chemistry' },
+                { key: 'Python', label: '🐍 Python' },
+                { key: 'AI Systems', label: '🤖 AI Systems' },
+                { key: 'exams', label: '🎯 Exams Only' },
+              ] as const
+            ).map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                className={`cal-filter-chip ${calSubjectFilter === f.key ? 'active' : ''}`}
+                onClick={() => {
+                  setCalSubjectFilter(f.key)
+                  soundSynth.playHarmonicChime()
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           {/* Top Banner with Quick Highlights */}
           <div className="cal-top-banner">
             <div>
               <div className="cal-top-banner-title">
-                <span>🗓️ September 2026 Academic Schedule</span>
+                <span>🗓️ {MONTH_NAMES[calMonth]} {calYear} Academic Schedule</span>
                 <span
                   style={{
                     fontSize: '11px',
@@ -2713,47 +2968,79 @@ export default function App() {
 
             <div className="cal-stats-grid">
               <div className="cal-stat-card">
-                <span className="cal-stat-val">30 Days</span>
+                <span className="cal-stat-val">{daysInCalMonth} Days</span>
                 <span className="cal-stat-label">Term Span</span>
               </div>
               <div className="cal-stat-card">
                 <span className="cal-stat-val" style={{ color: '#34d399' }}>
-                  {tasks.filter((t) => t.completed).length +
-                    Object.values(otherDayTasks).flat().filter((t) => t.completed).length}{' '}
+                  {Object.values(calTasksByDate).flat().filter((t) => t.completed).length +
+                    tasks.filter((t) => t.completed).length}{' '}
                   Done
                 </span>
                 <span className="cal-stat-label">Completed Tasks</span>
               </div>
               <div className="cal-stat-card">
-                <span className="cal-stat-val" style={{ color: '#f59e0b' }}>2 Exams</span>
-                <span className="cal-stat-label">Milestones (Sep 15, 28)</span>
+                <span className="cal-stat-val" style={{ color: '#f59e0b' }}>
+                  {
+                    Object.values(calTasksByDate)
+                      .flat()
+                      .filter(
+                        (t) =>
+                          t.title.toLowerCase().includes('exam') ||
+                          t.title.toLowerCase().includes('midterm')
+                      ).length
+                  }{' '}
+                  Exams
+                </span>
+                <span className="cal-stat-label">Milestones</span>
               </div>
               <button
                 type="button"
                 className="btn-pill"
                 style={{ fontSize: '12px', padding: '6px 14px' }}
-                onClick={() => {
-                  setCalendarSyncActive(true)
-                  soundSynth.playSuccessBeep()
-                  showToast('Re-synced with Google Calendar & iCal!', '✨')
-                  setTimeout(() => setCalendarSyncActive(false), 800)
-                }}
+                onClick={handleSyncCalendar}
               >
                 <span>🔄</span>
-                <span>{calendarSyncActive ? 'Syncing...' : 'Sync Calendar'}</span>
+                <span>{calendarSyncActive ? 'Exporting...' : 'Sync Calendar'}</span>
               </button>
             </div>
           </div>
 
-          {/* Condition: Month View vs Day View */}
-          {calViewMode === 'month' ? (
-            /* Month Layout: Expansive Grid + Side Drawer */
+          {/* VIEW 1: MONTH VIEW */}
+          {calViewMode === 'month' && (
             <div className="cal-month-layout">
               <div className="cal-grid-panel">
                 <div className="calendar-month-nav">
-                  <div className="calendar-month-title">
-                    <span>September 2026</span>
+                  <div className="cal-nav-buttons">
+                    <button
+                      type="button"
+                      className="cal-nav-btn"
+                      onClick={handlePrevMonth}
+                      title="Previous Month"
+                    >
+                      ◀
+                    </button>
+                    <span className="calendar-month-title">
+                      {MONTH_NAMES[calMonth]} {calYear}
+                    </span>
+                    <button
+                      type="button"
+                      className="cal-nav-btn"
+                      onClick={handleNextMonth}
+                      title="Next Month"
+                    >
+                      ▶
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-pill"
+                      style={{ fontSize: '11px', padding: '3px 10px', marginLeft: '6px' }}
+                      onClick={handleJumpToTodayMonth}
+                    >
+                      Today
+                    </button>
                   </div>
+
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                       Click any date to inspect and manage its tasks
@@ -2762,21 +3049,27 @@ export default function App() {
                 </div>
 
                 <div className="cal-large-grid">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                  {WEEKDAY_NAMES.map((d) => (
                     <div key={d} className="calendar-weekday">
                       {d}
                     </div>
                   ))}
 
-                  {/* Empty padding for Sun, Mon */}
-                  <div className="cal-large-cell empty" />
-                  <div className="cal-large-cell empty" />
+                  {/* Empty padding cells for start of month */}
+                  {Array.from({ length: startDayOfWeek }).map((_, i) => (
+                    <div key={`empty-${i}`} className="cal-large-cell empty" />
+                  ))}
 
-                  {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
-                    const isToday = day === 12
+                  {Array.from({ length: daysInCalMonth }, (_, i) => i + 1).map((day) => {
+                    const isToday = calYear === 2026 && calMonth === 8 && day === 12
                     const isSelected = day === selectedCalDay
-                    const dayTasksList = day === 12 ? tasks : otherDayTasks[day] || []
-                    const hasExam = [15, 28].includes(day)
+                    const rawTasks = getTasksForDate(calYear, calMonth, day)
+                    const dayTasksList = rawTasks.filter(filterTask)
+                    const hasExam = rawTasks.some(
+                      (t) =>
+                        t.title.toLowerCase().includes('exam') ||
+                        t.title.toLowerCase().includes('midterm')
+                    )
 
                     let cellClass = 'cal-large-cell'
                     if (isToday) cellClass += ' today'
@@ -2802,21 +3095,26 @@ export default function App() {
                               🎯 Exam Milestone
                             </div>
                           )}
-                          {dayTasksList.slice(0, 2).map((t) => (
-                            <div
-                              key={t.id}
-                              className={`cal-event-chip ${
-                                t.subject === 'Maths'
-                                  ? 'math'
-                                  : t.subject === 'Chemistry'
-                                  ? 'chem'
-                                  : 'python'
-                              }`}
-                              title={t.title}
-                            >
-                              {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
-                            </div>
-                          ))}
+                          {dayTasksList.slice(0, 2).map((t) => {
+                            const subjectLower = (t.subject || '').toLowerCase()
+                            const chipClass = subjectLower.includes('chem')
+                              ? 'chem'
+                              : subjectLower.includes('python')
+                              ? 'python'
+                              : subjectLower.includes('ai')
+                              ? 'ai'
+                              : 'math'
+
+                            return (
+                              <div
+                                key={t.id}
+                                className={`cal-event-chip ${chipClass}`}
+                                title={`${t.subject}: ${t.title}`}
+                              >
+                                {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
+                              </div>
+                            )
+                          })}
                           {dayTasksList.length > 2 && (
                             <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600 }}>
                               +{dayTasksList.length - 2} more
@@ -2833,8 +3131,13 @@ export default function App() {
               <div className="cal-side-drawer">
                 <div className="cal-side-header">
                   <div className="cal-side-title">
-                    <span>Selected: <strong>Sep {selectedCalDay}, 2026</strong></span>
-                    {selectedCalDay === 12 && (
+                    <span>
+                      Selected:{' '}
+                      <strong>
+                        {MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay}, {calYear}
+                      </strong>
+                    </span>
+                    {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
                       <span className="cal-badge-today" style={{ marginLeft: '8px' }}>
                         Today
                       </span>
@@ -2852,40 +3155,42 @@ export default function App() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    Scheduled Tasks ({ (selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length })
+                    Scheduled Tasks ({getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask).length})
                   </span>
 
-                  {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).map((t) => (
-                    <div
-                      key={t.id}
-                      className="cal-task-row"
-                      style={{ padding: '10px 12px', cursor: 'pointer' }}
-                      onClick={() => handleToggleCalTask(selectedCalDay, t.id)}
-                    >
-                      <button
-                        type="button"
-                        className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleToggleCalTask(selectedCalDay, t.id)
-                        }}
+                  {getTasksForDate(calYear, calMonth, selectedCalDay)
+                    .filter(filterTask)
+                    .map((t) => (
+                      <div
+                        key={t.id}
+                        className="cal-task-row"
+                        style={{ padding: '10px 12px', cursor: 'pointer' }}
+                        onClick={() => handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)}
                       >
-                        {t.completed ? '✓' : ''}
-                      </button>
-                      <div className="cal-task-info">
-                        <div className="cal-task-name" style={{ fontSize: '13px' }}>{t.title}</div>
-                        <div className="cal-task-sub" style={{ fontSize: '11px' }}>
-                          <span>{t.subject}</span>
-                          <span>•</span>
-                          <span>{t.timeSlot}</span>
+                        <button
+                          type="button"
+                          className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)
+                          }}
+                        >
+                          {t.completed ? '✓' : ''}
+                        </button>
+                        <div className="cal-task-info">
+                          <div className="cal-task-name" style={{ fontSize: '13px' }}>{t.title}</div>
+                          <div className="cal-task-sub" style={{ fontSize: '11px' }}>
+                            <span>{t.subject}</span>
+                            <span>•</span>
+                            <span>{t.timeSlot}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length === 0 && (
+                  {getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask).length === 0 && (
                     <div className="cal-empty-state" style={{ padding: '24px 12px' }}>
-                      No tasks scheduled for Sep {selectedCalDay}.
+                      No tasks scheduled for {MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay}.
                     </div>
                   )}
                 </div>
@@ -2902,9 +3207,139 @@ export default function App() {
                 </div>
               </div>
             </div>
-          ) : (
-            /* Day Layout: 2 Columns - Task List + Add Task & Metrics Panel */
+          )}
+
+          {/* VIEW 2: WEEK VIEW */}
+          {calViewMode === 'week' && (
+            <div className="cal-week-layout">
+              {(() => {
+                const weekDays = getWeekDays(calYear, calMonth, selectedCalDay)
+                const startLabel = `${MONTH_NAMES[weekDays[0].month].slice(0, 3)} ${weekDays[0].day}`
+                const endLabel = `${MONTH_NAMES[weekDays[6].month].slice(0, 3)} ${weekDays[6].day}`
+
+                return (
+                  <>
+                    <div className="cal-day-nav" style={{ marginBottom: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn-pill"
+                        style={{ padding: '6px 14px', fontSize: '12px' }}
+                        onClick={() => setSelectedCalDay((prev) => Math.max(1, prev - 7))}
+                      >
+                        ◀ Previous Week
+                      </button>
+
+                      <div className="cal-day-heading">
+                        <span className="cal-day-title">Week of {startLabel} – {endLabel}, {calYear}</span>
+                        <button
+                          type="button"
+                          className="btn-pill"
+                          style={{ fontSize: '11px', padding: '3px 9px' }}
+                          onClick={handleJumpToTodayMonth}
+                        >
+                          This Week
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn-pill"
+                        style={{ padding: '6px 14px', fontSize: '12px' }}
+                        onClick={() => setSelectedCalDay((prev) => Math.min(daysInCalMonth, prev + 7))}
+                      >
+                        Next Week ▶
+                      </button>
+                    </div>
+
+                    <div className="cal-week-grid">
+                      {weekDays.map((wDay) => {
+                        const dayTasks = getTasksForDate(wDay.year, wDay.month, wDay.day).filter(filterTask)
+                        let colClass = 'cal-week-day-col'
+                        if (wDay.isToday) colClass += ' today'
+                        if (wDay.isSelected) colClass += ' selected'
+
+                        return (
+                          <div
+                            key={wDay.dateKey}
+                            className={colClass}
+                            onClick={() => {
+                              setSelectedCalDay(wDay.day)
+                              setCalMonth(wDay.month)
+                              setCalYear(wDay.year)
+                            }}
+                          >
+                            <div className="cal-week-col-header">
+                              <div>
+                                <div className="cal-week-col-name">{wDay.weekday}</div>
+                                <div className="cal-week-col-num">{wDay.day}</div>
+                              </div>
+                              {wDay.isToday && <span className="cal-badge-today">Today</span>}
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                              {dayTasks.map((t) => (
+                                <div
+                                  key={t.id}
+                                  className={`cal-week-task-card ${t.completed ? 'completed' : ''}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleToggleCalTask(wDay.day, t.id, wDay.year, wDay.month)
+                                  }}
+                                  title={`${t.subject}: ${t.title} (${t.timeSlot})`}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span
+                                      className={`task-tag ${t.tagClass}`}
+                                      style={{ fontSize: '9.5px', padding: '1px 6px' }}
+                                    >
+                                      {t.subject}
+                                    </span>
+                                    <span style={{ fontSize: '10.5px', color: 'var(--text-tertiary)' }}>
+                                      {t.completed ? '✓' : ''}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                                    {t.title}
+                                  </div>
+                                  <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                                    ⏰ {t.timeSlot}
+                                  </div>
+                                </div>
+                              ))}
+
+                              {dayTasks.length === 0 && (
+                                <div className="cal-week-empty">No tasks</div>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              className="btn-pill"
+                              style={{ width: '100%', justifyContent: 'center', fontSize: '10.5px', padding: '5px 8px', marginTop: 'auto' }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedCalDay(wDay.day)
+                                setCalMonth(wDay.month)
+                                setCalYear(wDay.year)
+                                setCalViewMode('day')
+                              }}
+                            >
+                              + View Day
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          )}
+
+          {/* VIEW 3: DAY VIEW WITH HOURLY TIMELINE & TASK COMPOSER */}
+          {calViewMode === 'day' && (
             <div className="cal-day-layout">
+              {/* Left Column: Hourly Timeline & Task List */}
               <div className="cal-day-main-panel">
                 {/* Day Navigation Header */}
                 <div className="cal-day-nav">
@@ -2918,14 +3353,18 @@ export default function App() {
                   </button>
 
                   <div className="cal-day-heading">
-                    <span className="cal-day-title">September {selectedCalDay}, 2026</span>
-                    {selectedCalDay === 12 && <span className="cal-badge-today">Today</span>}
-                    {selectedCalDay !== 12 && (
+                    <span className="cal-day-title">
+                      {MONTH_NAMES[calMonth]} {selectedCalDay}, {calYear}
+                    </span>
+                    {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
+                      <span className="cal-badge-today">Today</span>
+                    )}
+                    {!(calYear === 2026 && calMonth === 8 && selectedCalDay === 12) && (
                       <button
                         type="button"
                         className="btn-pill"
                         style={{ fontSize: '11px', padding: '3px 9px' }}
-                        onClick={() => setSelectedCalDay(12)}
+                        onClick={handleJumpToTodayMonth}
                       >
                         Jump to Today
                       </button>
@@ -2936,101 +3375,232 @@ export default function App() {
                     type="button"
                     className="btn-pill"
                     style={{ padding: '6px 14px', fontSize: '12px' }}
-                    onClick={() => setSelectedCalDay((prev) => Math.min(30, prev + 1))}
+                    onClick={() => setSelectedCalDay((prev) => Math.min(daysInCalMonth, prev + 1))}
                   >
                     Next Day ▶
                   </button>
                 </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    fontSize: '13px',
-                    color: 'var(--text-secondary)',
-                    fontWeight: 600,
-                  }}
-                >
-                  <span>
-                    Tasks for September {selectedCalDay} (
-                    {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).filter((t) => t.completed)
-                      .length}
-                    /
-                    {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length} completed)
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#80cbc4' }}>
-                    Click checkbox or row to checkout ✓
-                  </span>
-                </div>
+                {/* Sub-header with completion stats */}
+                {(() => {
+                  const dayTasks = getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask)
+                  const completed = dayTasks.filter((t) => t.completed).length
 
-                {/* Interactive Task List */}
-                <div className="cal-task-list">
-                  {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length === 0 ? (
-                    <div className="cal-empty-state">
-                      🏖️ No study tasks scheduled for September {selectedCalDay}. Add a new task using the panel on the right!
+                  return (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '13px',
+                        color: 'var(--text-secondary)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <span>
+                        Tasks for {MONTH_NAMES[calMonth]} {selectedCalDay} ({completed} / {dayTasks.length} completed)
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#80cbc4' }}>
+                        Click checkbox or card to mark complete ✓
+                      </span>
                     </div>
-                  ) : (
-                    (selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).map((t) => (
-                      <div
-                        key={t.id}
-                        className={`cal-task-row ${t.completed ? 'completed' : ''}`}
-                        onClick={() => handleToggleCalTask(selectedCalDay, t.id)}
-                      >
-                        <button
-                          type="button"
-                          className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleToggleCalTask(selectedCalDay, t.id)
-                          }}
-                          title={t.completed ? 'Mark upcoming' : 'Checkout task (Mark Done)'}
-                        >
-                          {t.completed ? '✓' : ''}
-                        </button>
+                  )
+                })()}
 
-                        <div className="cal-task-info">
-                          <div className="cal-task-name">{t.title}</div>
-                          <div className="cal-task-sub">
-                            <span className={`task-tag ${t.tagClass}`} style={{ fontSize: '10.5px', padding: '2px 8px' }}>
-                              {t.subject}
-                            </span>
-                            <span>⏰ {t.timeSlot}</span>
+                {/* Section A: Hourly Schedule Timeline (8 AM – 8 PM) */}
+                <div style={{ marginTop: '8px' }}>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      color: 'var(--text-primary)',
+                      marginBottom: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span>⏱️</span>
+                    <span>Hourly Schedule Timeline &amp; Time Blocks</span>
+                  </div>
+
+                  <div className="cal-timeline-container">
+                    {DAY_HOURLY_SLOTS.map((slot) => {
+                      const allDayTasks = getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask)
+                      // Match tasks scheduled for this hour
+                      const slotHour12 = slot.hour > 12 ? slot.hour - 12 : slot.hour
+                      const slotHourPrefix = `${slotHour12}:`
+                      const matchedTasks = allDayTasks.filter((t) => {
+                        const time = t.timeSlot.toLowerCase()
+                        return (
+                          time.includes(slotHourPrefix) ||
+                          time.includes(`${slot.hour}:`) ||
+                          (slot.hour === 9 && time.includes('9:00')) ||
+                          (slot.hour === 11 && time.includes('11:00')) ||
+                          (slot.hour === 14 && (time.includes('2:00') || time.includes('1:30'))) ||
+                          (slot.hour === 15 && time.includes('3:00')) ||
+                          (slot.hour === 17 && time.includes('5:00'))
+                        )
+                      })
+
+                      return (
+                        <div key={slot.hour} className="cal-timeline-hour-row">
+                          <div className="cal-hour-label">{slot.label}</div>
+                          <div className="cal-hour-content">
+                            {matchedTasks.length > 0 ? (
+                              matchedTasks.map((t) => {
+                                const subLower = (t.subject || '').toLowerCase()
+                                const isExam =
+                                  t.title.toLowerCase().includes('exam') ||
+                                  t.title.toLowerCase().includes('midterm')
+                                let cardType = 'math'
+                                if (isExam) cardType = 'exam'
+                                else if (subLower.includes('chem')) cardType = 'chem'
+                                else if (subLower.includes('python')) cardType = 'python'
+                                else if (subLower.includes('ai')) cardType = 'ai'
+
+                                return (
+                                  <div
+                                    key={t.id}
+                                    className={`cal-timeline-task-card ${cardType} ${t.completed ? 'completed' : ''}`}
+                                    onClick={() => handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <button
+                                        type="button"
+                                        className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)
+                                        }}
+                                      >
+                                        {t.completed ? '✓' : ''}
+                                      </button>
+                                      <div>
+                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '13px' }}>
+                                          {t.title}
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                          {t.subject} • {t.timeSlot}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <span
+                                      className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}
+                                      style={{ fontSize: '10.5px' }}
+                                    >
+                                      {t.completed ? 'Done ✓' : 'Scheduled'}
+                                    </span>
+                                  </div>
+                                )
+                              })
+                            ) : (
+                              <div
+                                className="cal-timeline-empty-slot"
+                                onClick={() => {
+                                  setNewCalTaskTime(`${slot.label}–${slot.hour >= 12 ? (slot.hour === 12 ? '1:00 PM' : `${slot.hour - 11}:00 PM`) : `${slot.hour + 1}:00 AM`}`)
+                                  showToast(`Selected time slot ${slot.label}. Enter task details on the right!`, '⏰')
+                                }}
+                                title="Click to schedule a study session here"
+                              >
+                                <span>+ Open buffer ({slot.period})</span>
+                              </div>
+                            )}
                           </div>
                         </div>
+                      )
+                    })}
+                  </div>
+                </div>
 
-                        <div className="cal-task-actions">
-                          <span
-                            className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}
-                            style={{ fontSize: '11px', padding: '4px 10px' }}
-                          >
-                            {t.completed ? 'Completed ✓' : 'Upcoming'}
-                          </span>
-                          <button
-                            type="button"
-                            className="cal-btn-delete"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteCalTask(selectedCalDay, t.id)
-                            }}
-                            title="Delete task"
-                          >
-                            ✕
-                          </button>
-                        </div>
+                {/* Section B: All Tasks Checklist for Selected Day */}
+                <div style={{ marginTop: '16px' }}>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      color: 'var(--text-primary)',
+                      marginBottom: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span>📋</span>
+                    <span>All Scheduled Tasks Checklist</span>
+                  </div>
+
+                  <div className="cal-task-list">
+                    {getTasksForDate(calYear, calMonth, selectedCalDay).filter(filterTask).length === 0 ? (
+                      <div className="cal-empty-state">
+                        🏖️ No study tasks scheduled for {MONTH_NAMES[calMonth]} {selectedCalDay}. Add a new task using the form on the right!
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      getTasksForDate(calYear, calMonth, selectedCalDay)
+                        .filter(filterTask)
+                        .map((t) => (
+                          <div
+                            key={t.id}
+                            className={`cal-task-row ${t.completed ? 'completed' : ''}`}
+                            onClick={() => handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)}
+                          >
+                            <button
+                              type="button"
+                              className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleCalTask(selectedCalDay, t.id, calYear, calMonth)
+                              }}
+                              title={t.completed ? 'Mark upcoming' : 'Checkout task (Mark Done)'}
+                            >
+                              {t.completed ? '✓' : ''}
+                            </button>
+
+                            <div className="cal-task-info">
+                              <div className="cal-task-name">{t.title}</div>
+                              <div className="cal-task-sub">
+                                <span className={`task-tag ${t.tagClass}`} style={{ fontSize: '10.5px', padding: '2px 8px' }}>
+                                  {t.subject}
+                                </span>
+                                <span>⏰ {t.timeSlot}</span>
+                                {t.duration_minutes && <span>⏱️ {t.duration_minutes}m</span>}
+                              </div>
+                            </div>
+
+                            <div className="cal-task-actions">
+                              <span
+                                className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}
+                                style={{ fontSize: '11px', padding: '4px 10px' }}
+                              >
+                                {t.completed ? 'Completed ✓' : 'Upcoming'}
+                              </span>
+                              <button
+                                type="button"
+                                className="cal-btn-delete"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteCalTask(selectedCalDay, t.id, calYear, calMonth)
+                                }}
+                                title="Delete task"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Side Panel in Day View: Add Task Form & Day Stats */}
+              {/* Right Column: Add Task Form & Day Insights */}
               <div className="cal-day-side-panel">
                 <form className="cal-add-form" onSubmit={handleAddCalendarTask}>
                   <div className="cal-add-title">
                     <span>➕</span>
-                    <span>Add Task to Sep {selectedCalDay}</span>
+                    <span>Add Task to {MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay}</span>
                   </div>
+
                   <div className="cal-add-row">
                     <input
                       type="text"
@@ -3040,6 +3610,7 @@ export default function App() {
                       onChange={(e) => setNewCalTaskTitle(e.target.value)}
                     />
                   </div>
+
                   <div className="cal-add-row controls">
                     <select
                       className="cal-select"
@@ -3061,6 +3632,42 @@ export default function App() {
                     />
                   </div>
 
+                  {/* Duration Presets */}
+                  <div>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                      Target Duration:
+                    </span>
+                    <div className="cal-duration-pills">
+                      {[25, 45, 60, 90].map((dur) => (
+                        <button
+                          key={dur}
+                          type="button"
+                          className={`cal-duration-pill ${newCalTaskDuration === dur ? 'active' : ''}`}
+                          onClick={() => setNewCalTaskDuration(dur)}
+                        >
+                          {dur} min
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Priority Select */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      Priority:
+                    </span>
+                    <select
+                      className="cal-select"
+                      style={{ padding: '6px 10px', fontSize: '11.5px' }}
+                      value={newCalTaskPriority}
+                      onChange={(e) => setNewCalTaskPriority(e.target.value as any)}
+                    >
+                      <option value="medium">Medium Priority</option>
+                      <option value="high">High Priority 🚨</option>
+                      <option value="low">Low Priority</option>
+                    </select>
+                  </div>
+
                   <button
                     type="submit"
                     className="btn-pill btn-primary"
@@ -3070,12 +3677,12 @@ export default function App() {
                   </button>
                 </form>
 
-                <div style={{ background: 'var(--bg-surface-elevated)', borderRadius: '14px', border: '1.5px solid var(--border-subtle)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    💡 Study Tips for Sep {selectedCalDay}
+                <div className="cal-tip-box">
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                    💡 Study Tips for {MONTH_NAMES[calMonth].slice(0, 3)} {selectedCalDay}
                   </div>
                   <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    {selectedCalDay === 12
+                    {calYear === 2026 && calMonth === 8 && selectedCalDay === 12
                       ? 'Today has peak cognitive retention slots between 2:00 PM and 6:30 PM. Complete high-difficulty problem sets before 7 PM.'
                       : selectedCalDay === 15 || selectedCalDay === 28
                       ? 'Exam Milestone Day! Prioritize formula sheets, flashcard recall, and light review rather than learning heavy new concepts.'
@@ -3096,11 +3703,20 @@ export default function App() {
                     type="button"
                     className="btn-pill"
                     style={{ flex: 1, justifyContent: 'center' }}
-                    onClick={() => setCalendarModalOpen(false)}
+                    onClick={() => setCalViewMode('week')}
                   >
-                    Exit Calendar
+                    📆 View Week
                   </button>
                 </div>
+
+                <button
+                  type="button"
+                  className="btn-pill"
+                  style={{ width: '100%', justifyContent: 'center', background: 'var(--bg-surface-elevated)' }}
+                  onClick={() => setCalendarModalOpen(false)}
+                >
+                  Exit Calendar
+                </button>
               </div>
             </div>
           )}

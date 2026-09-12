@@ -1248,26 +1248,71 @@ def export_calendar(
         db_tasks = crud.get_tasks(db, user_id=user_id)
         cal_tasks = [
             {
+                "id": t.id,
+                "title": t.title or t.topic,
                 "subject": t.subject,
                 "topic": t.topic,
                 "priority": t.priority,
-                "duration_minutes": t.duration_minutes,
+                "duration_minutes": t.duration_minutes or 60,
+                "scheduled_date": t.scheduled_date or "2026-09-12",
+                "time_slot": t.time_slot or "09:00–10:30 AM",
             }
             for t in db_tasks
         ]
     else:
         cal_tasks = tasks
 
-    ics_lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Reviso//Autonomous Study Engine//EN"]
-    for task in cal_tasks:
-        ics_lines.append("BEGIN:VEVENT")
-        ics_lines.append(f"SUMMARY:{task['subject']} - {task['topic']}")
-        ics_lines.append(f"DESCRIPTION:Priority: {task.get('priority', 'medium')}, Duration: {task.get('duration_minutes', 60)} minutes")
-        ics_lines.append("END:VEVENT")
-    ics_lines.append("END:VCALENDAR")
+    from datetime import datetime, timezone
+    now_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
-    ics_content = "\n".join(ics_lines)
-    return Response(content=ics_content, media_type="text/calendar")
+    ics_lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Reviso//Academic Study Calendar//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:Reviso Study Schedule",
+        "X-WR-TIMEZONE:UTC",
+    ]
+
+    for idx, task in enumerate(cal_tasks):
+        tid = task.get("id", idx + 1)
+        raw_date = str(task.get("scheduled_date", "2026-09-12")).replace("-", "")
+        if len(raw_date) == 8:
+            dtstart = f"{raw_date}T090000Z"
+            dtend = f"{raw_date}T103000Z"
+        else:
+            dtstart = f"{now_stamp}"
+            dtend = f"{now_stamp}"
+
+        summary = f"{task.get('subject', 'Study')}: {task.get('title') or task.get('topic', 'Practice')}"
+        desc = f"Subject: {task.get('subject')}\\nPriority: {task.get('priority', 'medium')}\\nDuration: {task.get('duration_minutes', 60)} min\\nTime Slot: {task.get('time_slot', 'Scheduled')}"
+
+        ics_lines.extend([
+            "BEGIN:VEVENT",
+            f"UID:reviso-task-{tid}-{raw_date}@reviso.app",
+            f"DTSTAMP:{now_stamp}",
+            f"DTSTART:{dtstart}",
+            f"DTEND:{dtend}",
+            f"SUMMARY:{summary}",
+            f"DESCRIPTION:{desc}",
+            f"CATEGORIES:{task.get('subject', 'Education')}",
+            "STATUS:CONFIRMED",
+            "BEGIN:VALARM",
+            "TRIGGER:-PT15M",
+            "ACTION:DISPLAY",
+            f"DESCRIPTION:Reminder: {summary}",
+            "END:VALARM",
+            "END:VEVENT"
+        ])
+
+    ics_lines.append("END:VCALENDAR")
+    ics_content = "\r\n".join(ics_lines)
+    return Response(
+        content=ics_content,
+        media_type="text/calendar",
+        headers={"Content-Disposition": "attachment; filename=reviso_study_schedule.ics"}
+    )
 
 @app.post("/replan")
 def replan(

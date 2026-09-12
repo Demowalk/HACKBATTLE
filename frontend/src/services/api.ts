@@ -464,3 +464,58 @@ export async function submitQuizAnswers(
   return null
 }
 
+export interface CreateTaskPayload {
+  title: string
+  subject: string
+  topic?: string
+  duration_minutes: number
+  priority?: string
+  time_slot: string
+  scheduled_date: string
+  alarm_active?: boolean
+  is_critical?: boolean
+  status_tag?: string
+  user_id?: number
+}
+
+export async function createBackendTask(payload: CreateTaskPayload): Promise<any | null> {
+  const uid = payload.user_id ?? getStoredUserId()
+  try {
+    const res = await fetch(`${BACKEND_URL}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, user_id: uid }),
+    })
+    if (res.ok) {
+      return await res.json()
+    }
+  } catch (err) {
+    console.error('Failed to create task in backend:', err)
+  }
+  return null
+}
+
+export async function deleteBackendTask(id: number): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/tasks/${id}`, {
+      method: 'DELETE',
+    })
+    return res.ok
+  } catch (err) {
+    console.error('Failed to delete task in backend:', err)
+    return false
+  }
+}
+
+export function downloadCalendarIcs(userId?: number): void {
+  const uid = userId ?? getStoredUserId()
+  const url = `${BACKEND_URL}/tasks/export-calendar?user_id=${uid}`
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', 'reviso_study_schedule.ics')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+
