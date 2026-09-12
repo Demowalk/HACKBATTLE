@@ -475,6 +475,18 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Lock background body scroll when full-page calendar is open
+  useEffect(() => {
+    if (calendarModalOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [calendarModalOpen])
+
   // Auto scroll chat
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -1922,191 +1934,298 @@ export default function App() {
       </div>
 
       {/* ==========================================================================
-           MODAL 4: STUDY CALENDAR & SCHEDULE SYNC (Month + Day View with Task Checkout & Add)
+           FULL-PAGE STUDY CALENDAR & WORKSPACE (Month + Day View with Full Scroll)
            ========================================================================== */}
       <div
-        className={`modal-backdrop ${calendarModalOpen ? 'active' : ''}`}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) setCalendarModalOpen(false)
-        }}
+        className={`calendar-fullpage-overlay ${calendarModalOpen ? 'active' : ''}`}
+        id="calendar-fullpage-view"
       >
-        <div className="modal-window calendar-modal-window">
-          {/* Header with Segmented View Switcher and Close Button */}
-          <div className="modal-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '18px' }}>📅</span>
-              <div className="cal-segmented-control">
-                <button
-                  type="button"
-                  className={`cal-seg-btn ${calViewMode === 'month' ? 'active' : ''}`}
-                  onClick={() => setCalViewMode('month')}
-                >
-                  📅 Month View
-                </button>
-                <button
-                  type="button"
-                  className={`cal-seg-btn ${calViewMode === 'day' ? 'active' : ''}`}
-                  onClick={() => setCalViewMode('day')}
-                >
-                  📋 Day View (Sep {selectedCalDay})
-                </button>
-              </div>
+        {/* Sticky Full-Page Header */}
+        <header className="cal-fullpage-header">
+          <div className="cal-fullpage-header-left">
+            <button
+              type="button"
+              className="btn-pill"
+              style={{ fontSize: '12px', padding: '6px 14px', background: 'var(--bg-surface-elevated)' }}
+              onClick={() => setCalendarModalOpen(false)}
+            >
+              ← Back to Dashboard
+            </button>
+            <div className="cal-fullpage-title">
+              <RevisoLogo size={24} />
+              <span>Study Calendar &amp; Schedule</span>
             </div>
+          </div>
+
+          <div className="cal-fullpage-header-right">
+            {/* View switcher: Month View vs Day Tasks */}
+            <div className="cal-segmented-control">
+              <button
+                type="button"
+                className={`cal-seg-btn ${calViewMode === 'month' ? 'active' : ''}`}
+                onClick={() => setCalViewMode('month')}
+              >
+                <span>📅</span>
+                <span>Month View</span>
+              </button>
+              <button
+                type="button"
+                className={`cal-seg-btn ${calViewMode === 'day' ? 'active' : ''}`}
+                onClick={() => setCalViewMode('day')}
+              >
+                <span>📋</span>
+                <span>Day View (Sep {selectedCalDay})</span>
+              </button>
+            </div>
+
+            {/* Sync Badge */}
+            <div className="calendar-sync-badge">
+              <span style={{ color: '#34d399', fontSize: '10px' }}>●</span>
+              <span>Google Calendar &amp; iCal Connected</span>
+            </div>
+
+            {/* Close X Button */}
             <button
               type="button"
               className="btn-icon"
-              style={{ width: '32px', height: '32px' }}
+              style={{ width: '36px', height: '36px', fontSize: '16px' }}
               onClick={() => setCalendarModalOpen(false)}
               title="Close Calendar (Esc)"
             >
               ✕
             </button>
           </div>
+        </header>
 
-          <div className="modal-body" style={{ gap: '14px' }}>
-            {/* Sync Badge */}
-            <div className="calendar-sync-badge">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#34d399', fontSize: '10px' }}>●</span>
-                <span>Google Calendar &amp; iCal Connected</span>
+        {/* Scrollable Body */}
+        <main className="cal-fullpage-body">
+          {/* Top Banner with Quick Highlights */}
+          <div className="cal-top-banner">
+            <div>
+              <div className="cal-top-banner-title">
+                <span>🗓️ September 2026 Academic Schedule</span>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    padding: '3px 9px',
+                    borderRadius: '999px',
+                    background: 'rgba(0, 77, 64, 0.4)',
+                    color: '#80cbc4',
+                    border: '1px solid #00695c',
+                  }}
+                >
+                  Active Semester
+                </span>
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                {calendarSyncActive ? 'Syncing...' : 'Real-time Auto-Adjustment Active'}
-              </span>
+              <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                Automated spaced repetition schedules, dynamic exam prep milestones, and daily study blocks.
+              </p>
             </div>
 
-            {calViewMode === 'month' ? (
-              <>
-                {/* Month Header */}
+            <div className="cal-stats-grid">
+              <div className="cal-stat-card">
+                <span className="cal-stat-val">30 Days</span>
+                <span className="cal-stat-label">Term Span</span>
+              </div>
+              <div className="cal-stat-card">
+                <span className="cal-stat-val" style={{ color: '#34d399' }}>
+                  {tasks.filter((t) => t.completed).length +
+                    Object.values(otherDayTasks).flat().filter((t) => t.completed).length}{' '}
+                  Done
+                </span>
+                <span className="cal-stat-label">Completed Tasks</span>
+              </div>
+              <div className="cal-stat-card">
+                <span className="cal-stat-val" style={{ color: '#f59e0b' }}>2 Exams</span>
+                <span className="cal-stat-label">Milestones (Sep 15, 28)</span>
+              </div>
+              <button
+                type="button"
+                className="btn-pill"
+                style={{ fontSize: '12px', padding: '6px 14px' }}
+                onClick={() => {
+                  setCalendarSyncActive(true)
+                  soundSynth.playSuccessBeep()
+                  showToast('Re-synced with Google Calendar & iCal!', '✨')
+                  setTimeout(() => setCalendarSyncActive(false), 800)
+                }}
+              >
+                <span>🔄</span>
+                <span>{calendarSyncActive ? 'Syncing...' : 'Sync Calendar'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Condition: Month View vs Day View */}
+          {calViewMode === 'month' ? (
+            /* Month Layout: Expansive Grid + Side Drawer */
+            <div className="cal-month-layout">
+              <div className="cal-grid-panel">
                 <div className="calendar-month-nav">
                   <div className="calendar-month-title">
                     <span>September 2026</span>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        padding: '2px 8px',
-                        borderRadius: '999px',
-                        background: 'rgba(0, 77, 64, 0.4)',
-                        color: '#80cbc4',
-                        border: '1px solid #00695c',
-                      }}
-                    >
-                      Fall Semester
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      Click any date to inspect and manage its tasks
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className="btn-pill"
-                    style={{ fontSize: '11px', padding: '4px 10px' }}
-                    onClick={() => {
-                      setCalendarSyncActive(true)
-                      soundSynth.playSuccessBeep()
-                      showToast('Re-synced with Google Calendar & iCal!', '✨')
-                      setTimeout(() => setCalendarSyncActive(false), 800)
-                    }}
-                  >
-                    <span>🔄</span>
-                    <span>Sync Now</span>
-                  </button>
                 </div>
 
-                {/* Calendar Grid */}
-                <div className="calendar-grid">
-                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                <div className="cal-large-grid">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
                     <div key={d} className="calendar-weekday">
                       {d}
                     </div>
                   ))}
-                  {/* Empty padding for Sun, Mon (Sep 1 2026 starts Tue) */}
-                  <div className="calendar-cell empty" />
-                  <div className="calendar-cell empty" />
+
+                  {/* Empty padding for Sun, Mon */}
+                  <div className="cal-large-cell empty" />
+                  <div className="cal-large-cell empty" />
 
                   {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
                     const isToday = day === 12
                     const isSelected = day === selectedCalDay
-                    const hasStudy = [
-                      1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 28, 29, 30,
-                    ].includes(day)
+                    const dayTasksList = day === 12 ? tasks : otherDayTasks[day] || []
                     const hasExam = [15, 28].includes(day)
 
-                    let cellClass = 'calendar-cell'
+                    let cellClass = 'cal-large-cell'
                     if (isToday) cellClass += ' today'
                     if (isSelected) cellClass += ' selected'
 
                     return (
-                      <button
+                      <div
                         key={day}
-                        type="button"
                         className={cellClass}
                         onClick={() => {
                           setSelectedCalDay(day)
                           soundSynth.playHarmonicChime()
                         }}
-                        title={`Select Sep ${day}`}
                       >
-                        <span>{day}</span>
-                        {hasStudy && (
-                          <div className="calendar-dot-row">
-                            <span className="cal-dot study" />
-                            {hasExam && <span className="cal-dot exam" />}
-                          </div>
-                        )}
-                      </button>
+                        <div className="cal-cell-header">
+                          <span className="cal-cell-day-num">{day}</span>
+                          {isToday && <span className="cal-cell-today-pill">Today</span>}
+                        </div>
+
+                        <div className="cal-cell-events">
+                          {hasExam && (
+                            <div className="cal-event-chip exam">
+                              🎯 Exam Milestone
+                            </div>
+                          )}
+                          {dayTasksList.slice(0, 2).map((t) => (
+                            <div
+                              key={t.id}
+                              className={`cal-event-chip ${
+                                t.subject === 'Maths'
+                                  ? 'math'
+                                  : t.subject === 'Chemistry'
+                                  ? 'chem'
+                                  : 'python'
+                              }`}
+                              title={t.title}
+                            >
+                              {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
+                            </div>
+                          ))}
+                          {dayTasksList.length > 2 && (
+                            <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600 }}>
+                              +{dayTasksList.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
+              </div>
 
-                {/* Selected Day Agenda Preview in Month View */}
-                <div className="calendar-day-preview">
-                  <div className="calendar-day-preview-title">
-                    <span>
-                      <strong>Sep {selectedCalDay}, 2026</strong> {selectedCalDay === 12 ? '· Today (Active)' : ''}
-                    </span>
-                    <button
-                      type="button"
-                      className="btn-pill btn-primary"
-                      style={{ fontSize: '11px', padding: '3px 9px' }}
-                      onClick={() => setCalViewMode('day')}
-                    >
-                      <span>Switch to Day Tasks ➔</span>
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {(selectedCalDay === 12
-                      ? tasks.slice(0, 3)
-                      : (otherDayTasks[selectedCalDay] || []).slice(0, 3)
-                    ).map((t) => (
-                      <div key={t.id} className="calendar-schedule-item">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>{t.completed ? '✅' : '⏳'}</span>
-                          <span style={{ fontWeight: 600 }}>{t.title}</span>
-                        </div>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>{t.timeSlot}</span>
-                      </div>
-                    ))}
-                    {(selectedCalDay === 12 ? tasks.length : (otherDayTasks[selectedCalDay] || []).length) === 0 && (
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '6px' }}>
-                        No tasks scheduled yet. Switch to Day View to add!
-                      </div>
+              {/* Side Drawer in Month View */}
+              <div className="cal-side-drawer">
+                <div className="cal-side-header">
+                  <div className="cal-side-title">
+                    <span>Selected: <strong>Sep {selectedCalDay}, 2026</strong></span>
+                    {selectedCalDay === 12 && (
+                      <span className="cal-badge-today" style={{ marginLeft: '8px' }}>
+                        Today
+                      </span>
                     )}
                   </div>
+                  <button
+                    type="button"
+                    className="btn-pill btn-primary"
+                    style={{ fontSize: '11px', padding: '4px 10px' }}
+                    onClick={() => setCalViewMode('day')}
+                  >
+                    Manage Day ➔
+                  </button>
                 </div>
-              </>
-            ) : (
-              /* ==========================================================
-                 DAY VIEW: CHECKOUT TASKS & ADD NEW TASKS
-                 ========================================================== */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {/* Day Navigation Bar */}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    Scheduled Tasks ({ (selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length })
+                  </span>
+
+                  {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).map((t) => (
+                    <div
+                      key={t.id}
+                      className="cal-task-row"
+                      style={{ padding: '10px 12px', cursor: 'pointer' }}
+                      onClick={() => handleToggleCalTask(selectedCalDay, t.id)}
+                    >
+                      <button
+                        type="button"
+                        className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleToggleCalTask(selectedCalDay, t.id)
+                        }}
+                      >
+                        {t.completed ? '✓' : ''}
+                      </button>
+                      <div className="cal-task-info">
+                        <div className="cal-task-name" style={{ fontSize: '13px' }}>{t.title}</div>
+                        <div className="cal-task-sub" style={{ fontSize: '11px' }}>
+                          <span>{t.subject}</span>
+                          <span>•</span>
+                          <span>{t.timeSlot}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length === 0 && (
+                    <div className="cal-empty-state" style={{ padding: '24px 12px' }}>
+                      No tasks scheduled for Sep {selectedCalDay}.
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+                  <button
+                    type="button"
+                    className="btn-pill btn-primary"
+                    style={{ width: '100%', justifyContent: 'center', padding: '9px 16px' }}
+                    onClick={() => setCalViewMode('day')}
+                  >
+                    <span>📋 Open Full Day Workspace &amp; Add Tasks</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Day Layout: 2 Columns - Task List + Add Task & Metrics Panel */
+            <div className="cal-day-layout">
+              <div className="cal-day-main-panel">
+                {/* Day Navigation Header */}
                 <div className="cal-day-nav">
                   <button
                     type="button"
                     className="btn-pill"
-                    style={{ padding: '5px 11px', fontSize: '11.5px' }}
+                    style={{ padding: '6px 14px', fontSize: '12px' }}
                     onClick={() => setSelectedCalDay((prev) => Math.max(1, prev - 1))}
                   >
-                    ◀ Prev Day
+                    ◀ Previous Day
                   </button>
 
                   <div className="cal-day-heading">
@@ -2116,10 +2235,10 @@ export default function App() {
                       <button
                         type="button"
                         className="btn-pill"
-                        style={{ fontSize: '10px', padding: '2px 7px' }}
+                        style={{ fontSize: '11px', padding: '3px 9px' }}
                         onClick={() => setSelectedCalDay(12)}
                       >
-                        Today
+                        Jump to Today
                       </button>
                     )}
                   </div>
@@ -2127,39 +2246,40 @@ export default function App() {
                   <button
                     type="button"
                     className="btn-pill"
-                    style={{ padding: '5px 11px', fontSize: '11.5px' }}
+                    style={{ padding: '6px 14px', fontSize: '12px' }}
                     onClick={() => setSelectedCalDay((prev) => Math.min(30, prev + 1))}
                   >
                     Next Day ▶
                   </button>
                 </div>
 
-                {/* Day Task Progress Header */}
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    fontSize: '12.5px',
+                    fontSize: '13px',
                     color: 'var(--text-secondary)',
                     fontWeight: 600,
                   }}
                 >
                   <span>
-                    Tasks for Sep {selectedCalDay} (
+                    Tasks for September {selectedCalDay} (
                     {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).filter((t) => t.completed)
                       .length}
                     /
                     {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length} completed)
                   </span>
-                  <span style={{ fontSize: '11px', color: '#80cbc4' }}>Click checkbox or row to checkout ✓</span>
+                  <span style={{ fontSize: '12px', color: '#80cbc4' }}>
+                    Click checkbox or row to checkout ✓
+                  </span>
                 </div>
 
                 {/* Interactive Task List */}
                 <div className="cal-task-list">
                   {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length === 0 ? (
                     <div className="cal-empty-state">
-                      🏖️ No study tasks scheduled for September {selectedCalDay}. Add a new task below!
+                      🏖️ No study tasks scheduled for September {selectedCalDay}. Add a new task using the panel on the right!
                     </div>
                   ) : (
                     (selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).map((t) => (
@@ -2183,17 +2303,17 @@ export default function App() {
                         <div className="cal-task-info">
                           <div className="cal-task-name">{t.title}</div>
                           <div className="cal-task-sub">
-                            <span className={`task-tag ${t.tagClass}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
+                            <span className={`task-tag ${t.tagClass}`} style={{ fontSize: '10.5px', padding: '2px 8px' }}>
                               {t.subject}
                             </span>
-                            <span>{t.timeSlot}</span>
+                            <span>⏰ {t.timeSlot}</span>
                           </div>
                         </div>
 
                         <div className="cal-task-actions">
                           <span
                             className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}
-                            style={{ fontSize: '10px' }}
+                            style={{ fontSize: '11px', padding: '4px 10px' }}
                           >
                             {t.completed ? 'Completed ✓' : 'Upcoming'}
                           </span>
@@ -2213,8 +2333,10 @@ export default function App() {
                     ))
                   )}
                 </div>
+              </div>
 
-                {/* Add Task Form */}
+              {/* Side Panel in Day View: Add Task Form & Day Stats */}
+              <div className="cal-day-side-panel">
                 <form className="cal-add-form" onSubmit={handleAddCalendarTask}>
                   <div className="cal-add-title">
                     <span>➕</span>
@@ -2248,46 +2370,52 @@ export default function App() {
                       value={newCalTaskTime}
                       onChange={(e) => setNewCalTaskTime(e.target.value)}
                     />
-
-                    <button type="submit" className="btn-pill btn-primary" style={{ padding: '8px 16px' }}>
-                      + Add Task
-                    </button>
                   </div>
+
+                  <button
+                    type="submit"
+                    className="btn-pill btn-primary"
+                    style={{ width: '100%', justifyContent: 'center', padding: '10px 18px', marginTop: '6px' }}
+                  >
+                    + Add to Day Schedule
+                  </button>
                 </form>
+
+                <div style={{ background: 'var(--bg-surface-elevated)', borderRadius: '14px', border: '1.5px solid var(--border-subtle)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    💡 Study Tips for Sep {selectedCalDay}
+                  </div>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    {selectedCalDay === 12
+                      ? 'Today has peak cognitive retention slots between 2:00 PM and 6:30 PM. Complete high-difficulty problem sets before 7 PM.'
+                      : selectedCalDay === 15 || selectedCalDay === 28
+                      ? 'Exam Milestone Day! Prioritize formula sheets, flashcard recall, and light review rather than learning heavy new concepts.'
+                      : 'Distribute study sessions with 25-minute Pomodoro bursts and active recall questions to retain maximum concepts.'}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    className="btn-pill"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    onClick={() => setCalViewMode('month')}
+                  >
+                    📅 View Full Month
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-pill"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    onClick={() => setCalendarModalOpen(false)}
+                  >
+                    Exit Calendar
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
-
-          <div className="modal-footer" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {calViewMode === 'day' ? (
-                <button type="button" className="btn-pill" onClick={() => setCalViewMode('month')}>
-                  <span>📅 Month View</span>
-                </button>
-              ) : (
-                <button type="button" className="btn-pill btn-primary" onClick={() => setCalViewMode('day')}>
-                  <span>📋 Switch to Day Tasks</span>
-                </button>
-              )}
-              <button
-                type="button"
-                className="btn-pill"
-                onClick={() => {
-                  setCalendarModalOpen(false)
-                  setTimeout(() => {
-                    document.getElementById('schedule-panel')?.scrollIntoView({ behavior: 'smooth' })
-                  }, 150)
-                }}
-              >
-                <span>📅 Jump to Timeline</span>
-              </button>
             </div>
-
-            <button type="button" className="btn-pill" onClick={() => setCalendarModalOpen(false)}>
-              Close
-            </button>
-          </div>
-        </div>
+          )}
+        </main>
       </div>
 
       {/* Interactive Toast */}
