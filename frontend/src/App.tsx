@@ -1880,7 +1880,7 @@ export default function App() {
     const mins = targetMins ?? pomoDurationMinutes
     setPomoSeconds(mins * 60)
     soundSynth.playResetClick()
-    showToast(`Timer reset to ${mins}:00`, '↺')
+    showToast(`Timer reset to ${mins}:00`, 'clock')
     setTimeout(() => {
       setIsResettingPomo(false)
     }, 550)
@@ -2341,7 +2341,7 @@ export default function App() {
           `Because you scored less than 2 right, I have automatically added a <strong>1-hour study time slot (60 mins)</strong> to your calendar on <strong>${chosenDayFormatted} from ${chosenTimeSlot}</strong> with an active study alarm to guarantee recovery.<br><br>` +
           `<strong>Mastery Video Tutorial:</strong><br>` +
           `<em>${topicVideo.title}</em> (${topicVideo.channel})<br>` +
-          `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">Watch Video on YouTube ↗</a><br><br>` +
+          `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">Watch Video on YouTube</a><br><br>` +
           `Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
         'bot'
       )
@@ -3096,13 +3096,6 @@ export default function App() {
                     >
                       Focus
                     </button>
-                    <button
-                      type="button"
-                      className="btn-alarm-bell active"
-                      onClick={() => showToast('Alarm set for Python practice', 'bell')}
-                    >
-                      <BellIcon size={14} />
-                    </button>
                     <span className="badge badge-upcoming">Review Slotted</span>
                   </div>
                 </div>
@@ -3651,8 +3644,6 @@ export default function App() {
                             <span><Calendar size={12} className="inline mr-1" /> {criticalRemediationInfo.dayName}</span>
                             <span>•</span>
                             <span><Clock size={12} className="inline mr-1" /> {criticalRemediationInfo.timeSlot} (60 min)</span>
-                            <span>•</span>
-                            <span><BellIcon size={12} className="inline mr-1" /> Study Alarm Armed</span>
                           </div>
                         </div>
                       </div>
