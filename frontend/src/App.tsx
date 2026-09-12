@@ -85,6 +85,26 @@ class AudioSynthesizer {
       // ignore
     }
   }
+
+  playResetClick() {
+    try {
+      this.init()
+      if (!this.ctx) return
+      const osc = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(640, this.ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(320, this.ctx.currentTime + 0.18)
+      gain.gain.setValueAtTime(0.12, this.ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18)
+      osc.connect(gain)
+      gain.connect(this.ctx.destination)
+      osc.start()
+      osc.stop(this.ctx.currentTime + 0.18)
+    } catch {
+      // ignore
+    }
+  }
 }
 
 const soundSynth = new AudioSynthesizer()
@@ -1207,8 +1227,10 @@ export default function App() {
   // Pomodoro
   const [pomoModalOpen, setPomoModalOpen] = useState<boolean>(false)
   const [pomoSessionName, setPomoSessionName] = useState<string>('Focus Session')
+  const [pomoDurationMinutes, setPomoDurationMinutes] = useState<number>(25)
   const [pomoSeconds, setPomoSeconds] = useState<number>(25 * 60)
   const [pomoRunning, setPomoRunning] = useState<boolean>(false)
+  const [isResettingPomo, setIsResettingPomo] = useState<boolean>(false)
 
   // Quiz Modal & Multi-Question Adaptive Stepper State
   const [quizModalOpen, setQuizModalOpen] = useState<boolean>(false)
@@ -1388,10 +1410,10 @@ export default function App() {
             setPomoRunning(false)
             soundSynth.playHarmonicChime()
             showToast('Pomodoro session completed! Great job, Laksh!', '🎉')
-            recordStudySession('General Focus', 25, pomoSessionName).then((res) => {
+            recordStudySession('General Focus', pomoDurationMinutes, pomoSessionName).then((res) => {
               if (res?.userStreak != null) setUserStreak(res.userStreak)
             })
-            return 25 * 60
+            return pomoDurationMinutes * 60
           }
           return prev - 1
         })
@@ -1400,7 +1422,7 @@ export default function App() {
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [pomoRunning, pomoSessionName])
+  }, [pomoRunning, pomoSessionName, pomoDurationMinutes])
 
   // Toast helper
   const showToast = (message: string, icon = '✨') => {
@@ -1649,9 +1671,24 @@ export default function App() {
     setPomoRunning((prev) => !prev)
   }
 
-  const resetPomodoro = () => {
+  const resetPomodoro = (targetMins?: number) => {
+    setIsResettingPomo(true)
     setPomoRunning(false)
-    setPomoSeconds(25 * 60)
+    const mins = targetMins ?? pomoDurationMinutes
+    setPomoSeconds(mins * 60)
+    soundSynth.playResetClick()
+    showToast(`Timer reset to ${mins}:00`, '↺')
+    setTimeout(() => {
+      setIsResettingPomo(false)
+    }, 550)
+  }
+
+  const handleSelectPomoPreset = (mins: number, label: string) => {
+    setPomoDurationMinutes(mins)
+    setPomoRunning(false)
+    setPomoSeconds(mins * 60)
+    soundSynth.playSuccessBeep()
+    showToast(`Preset: ${label} (${mins} min)`, '⏱️')
   }
 
   // Add tool trace to chat
@@ -3465,21 +3502,71 @@ export default function App() {
                 {`${String(Math.floor(pomoSeconds / 60)).padStart(2, '0')}:${String(pomoSeconds % 60).padStart(2, '0')}`}
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                Deep Focus Block · Take it one step at a time
+                {pomoDurationMinutes <= 15 ? '☕ Break & Recovery Buffer' : '⚡ Deep Focus Block · Take it one step at a time'}
+              </div>
+
+              {/* Progress Track */}
+              <div className="timer-progress-track">
+                <div
+                  className="timer-progress-fill"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, ((pomoDurationMinutes * 60 - pomoSeconds) / (pomoDurationMinutes * 60)) * 100))}%`
+                  }}
+                />
               </div>
             </div>
+
+            {/* Quick Presets Row */}
+            <div className="timer-presets-row">
+              {[
+                { label: '25m Focus', mins: 25, icon: '🎯' },
+                { label: '50m Deep', mins: 50, icon: '⚡' },
+                { label: '5m Break', mins: 5, icon: '☕' },
+                { label: '15m Break', mins: 15, icon: '🌿' },
+              ].map((preset) => (
+                <button
+                  key={preset.mins}
+                  type="button"
+                  className={`timer-preset-chip ${pomoDurationMinutes === preset.mins ? 'active' : ''}`}
+                  onClick={() => handleSelectPomoPreset(preset.mins, preset.label)}
+                >
+                  <span>{preset.icon}</span>
+                  <span>{preset.label}</span>
+                </button>
+              ))}
+            </div>
+
             <div className="timer-controls" style={{ justifyContent: 'center' }}>
               <button
                 type="button"
-                className="btn-pill btn-primary"
-                style={{ padding: '9px 22px' }}
+                className={`btn-pill ${pomoRunning ? 'btn-timer-pause' : 'btn-primary'}`}
+                style={{ padding: '10px 24px', fontSize: '14px', minWidth: '124px' }}
                 onClick={togglePomodoro}
               >
                 <span>{pomoRunning ? '⏸' : '▶'}</span>
                 <span>{pomoRunning ? 'Pause' : 'Start'}</span>
               </button>
-              <button type="button" className="btn-pill" onClick={resetPomodoro}>
-                <span>🔄</span>
+
+              <button
+                type="button"
+                className={`btn-timer-reset ${isResettingPomo ? 'spinning' : ''}`}
+                onClick={() => resetPomodoro()}
+                title={`Reset timer to ${pomoDurationMinutes}:00`}
+              >
+                <svg
+                  className="timer-reset-icon"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
                 <span>Reset</span>
               </button>
             </div>
