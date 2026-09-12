@@ -226,6 +226,12 @@ def get_quiz_by_id(db: Session, quiz_id: int) -> Optional[Quiz]:
     return db.query(Quiz).filter(Quiz.id == quiz_id).first()
 
 
+def get_quiz_question_by_id(db: Session, question_id: int) -> Optional[QuizQuestion]:
+    """Retrieve a single quiz question by ID."""
+    return db.query(QuizQuestion).filter(QuizQuestion.id == question_id).first()
+
+
+
 def record_quiz_score(
     db: Session,
     quiz_id: int,

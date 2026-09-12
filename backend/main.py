@@ -35,12 +35,14 @@ class Subject(BaseModel):
 class GeneratePlanRequest(BaseModel):
     subjects: List[Subject]
     hours_available: int
+    user_id: Optional[int] = 1
 
 class GenerateQuizRequest(BaseModel):
     subject: str
     topic: str
     difficulty: str
     count: int
+    user_id: Optional[int] = 1
 
 class QuizAnswer(BaseModel):
     question_id: int
@@ -48,12 +50,15 @@ class QuizAnswer(BaseModel):
 
 class QuizAnswersRequest(BaseModel):
     answers: List[QuizAnswer]
+    quiz_id: Optional[int] = None
+    user_id: Optional[int] = 1
 
 class ReplanRequest(BaseModel):
     subjects: List[Subject]
     hours_available: int
     weak_subject: str
     weak_topic: str
+    user_id: Optional[int] = 1
 
 class UserProfileUpdateRequest(BaseModel):
     fullName: Optional[str] = None
@@ -140,6 +145,17 @@ tasks = [
     }
 ]
 
+@app.on_event("startup")
+def on_startup():
+    if DATABASE_AVAILABLE:
+        try:
+            Base.metadata.create_all(bind=engine)
+            with SessionLocal() as db:
+                crud.get_or_create_default_user(db)
+            print("🚀 [Reviso Database] Tables and default student profile verified on startup.")
+        except Exception as e:
+            print(f"⚠️ [Reviso Database] Startup initialization notice: {e}")
+
 @app.get("/")
 def read_root():
     return {
@@ -147,6 +163,7 @@ def read_root():
         "database_connected": DATABASE_AVAILABLE,
         "engine": "Reviso Autonomous Study Engine",
     }
+
 
 @app.get("/user/profile")
 def get_user_profile(
@@ -562,7 +579,10 @@ Respond ONLY with a valid JSON array, no other text. Example format:
 
 
 @app.post("/generate-plan")
-def generate_plan(request: GeneratePlanRequest):
+def generate_plan(
+    request: GeneratePlanRequest,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
     if not client:
         return {"error": "GROQ_API_KEY is not configured in environment or .env file."}
 
@@ -578,18 +598,54 @@ def generate_plan(request: GeneratePlanRequest):
     except Exception as e:
         return {"error": "Failed to generate plan. Please try again.", "details": str(e)}
 
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    persisted_tasks = []
+
+    if DATABASE_AVAILABLE and db:
+        user_id = request.user_id or 1
+        for i, ai_task in enumerate(ai_tasks):
+            time_slot = f"{9 + (i * 2)}:00–{10 + (i * 2)}:30 AM" if i < 2 else f"{2 + ((i-2)*2)}:00–{3 + ((i-2)*2)}:30 PM"
+            task_in = schemas.TaskCreate(
+                title=f"{ai_task['subject']}: {ai_task['topic']}",
+                subject=ai_task["subject"],
+                topic=ai_task["topic"],
+                duration_minutes=ai_task["duration_minutes"],
+                priority=ai_task.get("priority", "medium"),
+                time_slot=time_slot,
+                scheduled_date=today_str,
+                alarm_active=True,
+                status_tag="Upcoming",
+                user_id=user_id,
+            )
+            created = crud.create_task(db, task_in)
+            persisted_tasks.append({
+                "id": created.id,
+                "title": created.title,
+                "subject": created.subject,
+                "topic": created.topic,
+                "duration_minutes": created.duration_minutes,
+                "priority": created.priority,
+                "timeSlot": created.time_slot,
+                "scheduled_date": created.scheduled_date,
+                "completed": created.completed,
+                "alarmEnabled": created.alarm_active,
+                "statusTag": created.status_tag,
+            })
+        return {"tasks": persisted_tasks}
+
     global tasks
     tasks = []
     next_id = 1
     for ai_task in ai_tasks:
         new_task = {
             "id": next_id,
+            "title": f"{ai_task['subject']}: {ai_task['topic']}",
             "subject": ai_task["subject"],
             "topic": ai_task["topic"],
             "duration_minutes": ai_task["duration_minutes"],
             "priority": ai_task["priority"],
             "completed": False,
-            "scheduled_date": "2026-09-13"
+            "scheduled_date": today_str
         }
         tasks.append(new_task)
         next_id += 1
@@ -599,7 +655,10 @@ def generate_plan(request: GeneratePlanRequest):
 quiz_questions = []
 
 @app.post("/generate-quiz")
-def generate_quiz(request: GenerateQuizRequest):
+def generate_quiz(
+    request: GenerateQuizRequest,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
     if not client:
         return {"error": "GROQ_API_KEY is not configured in environment or .env file."}
 
@@ -614,6 +673,36 @@ def generate_quiz(request: GenerateQuizRequest):
         ai_questions = parse_json_response(ai_reply)
     except Exception as e:
         return {"error": "Failed to generate quiz. Please try again.", "details": str(e)}
+
+    if DATABASE_AVAILABLE and db:
+        quiz_in = schemas.QuizCreate(
+            subject=request.subject,
+            topic=request.topic,
+            difficulty=request.difficulty,
+            user_id=request.user_id or 1,
+            questions=[
+                schemas.QuizQuestionCreate(
+                    question_text=q["question"],
+                    options=q["options"],
+                    correct_answer=q["correct_answer"],
+                )
+                for q in ai_questions
+            ],
+        )
+        db_quiz = crud.create_quiz_with_questions(db, quiz_in)
+        return {
+            "quiz_id": db_quiz.id,
+            "questions": [
+                {
+                    "id": q.id,
+                    "subject": db_quiz.subject,
+                    "topic": db_quiz.topic,
+                    "question": q.question_text,
+                    "options": q.options,
+                }
+                for q in db_quiz.questions
+            ],
+        }
 
     global quiz_questions
     quiz_questions = []
@@ -643,15 +732,50 @@ def generate_quiz(request: GenerateQuizRequest):
     return {"questions": frontend_questions}
 
 @app.post("/quiz/answer")
-def check_quiz_answers(request: QuizAnswersRequest):
+def check_quiz_answers(
+    request: QuizAnswersRequest,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
     correct_count = 0
     total = len(request.answers)
+    quiz_topic = None
+    quiz_subject = None
 
-    for answer in request.answers:
-        for question in quiz_questions:
-            if question["id"] == answer.question_id:
-                if question["correct_answer"] == answer.selected_answer:
+    if DATABASE_AVAILABLE and db:
+        for answer in request.answers:
+            q = crud.get_quiz_question_by_id(db, answer.question_id)
+            if q:
+                if not quiz_topic and q.quiz:
+                    quiz_topic = q.quiz.topic
+                    quiz_subject = q.quiz.subject
+                if q.correct_answer.strip().lower() == answer.selected_answer.strip().lower():
                     correct_count += 1
+                q.selected_answer = answer.selected_answer
+        db.commit()
+
+        if request.quiz_id:
+            score_pct = int((correct_count / max(1, total)) * 100)
+            weak = quiz_topic if score_pct < 50 else None
+            crud.record_quiz_score(db, request.quiz_id, score_pct, weak)
+
+        if quiz_subject and quiz_topic:
+            mastery_score = correct_count / max(1, total)
+            crud.upsert_concept_mastery(
+                db=db,
+                subject=quiz_subject,
+                topic=quiz_topic,
+                mastery_score=mastery_score,
+                decay_risk=0.12 if mastery_score >= 0.7 else 0.45,
+                low_proficiency=(mastery_score < 0.5),
+                projected_note="Solid mastery shown in quiz" if mastery_score >= 0.7 else "Flagged for spaced review",
+                user_id=request.user_id or 1,
+            )
+    else:
+        for answer in request.answers:
+            for question in quiz_questions:
+                if question["id"] == answer.question_id:
+                    if question["correct_answer"] == answer.selected_answer:
+                        correct_count += 1
 
     if correct_count >= (total * 0.7):
         next_difficulty = "hard"
@@ -663,7 +787,8 @@ def check_quiz_answers(request: QuizAnswersRequest):
     return {
         "correct_count": correct_count,
         "total": total,
-        "next_difficulty": next_difficulty
+        "next_difficulty": next_difficulty,
+        "score_percentage": int((correct_count / max(1, total)) * 100),
     }
 
 @app.get("/debug/quiz-answers")
@@ -671,21 +796,41 @@ def debug_quiz_answers():
     return quiz_questions
 
 @app.get("/tasks/export-calendar")
-def export_calendar():
-    ics_lines = ["BEGIN:VCALENDAR", "VERSION:2.0"]
-    for task in tasks:
+def export_calendar(
+    user_id: Optional[int] = Query(1),
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    cal_tasks = []
+    if DATABASE_AVAILABLE and db:
+        db_tasks = crud.get_tasks(db, user_id=user_id)
+        cal_tasks = [
+            {
+                "subject": t.subject,
+                "topic": t.topic,
+                "priority": t.priority,
+                "duration_minutes": t.duration_minutes,
+            }
+            for t in db_tasks
+        ]
+    else:
+        cal_tasks = tasks
+
+    ics_lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Reviso//Autonomous Study Engine//EN"]
+    for task in cal_tasks:
         ics_lines.append("BEGIN:VEVENT")
         ics_lines.append(f"SUMMARY:{task['subject']} - {task['topic']}")
-        ics_lines.append(f"DESCRIPTION:Priority: {task['priority']}, Duration: {task['duration_minutes']} minutes")
+        ics_lines.append(f"DESCRIPTION:Priority: {task.get('priority', 'medium')}, Duration: {task.get('duration_minutes', 60)} minutes")
         ics_lines.append("END:VEVENT")
     ics_lines.append("END:VCALENDAR")
 
     ics_content = "\n".join(ics_lines)
-
     return Response(content=ics_content, media_type="text/calendar")
 
 @app.post("/replan")
-def replan(request: ReplanRequest):
+def replan(
+    request: ReplanRequest,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
     if not client:
         return {"error": "GROQ_API_KEY is not configured in environment or .env file."}
 
@@ -706,23 +851,64 @@ def replan(request: ReplanRequest):
     except Exception as e:
         return {"error": "Failed to replan. Please try again.", "details": str(e)}
 
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    persisted_tasks = []
+
+    if DATABASE_AVAILABLE and db:
+        user_id = request.user_id or 1
+        for i, ai_task in enumerate(ai_tasks):
+            is_weak = (ai_task["topic"].lower() == request.weak_topic.lower() or 
+                       ai_task["subject"].lower() == request.weak_subject.lower())
+            time_slot = f"{9 + (i * 2)}:00–{10 + (i * 2)}:30 AM" if i < 2 else f"{2 + ((i-2)*2)}:00–{3 + ((i-2)*2)}:30 PM"
+            task_in = schemas.TaskCreate(
+                title=f"{ai_task['subject']}: {ai_task['topic']} (Adaptive Rebalance)",
+                subject=ai_task["subject"],
+                topic=ai_task["topic"],
+                duration_minutes=ai_task["duration_minutes"],
+                priority="high" if is_weak else ai_task.get("priority", "medium"),
+                time_slot=time_slot,
+                scheduled_date=today_str,
+                alarm_active=True,
+                is_critical=is_weak,
+                status_tag="Critical Remediation" if is_weak else "Upcoming",
+                user_id=user_id,
+            )
+            created = crud.create_task(db, task_in)
+            persisted_tasks.append({
+                "id": created.id,
+                "title": created.title,
+                "subject": created.subject,
+                "topic": created.topic,
+                "duration_minutes": created.duration_minutes,
+                "priority": created.priority,
+                "timeSlot": created.time_slot,
+                "scheduled_date": created.scheduled_date,
+                "completed": created.completed,
+                "alarmEnabled": created.alarm_active,
+                "isCritical": created.is_critical,
+                "statusTag": created.status_tag,
+            })
+        return {"tasks": persisted_tasks}
+
     global tasks
     tasks = []
     next_id = 1
     for ai_task in ai_tasks:
         new_task = {
             "id": next_id,
+            "title": f"{ai_task['subject']}: {ai_task['topic']}",
             "subject": ai_task["subject"],
             "topic": ai_task["topic"],
             "duration_minutes": ai_task["duration_minutes"],
             "priority": ai_task["priority"],
             "completed": False,
-            "scheduled_date": "2026-09-13"
+            "scheduled_date": today_str
         }
         tasks.append(new_task)
         next_id += 1
 
     return {"tasks": tasks}
+
 
 
 if __name__ == "__main__":
