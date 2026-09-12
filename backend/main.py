@@ -1,6 +1,22 @@
+import os
+from dotenv import load_dotenv
+from groq import Groq
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv()
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 tasks = [
     {
@@ -29,3 +45,4 @@ def update_task(id: int):
             task["completed"] = True
             return task
     return {"error": "Task not found"}
+
