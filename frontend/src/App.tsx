@@ -1332,7 +1332,6 @@ export default function App() {
                 <button
                   type="button"
                   className="btn-concept-quiz"
-                  style={{ borderColor: 'var(--color-python)', color: 'var(--color-python)', fontWeight: 700 }}
                   onClick={() => launchQuiz('python')}
                 >
                   <span>⚡</span>

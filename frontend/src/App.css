@@ -215,15 +215,19 @@ header.navbar {
 }
 
 .btn-pill.btn-primary {
-  background: var(--grad-primary);
-  color: #ffffff;
-  border: none;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
+  font-weight: 700;
 }
 
 .btn-pill.btn-primary:hover {
-  opacity: 0.95;
+  background: #e2e8f0;
+  border-color: #e2e8f0;
+  color: #000000;
   transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.3);
 }
 
 .btn-icon {
@@ -590,9 +594,9 @@ header.navbar {
 }
 
 .sync-btn-auto {
-  background: var(--grad-primary);
-  color: #ffffff;
-  border: none;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #ffffff;
   padding: 7px 14px;
   border-radius: 8px;
   font-size: 11.5px;
@@ -600,7 +604,23 @@ header.navbar {
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sync-btn-auto:hover {
+  background: #e2e8f0;
+  border-color: #e2e8f0;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(255, 255, 255, 0.3);
+}
+
+.sync-btn-auto.scheduled {
+  background: rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: none;
 }
 
 /* TIMELINE & TASKS (Simplified & De-cluttered) */
@@ -761,10 +781,11 @@ header.navbar {
 }
 
 .btn-timer:hover {
-  background: var(--grad-primary);
-  border-color: transparent;
-  color: #ffffff;
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #000000;
   transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
 }
 
 /* Basic White Alarm Bell */
@@ -920,9 +941,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .btn-quick-fill {
-  background: transparent;
-  border: 1.5px solid var(--border-subtle);
-  color: var(--accent-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
   padding: 5px 12px;
   border-radius: 8px;
   font-size: 11.5px;
@@ -935,9 +956,10 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .btn-quick-fill:hover {
-  background: var(--accent-primary);
-  color: #ffffff;
-  border-color: var(--accent-primary);
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
 }
 
 /* CONCEPT MASTERY & RETENTION (DKT SECTION) */
@@ -1066,9 +1088,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .btn-schedule-critical {
-  background: var(--grad-primary);
-  color: #ffffff;
-  border: none;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #ffffff;
   padding: 7px 14px;
   border-radius: 8px;
   font-size: 11.5px;
@@ -1079,16 +1101,20 @@ html[data-theme="light"] .btn-alarm-bell.active {
   gap: 5px;
   white-space: nowrap;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
 }
 
 .btn-schedule-critical:hover {
-  opacity: 0.92;
+  background: #e2e8f0;
+  border-color: #e2e8f0;
   transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.3);
 }
 
 .btn-schedule-critical.scheduled {
-  background: var(--grad-math);
+  background: var(--color-math-subtle);
+  color: var(--color-math);
+  border-color: var(--color-math);
   cursor: default;
   box-shadow: none;
 }
@@ -1179,11 +1205,12 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .chat-bubble.user {
-  background: var(--grad-primary);
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
   align-self: flex-end;
   border-top-right-radius: 4px;
-  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
+  font-weight: 500;
 }
 
 /* Transparent friendly tool traces */
@@ -1244,7 +1271,7 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .quick-btn .arrow {
-  color: var(--accent-primary);
+  color: #ffffff;
   font-weight: 800;
 }
 
@@ -1271,13 +1298,13 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .chat-input-field:focus {
-  border-color: var(--accent-primary);
+  border-color: #ffffff;
 }
 
 .chat-send-btn {
-  background: var(--grad-primary);
-  color: #ffffff;
-  border: none;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #ffffff;
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -1285,14 +1312,17 @@ html[data-theme="light"] .btn-alarm-bell.active {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: 800;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.25);
 }
 
 .chat-send-btn:hover {
-  opacity: 0.92;
+  background: #e2e8f0;
+  border-color: #e2e8f0;
   transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.35);
 }
 
 /* ==========================================================================
