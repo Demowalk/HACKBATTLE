@@ -1,37 +1,56 @@
 export interface Task {
-  id: number;
-  subject: string;
-  topic: string;
-  duration_minutes: number;
-  priority: 'high' | 'mid' | 'low';
+  id: string | number;
+  title: string;
+  subject: 'Maths' | 'Chemistry' | 'Python' | string;
+  timeSlot: string;
   completed: boolean;
-  scheduled_date: string;
-  time_slot?: string;
+  alarmEnabled: boolean;
+  isCritical?: boolean;
+  statusTag?: 'Upcoming' | 'Done' | 'Critical Remediation' | string;
 }
 
-export interface QuizQuestion {
-  id: number;
-  subject: string;
-  topic: string;
-  question: string;
-  options: string[];
-  source: string;
-  correctIndex?: number;
+export type TaskItem = Task;
+
+export interface EmptyBlockItem {
+  id: string;
+  timeSlot: string;
+  label: string;
+  subLabel: string;
+  isOptimal?: boolean;
+  isFilled?: boolean;
+  filledTask?: TaskItem;
+}
+
+export interface SubjectProgressItem {
+  id: string;
+  name: string;
+  percent: number;
+  colorKey: 'math' | 'chem' | 'python';
+  lowProficiency?: boolean;
+  projectedNote?: string;
+}
+
+export interface CriticalActionItem {
+  id: string;
+  badgeLabel: 'URGENT' | 'UPCOMING EXAM' | 'CRITICAL REMINDER';
+  descHtml: string;
+  btnText: string;
+  scheduled: boolean;
+  scheduledText?: string;
+  targetSlot: string;
+  actionKey: 'python_remediation' | 'math_midterm' | 'chem_lab';
 }
 
 export interface ChatMessage {
   id: string;
-  sender: 'assistant' | 'user';
+  sender: 'bot' | 'user';
   text: string;
-  timestamp: string;
-  actionType?: 'remediation_accepted' | 'quiz_details' | 'math_warmup' | 'study_hours';
-  quiz?: QuizQuestion;
+  timestamp?: string;
 }
 
-export interface SubjectProficiency {
+export interface UserProfile {
   name: string;
-  level: 'HIGH' | 'MID' | 'CRITICAL';
-  scorePercent: number;
-  color: string;
-  badgeClass: string;
+  email: string;
+  role: string;
+  grade: string;
 }
