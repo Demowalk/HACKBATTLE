@@ -851,7 +851,7 @@ header.navbar {
   box-shadow: 0 3px 10px rgba(0, 77, 64, 0.35);
 }
 
-/* Basic White Alarm Bell */
+/* Basic White Alarm Bell with Orange Active State */
 .btn-alarm-bell {
   background: transparent;
   border: 1px solid transparent;
@@ -882,31 +882,69 @@ header.navbar {
 
 .btn-alarm-bell.active {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.35);
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
+  background: rgba(249, 115, 22, 0.16);
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #f97316;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.28);
+}
+
+.btn-alarm-bell.active:hover {
+  opacity: 1;
+  background: rgba(249, 115, 22, 0.26);
+  border-color: rgba(249, 115, 22, 0.65);
+  color: #fb923c;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.42);
+  transform: scale(1.06);
 }
 
 .btn-alarm-bell svg {
   display: block;
-  fill: #ffffff;
+  fill: currentColor;
   width: 15px;
   height: 15px;
+  transition: fill 0.2s ease, transform 0.2s ease;
+}
+
+.btn-alarm-bell.active svg {
+  fill: #f97316;
+}
+
+.btn-alarm-bell.active:hover svg {
+  fill: #fb923c;
 }
 
 html[data-theme="light"] .btn-alarm-bell {
   color: #0f172a;
 }
 
+html[data-theme="light"] .btn-alarm-bell:hover {
+  background: rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 23, 42, 0.2);
+}
+
 html[data-theme="light"] .btn-alarm-bell svg {
-  fill: #0f172a;
+  fill: currentColor;
 }
 
 html[data-theme="light"] .btn-alarm-bell.active {
-  background: rgba(15, 23, 42, 0.08);
-  border-color: rgba(15, 23, 42, 0.2);
-  color: #0f172a;
+  background: rgba(234, 88, 12, 0.12);
+  border-color: rgba(234, 88, 12, 0.35);
+  color: #ea580c;
+  box-shadow: 0 0 8px rgba(234, 88, 12, 0.2);
+}
+
+html[data-theme="light"] .btn-alarm-bell.active:hover {
+  background: rgba(234, 88, 12, 0.2);
+  border-color: rgba(234, 88, 12, 0.55);
+  color: #c2410c;
+}
+
+html[data-theme="light"] .btn-alarm-bell.active svg {
+  fill: #ea580c;
+}
+
+html[data-theme="light"] .btn-alarm-bell.active:hover svg {
+  fill: #c2410c;
 }
 
 /* Subtle Status Badges */
