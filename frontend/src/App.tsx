@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
+import {
+  fetchUserProfile,
+  updateUserProfile,
+  getStoredUserName,
+  setStoredUserName,
+} from './services/api'
 
 // ============================================================================
 // PROCEDURAL SOUND SYNTHESIZER (Web Audio API)
@@ -284,11 +290,21 @@ export default function App() {
     return (localStorage.getItem('reviso-theme') as 'dark' | 'light') || (localStorage.getItem('studysync-theme') as 'dark' | 'light') || 'dark'
   })
 
-  // User Profile
-  const [userName, setUserName] = useState<string>('Laksh HS')
+  // User Profile (Persisted across visits via localStorage & Database)
+  const [userName, setUserName] = useState<string>(() => getStoredUserName())
+  const [userStreak, setUserStreak] = useState<number>(() => {
+    try {
+      const s = localStorage.getItem('reviso_user_streak')
+      return s ? parseInt(s, 10) : 7
+    } catch {
+      return 7
+    }
+  })
+  const [userRole, setUserRole] = useState<string>('Student')
+  const [userGrade, setUserGrade] = useState<string>('Grade 12 • Engineering Prep')
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false)
   const [isEditingName, setIsEditingName] = useState<boolean>(false)
-  const [editNameValue, setEditNameValue] = useState<string>('Laksh HS')
+  const [editNameValue, setEditNameValue] = useState<string>(() => getStoredUserName())
   const profileRef = useRef<HTMLDivElement>(null)
 
   // Schedule & Tasks
@@ -448,6 +464,24 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('reviso-theme', theme)
   }, [theme])
+
+  // Persistent User Profile Loader (Sync with database on every visit)
+  useEffect(() => {
+    fetchUserProfile().then((profile) => {
+      if (profile) {
+        if (profile.fullName) {
+          setUserName(profile.fullName)
+          setEditNameValue(profile.fullName)
+        }
+        if (profile.role) setUserRole(profile.role)
+        if (profile.grade) setUserGrade(profile.grade)
+        if (profile.streak != null) {
+          setUserStreak(profile.streak)
+          localStorage.setItem('reviso_user_streak', profile.streak.toString())
+        }
+      }
+    })
+  }, [])
 
   // Click outside to close profile
   useEffect(() => {
@@ -990,7 +1024,7 @@ export default function App() {
               </div>
               <div className="profile-text-group">
                 <span className="profile-user-name">{userName}</span>
-                <span className="profile-user-role">Student</span>
+                <span className="profile-user-role">{userRole}</span>
               </div>
               <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>▾</span>
             </button>
@@ -1004,7 +1038,7 @@ export default function App() {
                   <div className="dropdown-meta">
                     <span className="dropdown-full-name">{userName}</span>
                     <span className="dropdown-email">laksh.hs@adaptive.ai</span>
-                    <span className="dropdown-badge">Student • Grade 12</span>
+                    <span className="dropdown-badge">{userRole} • {userGrade}</span>
                   </div>
                 </div>
                 <div className="dropdown-divider" />
@@ -1029,9 +1063,12 @@ export default function App() {
                         type="button"
                         onClick={() => {
                           if (editNameValue.trim()) {
-                            setUserName(editNameValue.trim())
+                            const trimmed = editNameValue.trim()
+                            setUserName(trimmed)
+                            setStoredUserName(trimmed)
+                            updateUserProfile(1, { fullName: trimmed })
                             setIsEditingName(false)
-                            showToast(`Display name updated to ${editNameValue.trim()}`)
+                            showToast(`Saved to database as ${trimmed}`)
                           }
                         }}
                         style={{
@@ -1102,7 +1139,7 @@ export default function App() {
           <div className="daily-progress-banner">
             <div className="daily-progress-header">
               <div className="daily-progress-title-wrap">
-                <span className="streak-pill">🔥 5-Day Streak!</span>
+                <span className="streak-pill">🔥 {userStreak}-Day Streak!</span>
                 <span className="daily-progress-text">
                   {completedCount} of {totalCount} study blocks completed <span className="daily-pct-highlight">({progressPct}%)</span>
                 </span>

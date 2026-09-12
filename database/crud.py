@@ -36,6 +36,39 @@ def get_or_create_default_user(db: Session) -> User:
     return user
 
 
+def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+    """Retrieve user by unique ID."""
+    return db.query(User).filter(User.id == user_id).first()
+
+
+def update_user_profile(
+    db: Session,
+    user_id: int,
+    full_name: Optional[str] = None,
+    grade: Optional[str] = None,
+    streak: Optional[int] = None,
+    total_study_minutes: Optional[int] = None,
+) -> Optional[User]:
+    """Update profile fields for a user."""
+    user = get_user_by_id(db, user_id)
+    if not user:
+        return None
+
+    if full_name is not None:
+        user.full_name = full_name
+    if grade is not None:
+        user.grade = grade
+    if streak is not None:
+        user.streak = streak
+    if total_study_minutes is not None:
+        user.total_study_minutes = total_study_minutes
+
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 # ---------------------------------------------------------------------------
 # Task CRUD
 # ---------------------------------------------------------------------------

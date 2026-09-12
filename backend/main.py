@@ -55,6 +55,12 @@ class ReplanRequest(BaseModel):
     weak_subject: str
     weak_topic: str
 
+class UserProfileUpdateRequest(BaseModel):
+    fullName: Optional[str] = None
+    grade: Optional[str] = None
+    streak: Optional[int] = None
+    totalStudyMinutes: Optional[int] = None
+
 load_dotenv()
 # Also check backend/.env if not loaded
 backend_env = os.path.join(os.path.dirname(__file__), ".env")
@@ -106,11 +112,69 @@ def read_root():
         "engine": "Reviso Autonomous Study Engine",
     }
 
+@app.get("/user/profile")
+def get_user_profile(
+    user_id: Optional[int] = Query(1),
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Fetch persistent user profile from database."""
+    if DATABASE_AVAILABLE and db:
+        user = crud.get_user_by_id(db, user_id) or crud.get_or_create_default_user(db)
+        return {
+            "id": user.id,
+            "username": user.username,
+            "fullName": user.full_name,
+            "email": user.email,
+            "role": user.role,
+            "grade": user.grade,
+            "streak": user.streak,
+            "totalStudyMinutes": user.total_study_minutes,
+        }
+    return {
+        "id": 1,
+        "username": "reviso_scholar",
+        "fullName": "Laksh HS",
+        "email": "scholar@reviso.ai",
+        "role": "Student",
+        "grade": "Grade 12 / Engineering Prep",
+        "streak": 7,
+        "totalStudyMinutes": 1260,
+    }
+
+@app.patch("/user/profile")
+def update_user_profile_endpoint(
+    data: UserProfileUpdateRequest,
+    user_id: Optional[int] = Query(1),
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Persist updated user profile fields in the database."""
+    if DATABASE_AVAILABLE and db:
+        updated = crud.update_user_profile(
+            db=db,
+            user_id=user_id,
+            full_name=data.fullName,
+            grade=data.grade,
+            streak=data.streak,
+            total_study_minutes=data.totalStudyMinutes,
+        )
+        if updated:
+            return {
+                "id": updated.id,
+                "fullName": updated.full_name,
+                "grade": updated.grade,
+                "streak": updated.streak,
+                "totalStudyMinutes": updated.total_study_minutes,
+            }
+    return {"id": user_id, "fullName": data.fullName}
+
 @app.get("/tasks")
-def get_tasks(db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+def get_tasks(
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
     if DATABASE_AVAILABLE and db:
         try:
-            db_tasks = crud.get_tasks(db)
+            db_tasks = crud.get_tasks(db, user_id=user_id)
             if db_tasks:
                 return [
                     {
