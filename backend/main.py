@@ -143,15 +143,15 @@ Respond ONLY with a valid JSON array, no other text. Example format:
 def generate_plan(request: GeneratePlanRequest):
     prompt = build_prompt(request.subjects, request.hours_available)
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    ai_reply = response.choices[0].message.content
-    ai_tasks = json.loads(ai_reply)
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        ai_reply = response.choices[0].message.content
+        ai_tasks = json.loads(ai_reply)
+    except Exception as e:
+        return {"error": "Failed to generate plan. Please try again.", "details": str(e)}
 
     global tasks
     tasks = []
@@ -177,15 +177,15 @@ quiz_questions = []
 def generate_quiz(request: GenerateQuizRequest):
     prompt = build_quiz_prompt(request.subject, request.topic, request.difficulty, request.count)
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    ai_reply = response.choices[0].message.content
-    ai_questions = json.loads(ai_reply)
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        ai_reply = response.choices[0].message.content
+        ai_questions = json.loads(ai_reply)
+    except Exception as e:
+        return {"error": "Failed to generate quiz. Please try again.", "details": str(e)}
 
     global quiz_questions
     quiz_questions = []
@@ -265,15 +265,15 @@ def replan(request: ReplanRequest):
         request.weak_topic
     )
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    ai_reply = response.choices[0].message.content
-    ai_tasks = json.loads(ai_reply)
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        ai_reply = response.choices[0].message.content
+        ai_tasks = json.loads(ai_reply)
+    except Exception as e:
+        return {"error": "Failed to replan. Please try again.", "details": str(e)}
 
     global tasks
     tasks = []
