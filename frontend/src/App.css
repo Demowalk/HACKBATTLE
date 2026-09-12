@@ -207,6 +207,14 @@ header.navbar {
   align-items: center;
   gap: 8px;
   color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alarm-pill:hover {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
 .alarm-pill strong {

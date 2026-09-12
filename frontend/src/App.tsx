@@ -377,6 +377,46 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       correct_answer: "'fallback'",
       explanation: 'The .get() method returns the specified fallback argument instead of raising an unhandled KeyError.',
     },
+    {
+      id: 108,
+      subject: 'Python',
+      topic: 'Type Casting',
+      difficulty: 'easy',
+      question: `What is the result of <code>type(3 / 1)</code> in Python 3?`,
+      options: ['<class \'float\'>', '<class \'int\'>', '<class \'number\'>', '<class \'double\'>'],
+      correct_answer: '<class \'float\'>',
+      explanation: 'The single slash operator / performs true floating-point division in Python 3.',
+    },
+    {
+      id: 109,
+      subject: 'Python',
+      topic: 'List Operations',
+      difficulty: 'easy',
+      question: `Which method adds an element to the very end of an existing list in-place?`,
+      options: ['list.append()', 'list.add()', 'list.push()', 'list.insert_end()'],
+      correct_answer: 'list.append()',
+      explanation: 'list.append(item) inserts the element at the end of the list in O(1) amortized time.',
+    },
+    {
+      id: 110,
+      subject: 'Python',
+      topic: 'String Formatting',
+      difficulty: 'easy',
+      question: `Which Python 3.6+ feature enables inline expression evaluation inside strings?`,
+      options: ['f-strings', 'format() templates', '% specifiers', 'template literals'],
+      correct_answer: 'f-strings',
+      explanation: 'f-strings (f"Value is {x}") evaluate expressions directly inside string literals at runtime.',
+    },
+    {
+      id: 111,
+      subject: 'Python',
+      topic: 'Tuples',
+      difficulty: 'easy',
+      question: `What denotes a single-element tuple literal in Python?`,
+      options: ['(42,)', '(42)', '[42]', '{42}'],
+      correct_answer: '(42,)',
+      explanation: 'The trailing comma (42,) distinguishes a single-element tuple from parenthesized arithmetic.',
+    },
     // Medium
     {
       id: 104,
@@ -402,6 +442,61 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       ],
       correct_answer: '`==` compares values for equality, while `is` compares object identity in memory',
       explanation: '`==` checks value equality, while `is` checks whether two variables refer to the exact same memory address (`id(a) == id(b)`).',
+    },
+    {
+      id: 112,
+      subject: 'Python',
+      topic: 'Set Operations',
+      difficulty: 'medium',
+      question: `What is the result of <code>{1, 2, 3} ^ {2, 3, 4}</code> (symmetric difference)?`,
+      options: ['{1, 4}', '{2, 3}', '{1, 2, 3, 4}', 'set()'],
+      correct_answer: '{1, 4}',
+      explanation: 'Symmetric difference ^ returns elements present in either set, but not in both.',
+    },
+    {
+      id: 113,
+      subject: 'Python',
+      topic: 'Zip Function',
+      difficulty: 'medium',
+      question: `What is produced by <code>dict(zip(['a', 'b'], [1, 2]))</code>?`,
+      options: ["{'a': 1, 'b': 2}", "[('a', 1), ('b', 2)]", "{'a': 'b', 1: 2}", "Error"],
+      correct_answer: "{'a': 1, 'b': 2}",
+      explanation: 'zip pairs parallel sequences into tuples which dict() constructs into key-value mappings.',
+    },
+    {
+      id: 114,
+      subject: 'Python',
+      topic: 'Lambda Functions',
+      difficulty: 'medium',
+      question: `What is the output of <code>list(map(lambda x: x**2, filter(lambda x: x > 0, [-2, 0, 3, 4])))</code>?`,
+      options: ['[9, 16]', '[4, 0, 9, 16]', '[3, 4]', '[9]'],
+      correct_answer: '[9, 16]',
+      explanation: 'filter keeps positive numbers [3, 4], and map squares them to produce [9, 16].',
+    },
+    {
+      id: 115,
+      subject: 'Python',
+      topic: 'Exceptions',
+      difficulty: 'medium',
+      question: `In a <code>try-except-finally</code> block, when does the <code>finally</code> clause execute?`,
+      options: [
+        'Always, regardless of whether an exception occurred or was handled',
+        'Only if an exception was caught by except',
+        'Only if no exception was raised in try',
+        'Only when explicitly called by sys.exit()'
+      ],
+      correct_answer: 'Always, regardless of whether an exception occurred or was handled',
+      explanation: 'The finally block is guaranteed to run on all control-flow paths, ensuring cleanup.',
+    },
+    {
+      id: 116,
+      subject: 'Python',
+      topic: 'Scope (LEGB)',
+      difficulty: 'medium',
+      question: `Which keyword allows modifying a variable bound in an outer non-global enclosing function scope?`,
+      options: ['nonlocal', 'global', 'outer', 'scope'],
+      correct_answer: 'nonlocal',
+      explanation: 'nonlocal declares that a variable refers to a previously bound variable in the nearest enclosing scope.',
     },
     // Hard
     {
@@ -433,6 +528,71 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       ],
       correct_answer: '(x**2 for x in range(100))',
       explanation: 'Parentheses around a comprehension create a generator expression that yields items on demand with minimal memory overhead.',
+    },
+    {
+      id: 117,
+      subject: 'Python',
+      topic: 'Decorators',
+      difficulty: 'hard',
+      question: `Why is <code>functools.wraps</code> used when creating custom decorator functions?`,
+      options: [
+        'To preserve the original function\'s __name__, __doc__, and metadata',
+        'To speed up bytecode execution via JIT compilation',
+        'To make the decorated function asynchronous by default',
+        'To enforce type checking on decorator parameters'
+      ],
+      correct_answer: 'To preserve the original function\'s __name__, __doc__, and metadata',
+      explanation: 'functools.wraps copies the docstrings and name attributes of the wrapped callable to avoid loss of introspection.',
+    },
+    {
+      id: 118,
+      subject: 'Python',
+      topic: 'Dunder Methods',
+      difficulty: 'hard',
+      question: `Which special method must be defined on an object to enable the <code>with</code> context manager protocol?`,
+      options: ['__enter__ and __exit__', '__open__ and __close__', '__start__ and __stop__', '__init__ and __del__'],
+      correct_answer: '__enter__ and __exit__',
+      explanation: 'Context managers implement __enter__() for setup and __exit__() for deterministic teardown and exception handling.',
+    },
+    {
+      id: 119,
+      subject: 'Python',
+      topic: 'Memory & GIL',
+      difficulty: 'hard',
+      question: `What mechanism does CPython use as its primary automatic memory management model?`,
+      options: [
+        'Reference counting supplemented by a cyclic generational garbage collector',
+        'Pure mark-and-sweep garbage collection',
+        'Manual heap allocation with no reference counters',
+        'Stop-the-world compaction without reference tracking'
+      ],
+      correct_answer: 'Reference counting supplemented by a cyclic generational garbage collector',
+      explanation: 'CPython deallocates objects as soon as their reference count drops to zero, using generational GC for reference cycles.',
+    },
+    {
+      id: 120,
+      subject: 'Python',
+      topic: 'Metaclasses',
+      difficulty: 'hard',
+      question: `What is the default metaclass of all standard classes in Python 3?`,
+      options: ['type', 'object', 'Class', 'Meta'],
+      correct_answer: 'type',
+      explanation: 'In Python, `type` is the metaclass responsible for constructing all class objects (`isinstance(Class, type) == True`).',
+    },
+    {
+      id: 121,
+      subject: 'Python',
+      topic: 'Slots',
+      difficulty: 'hard',
+      question: `What primary benefit does defining <code>__slots__ = ('x', 'y')</code> provide on a class?`,
+      options: [
+        'Prevents dynamic __dict__ creation, reducing per-instance memory footprint',
+        'Makes all instance attributes strictly immutable',
+        'Enables automatic JSON serialization',
+        'Allows multithreaded concurrent attribute writes without locking'
+      ],
+      correct_answer: 'Prevents dynamic __dict__ creation, reducing per-instance memory footprint',
+      explanation: '__slots__ reserves fixed attribute space in memory rather than allocating a dynamic dictionary per instance.',
     },
   ],
   math: [
@@ -467,6 +627,46 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       correct_answer: '1/6',
       explanation: 'There are 6 combinations summing to 7 out of 36 possible outcomes: 6/36 = 1/6.',
     },
+    {
+      id: 208,
+      subject: 'Maths',
+      topic: 'Exponents',
+      difficulty: 'easy',
+      question: `Simplify the algebraic expression: <code>(2³ · 2⁵) / 2⁴</code>`,
+      options: ['16', '32', '8', '64'],
+      correct_answer: '16',
+      explanation: 'Add exponents in numerator: 3 + 5 = 8. Subtract denominator: 8 - 4 = 4. 2⁴ = 16.',
+    },
+    {
+      id: 209,
+      subject: 'Maths',
+      topic: 'Trigonometry',
+      difficulty: 'easy',
+      question: `What is the exact value of <code>sin(π/6)</code> (or sin(30°))?`,
+      options: ['1/2', '√3/2', '√2/2', '1'],
+      correct_answer: '1/2',
+      explanation: 'The sine of 30 degrees (π/6 radians) in a standard 30-60-90 right triangle is 1/2.',
+    },
+    {
+      id: 210,
+      subject: 'Maths',
+      topic: 'Pythagorean Theorem',
+      difficulty: 'easy',
+      question: `If a right triangle has legs of length 5 and 12, what is the length of the hypotenuse?`,
+      options: ['13', '17', '15', '√119'],
+      correct_answer: '13',
+      explanation: 'c = √(5² + 12²) = √(25 + 144) = √169 = 13.',
+    },
+    {
+      id: 211,
+      subject: 'Maths',
+      topic: 'Arithmetic Sequences',
+      difficulty: 'easy',
+      question: `What is the 10th term of the arithmetic sequence: <code>3, 7, 11, 15, ...</code>?`,
+      options: ['39', '43', '35', '47'],
+      correct_answer: '39',
+      explanation: 'a_n = a₁ + (n - 1)d. a₁₀ = 3 + 9(4) = 3 + 36 = 39.',
+    },
     // Medium
     {
       id: 204,
@@ -493,6 +693,56 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       correct_answer: '6',
       explanation: 'Antiderivative F(x) = x³ - x² + x. F(2) = 8 - 4 + 2 = 6. F(0) = 0. Difference is 6.',
     },
+    {
+      id: 212,
+      subject: 'Maths',
+      topic: 'Matrices',
+      difficulty: 'medium',
+      question: `What is the determinant of matrix <br><pre style="background:var(--bg-canvas); padding:6px; border-radius:6px; font-family:var(--font-mono); border:1px solid var(--border-subtle);">[ 4  3 ]\n[ 2  5 ]</pre>`,
+      options: ['14', '26', '20', '6'],
+      correct_answer: '14',
+      explanation: 'det(A) = (4)(5) - (3)(2) = 20 - 6 = 14.',
+    },
+    {
+      id: 213,
+      subject: 'Maths',
+      topic: 'Complex Numbers',
+      difficulty: 'medium',
+      question: `What is the magnitude (modulus) of the complex number <code>z = 3 - 4i</code>?`,
+      options: ['5', '7', '√7', '25'],
+      correct_answer: '5',
+      explanation: '|z| = √(3² + (-4)²) = √(9 + 16) = √25 = 5.',
+    },
+    {
+      id: 214,
+      subject: 'Maths',
+      topic: 'Limits',
+      difficulty: 'medium',
+      question: `Evaluate the limit: <code>lim (x → 0) [sin(5x) / x]</code>`,
+      options: ['5', '1', '0', 'Undefined'],
+      correct_answer: '5',
+      explanation: 'Using the standard limit lim (u → 0) sin(u)/u = 1: lim 5·(sin(5x)/(5x)) = 5(1) = 5.',
+    },
+    {
+      id: 215,
+      subject: 'Maths',
+      topic: 'Vectors',
+      difficulty: 'medium',
+      question: `What is the dot product of vectors <code>u = (2, 3, -1)</code> and <code>v = (4, -2, 5)</code>?`,
+      options: ['-3', '3', '7', '14'],
+      correct_answer: '-3',
+      explanation: 'u · v = (2)(4) + (3)(-2) + (-1)(5) = 8 - 6 - 5 = -3.',
+    },
+    {
+      id: 216,
+      subject: 'Maths',
+      topic: 'Geometric Series',
+      difficulty: 'medium',
+      question: `What is the sum of the infinite geometric series: <code>16 + 8 + 4 + 2 + ...</code>?`,
+      options: ['32', '64', '30', '48'],
+      correct_answer: '32',
+      explanation: 'S = a / (1 - r) = 16 / (1 - 0.5) = 16 / 0.5 = 32.',
+    },
     // Hard
     {
       id: 206,
@@ -513,6 +763,56 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       options: ['λ = 3 and λ = 1', 'λ = 2 and λ = 2', 'λ = 4 and λ = 0', 'λ = 1 and λ = -1'],
       correct_answer: 'λ = 3 and λ = 1',
       explanation: 'det(A - λI) = (2 - λ)² - 1 = λ² - 4λ + 3 = 0 → (λ - 3)(λ - 1) = 0. Roots are λ = 3 and λ = 1.',
+    },
+    {
+      id: 217,
+      subject: 'Maths',
+      topic: 'Differential Equations',
+      difficulty: 'hard',
+      question: `What is the general solution to the first-order differential equation: <code>dy/dx + 2y = 0</code>?`,
+      options: ['y = C · e^(-2x)', 'y = C · e^(2x)', 'y = -2x + C', 'y = ln(2x) + C'],
+      correct_answer: 'y = C · e^(-2x)',
+      explanation: 'Separating variables: dy/y = -2 dx → ln|y| = -2x + c → y = C·e^(-2x).',
+    },
+    {
+      id: 218,
+      subject: 'Maths',
+      topic: 'Multivariable Calculus',
+      difficulty: 'hard',
+      question: `What is the gradient vector <code>∇f</code> of <code>f(x, y) = x²y + 3xy²</code> at point (1, 1)?`,
+      options: ['(5, 7)', '(2, 6)', '(4, 4)', '(1, 3)'],
+      correct_answer: '(5, 7)',
+      explanation: '∂f/∂x = 2xy + 3y² = 2 + 3 = 5. ∂f/∂y = x² + 6xy = 1 + 6 = 7. ∇f(1, 1) = (5, 7).',
+    },
+    {
+      id: 219,
+      subject: 'Maths',
+      topic: 'Rank-Nullity Theorem',
+      difficulty: 'hard',
+      question: `If a linear transformation T: ℝ⁵ → ℝ³ has a 2-dimensional kernel (null space), what is the rank of T?`,
+      options: ['3', '2', '5', '1'],
+      correct_answer: '3',
+      explanation: 'Rank-Nullity Theorem states dim(V) = rank(T) + nullity(T). 5 = rank(T) + 2 → rank(T) = 3.',
+    },
+    {
+      id: 220,
+      subject: 'Maths',
+      topic: 'Combinatorics',
+      difficulty: 'hard',
+      question: `In how many distinct ways can 8 people be seated around a circular table where rotations are identical?`,
+      options: ['5040 (7!)', '40320 (8!)', '576', '2520'],
+      correct_answer: '5040 (7!)',
+      explanation: 'Circular permutations of n distinct objects is given by (n - 1)!. (8 - 1)! = 7! = 5040.',
+    },
+    {
+      id: 221,
+      subject: 'Maths',
+      topic: 'Fourier & Series',
+      difficulty: 'hard',
+      question: `For a periodic even function f(x) = f(-x), what are the values of all sine coefficients b_n in its Fourier series?`,
+      options: ['b_n = 0 for all n', 'b_n = a_n', 'b_n = 1/n', 'b_n = (-1)^n'],
+      correct_answer: 'b_n = 0 for all n',
+      explanation: 'The integral of an even function multiplied by the odd sine function over a symmetric interval is identically 0.',
     },
   ],
   chem: [
@@ -547,6 +847,46 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       correct_answer: 'Hydrogen bonding',
       explanation: 'Strong hydrogen bonding between electronegative oxygen and hydrogen requires significant energy to break.',
     },
+    {
+      id: 307,
+      subject: 'Chemistry',
+      topic: 'Atomic Structure',
+      difficulty: 'easy',
+      question: `How many valence electrons are present in a neutral ground-state Chlorine atom (Z = 17)?`,
+      options: ['7', '5', '8', '17'],
+      correct_answer: '7',
+      explanation: 'Chlorine has the electron configuration [Ne] 3s² 3p⁵, containing 2 + 5 = 7 valence electrons.',
+    },
+    {
+      id: 308,
+      subject: 'Chemistry',
+      topic: 'Gas Laws',
+      difficulty: 'easy',
+      question: `According to Boyle's Law, what happens to the volume of an ideal gas when pressure is doubled at constant temperature?`,
+      options: ['Halved', 'Doubled', 'Quadrupled', 'Remains unchanged'],
+      correct_answer: 'Halved',
+      explanation: 'Boyle\'s Law states P₁V₁ = P₂V₂. Pressure and volume are inversely proportional.',
+    },
+    {
+      id: 309,
+      subject: 'Chemistry',
+      topic: 'Periodic Trends',
+      difficulty: 'easy',
+      question: `Which element has the highest electronegativity value on the Pauling scale?`,
+      options: ['Fluorine (F)', 'Oxygen (O)', 'Chlorine (Cl)', 'Helium (He)'],
+      correct_answer: 'Fluorine (F)',
+      explanation: 'Fluorine is the most electronegative element with a Pauling value of approximately 3.98.',
+    },
+    {
+      id: 310,
+      subject: 'Chemistry',
+      topic: 'Molar Mass',
+      difficulty: 'easy',
+      question: `What is the approximate molar mass of Calcium Carbonate (CaCO₃) (Ca=40, C=12, O=16)?`,
+      options: ['100 g/mol', '68 g/mol', '120 g/mol', '84 g/mol'],
+      correct_answer: '100 g/mol',
+      explanation: '40 + 12 + 3(16) = 40 + 12 + 48 = 100 g/mol.',
+    },
     // Medium
     {
       id: 304,
@@ -578,6 +918,56 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       correct_answer: 'Shifts toward products (fewer moles of gas)',
       explanation: 'Reactants comprise 4 moles of gas while products comprise 2. Higher pressure shifts toward fewer gas molecules.',
     },
+    {
+      id: 311,
+      subject: 'Chemistry',
+      topic: 'Kinetics & Rate Laws',
+      difficulty: 'medium',
+      question: `For a reaction with rate law <code>Rate = k[A]²[B]</code>, what is the overall reaction order?`,
+      options: ['3 (Third order)', '2 (Second order)', '1 (First order)', '0 (Zero order)'],
+      correct_answer: '3 (Third order)',
+      explanation: 'The overall reaction order is the sum of exponents: 2 + 1 = 3.',
+    },
+    {
+      id: 312,
+      subject: 'Chemistry',
+      topic: 'Thermodynamics',
+      difficulty: 'medium',
+      question: `Under what condition is a chemical reaction always spontaneous at all temperatures?`,
+      options: ['ΔH < 0 (exothermic) and ΔS > 0 (entropy increases)', 'ΔH > 0 and ΔS < 0', 'ΔH > 0 and ΔS > 0', 'ΔH < 0 and ΔS < 0'],
+      correct_answer: 'ΔH < 0 (exothermic) and ΔS > 0 (entropy increases)',
+      explanation: 'In ΔG = ΔH - TΔS, negative ΔH and positive ΔS ensure ΔG is strictly negative at all absolute temperatures.',
+    },
+    {
+      id: 313,
+      subject: 'Chemistry',
+      topic: 'Electrochemistry',
+      difficulty: 'medium',
+      question: `In a standard galvanic cell, at which electrode does oxidation occur?`,
+      options: ['Anode', 'Cathode', 'Salt bridge', 'Both electrodes equally'],
+      correct_answer: 'Anode',
+      explanation: 'Oxidation occurs at the anode (An Ox), while reduction occurs at the cathode (Red Cat).',
+    },
+    {
+      id: 314,
+      subject: 'Chemistry',
+      topic: 'Hybridization',
+      difficulty: 'medium',
+      question: `What is the hybridization and molecular geometry of the central carbon in ethene (C₂H₄)?`,
+      options: ['sp² (Trigonal planar)', 'sp³ (Tetrahedral)', 'sp (Linear)', 'sp³d (Trigonal bipyramidal)'],
+      correct_answer: 'sp² (Trigonal planar)',
+      explanation: 'Each double-bonded carbon in ethene forms 3 sigma bonds and 1 pi bond, adopting sp² trigonal planar geometry.',
+    },
+    {
+      id: 315,
+      subject: 'Chemistry',
+      topic: 'Buffer Solutions',
+      difficulty: 'medium',
+      question: `What equation is used to calculate the pH of an acid-base buffer solution from pKa and concentration ratios?`,
+      options: ['Henderson-Hasselbalch equation', 'Nernst equation', 'Arrhenius equation', 'Van \'t Hoff equation'],
+      correct_answer: 'Henderson-Hasselbalch equation',
+      explanation: 'pH = pKa + log([A⁻]/[HA]) is the fundamental Henderson-Hasselbalch buffer relationship.',
+    },
     // Hard
     {
       id: 306,
@@ -593,6 +983,76 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       ],
       correct_answer: 'Complete Walden inversion of configuration',
       explanation: 'Backside attack by the incoming nucleophile inverts the chiral geometry (Walden inversion).',
+    },
+    {
+      id: 316,
+      subject: 'Chemistry',
+      topic: 'Crystal Field Theory',
+      difficulty: 'hard',
+      question: `Which ligand is classified as a strong-field ligand according to the spectrochemical series, causing low-spin octahedral complexes?`,
+      options: ['CN⁻ (Cyanide)', 'I⁻ (Iodide)', 'Br⁻ (Bromide)', 'Cl⁻ (Chloride)'],
+      correct_answer: 'CN⁻ (Cyanide)',
+      explanation: 'Cyanide (CN⁻) and CO are strong-field pi-acceptor ligands with large crystal field splitting (Δo), favoring low-spin states.',
+    },
+    {
+      id: 317,
+      subject: 'Chemistry',
+      topic: 'Pericyclic Reactions',
+      difficulty: 'hard',
+      question: `The Diels-Alder reaction between a conjugated diene and a dienophile is classified as what type of pericyclic process?`,
+      options: ['[4+2] Cycloaddition', '[2+2] Photochemical addition', '[3,3] Sigmatropic shift', 'Electrocyclic ring opening'],
+      correct_answer: '[4+2] Cycloaddition',
+      explanation: 'The thermally allowed Diels-Alder reaction proceeds via a concerted [4π + 2π] suprafacial cycloaddition.',
+    },
+    {
+      id: 318,
+      subject: 'Chemistry',
+      topic: 'NMR Spectroscopy',
+      difficulty: 'hard',
+      question: `In ¹H-NMR spectroscopy, what causes spin-spin splitting observed as the (n + 1) rule?`,
+      options: [
+        'Coupling through chemical bonds with non-equivalent neighboring protons',
+        'Spin-lattice relaxation time differences (T1)',
+        'Paramagnetic shielding from the external magnet',
+        'Direct through-space nuclear Overhauser enhancement'
+      ],
+      correct_answer: 'Coupling through chemical bonds with non-equivalent neighboring protons',
+      explanation: 'Scalar J-coupling mediated through electrons in chemical bonds splits resonances based on n adjacent non-equivalent protons.',
+    },
+    {
+      id: 319,
+      subject: 'Chemistry',
+      topic: 'Quantum Chemistry',
+      difficulty: 'hard',
+      question: `According to Hund's rule of maximum multiplicity, how are degenerate orbitals filled with electrons in the ground state?`,
+      options: [
+        'Singly with parallel spins before any orbital is doubly occupied',
+        'Doubly occupied in the lowest spatial coordinate first',
+        'With alternating antiparallel spins in adjacent orbitals',
+        'Randomly based on Heisenberg uncertainty principle'
+      ],
+      correct_answer: 'Singly with parallel spins before any orbital is doubly occupied',
+      explanation: 'Electrons maximize total spin multiplicity by occupying degenerate subshells singly with parallel spins to minimize Coulomb repulsion.',
+    },
+    {
+      id: 320,
+      subject: 'Chemistry',
+      topic: 'Electrochemistry (Nernst)',
+      difficulty: 'hard',
+      question: `For a 2-electron redox reaction at 298 K, by how much does the cell potential (E) change when the reaction quotient Q increases tenfold?`,
+      options: ['Decreases by 0.0296 V', 'Increases by 0.0592 V', 'Decreases by 0.0592 V', 'Remains unchanged'],
+      correct_answer: 'Decreases by 0.0296 V',
+      explanation: 'E = E° - (0.0592 / n) log₁₀(Q). For n = 2 and log₁₀(10) = 1: change is -0.0592 / 2 = -0.0296 V.',
+    },
+    {
+      id: 321,
+      subject: 'Chemistry',
+      topic: 'Aromaticity (Hückel)',
+      difficulty: 'hard',
+      question: `Which criterion is required for a planar cyclic conjugated system to exhibit Hückel aromaticity?`,
+      options: ['(4n + 2) π-electrons where n is a non-negative integer', '4n π-electrons where n is an integer', 'Exactly 6 σ-bonds in the ring', 'An odd number of conjugated heteroatoms'],
+      correct_answer: '(4n + 2) π-electrons where n is a non-negative integer',
+      explanation: 'Hückel\'s rule requires a planar, uninterrupted cyclic pi-electron cloud containing (4n + 2) delocalized pi electrons.',
     },
   ],
 }
@@ -1389,7 +1849,6 @@ export default function App() {
 
   // Alarms & Upcoming Tests
   const [alarmModalOpen, setAlarmModalOpen] = useState<boolean>(false)
-  const [nextAlarmLabel] = useState<string>('Organic Chemistry (11:00 AM)')
 
   // Pomodoro
   const [pomoModalOpen, setPomoModalOpen] = useState<boolean>(false)
@@ -2062,13 +2521,13 @@ export default function App() {
       let notice = ''
       if (s1Correct <= 1) {
         nextDiff = 'easy'
-        notice = `Adaptive Booster: Scored ${s1Correct}/3 — Generating 2 Easy practice questions to rebuild fundamentals.`
+        notice = `Adaptive Booster: Scored ${s1Correct}/3 — Generating 7 Easy practice questions to rebuild fundamentals.`
       } else if (s1Correct === 2) {
         nextDiff = 'medium'
-        notice = `Reinforcement Round: Scored 2/3 — Generating 2 Medium practice questions to lock in proficiency.`
+        notice = `Reinforcement Round: Scored 2/3 — Generating 7 Medium practice questions to lock in proficiency.`
       } else {
         nextDiff = 'hard'
-        notice = `Mastery Challenge: Perfect 3/3 — Generating 2 Hard challenge questions to test advanced skills.`
+        notice = `Mastery Challenge: Perfect 3/3 — Generating 7 Hard challenge questions to test advanced skills.`
       }
       setAdaptiveDifficulty(nextDiff)
       setAdaptiveNotice(notice)
@@ -2082,7 +2541,7 @@ export default function App() {
 
     let nextQuestions: QuizQuestionItem[] = []
     try {
-      const data = await fetchGeneratedQuiz(subjectName, undefined, adaptiveDifficulty, 2)
+      const data = await fetchGeneratedQuiz(subjectName, undefined, adaptiveDifficulty, 7)
       if (data && data.questions && data.questions.length > 0) {
         nextQuestions = data.questions
       }
@@ -2090,14 +2549,18 @@ export default function App() {
       // offline fallback
     }
 
-    if (nextQuestions.length === 0) {
+    if (nextQuestions.length < 7) {
       const pool = FALLBACK_QUIZ_BANK[currentQuizSubject] || FALLBACK_QUIZ_BANK.python
-      const diffPool = pool.filter((q) => q.difficulty === adaptiveDifficulty)
-      const fallbackPool = diffPool.length >= 2 ? diffPool : pool
-      nextQuestions = [...fallbackPool].sort(() => Math.random() - 0.5).slice(0, 2)
+      const existingIds = new Set(quizQuestions.map((q) => q.id))
+      const availablePool = pool.filter((q) => !existingIds.has(q.id))
+      const diffPool = availablePool.filter((q) => q.difficulty === adaptiveDifficulty)
+      const fallbackPool = diffPool.length >= (7 - nextQuestions.length) ? diffPool : availablePool.length > 0 ? availablePool : pool
+      const needed = 7 - nextQuestions.length
+      const additional = [...fallbackPool].sort(() => Math.random() - 0.5).slice(0, needed)
+      nextQuestions = [...nextQuestions, ...additional]
     }
 
-    // Append 2 adaptive questions (total is now 5)
+    // Append 7 adaptive questions (total is now 10: 3 Stage 1 + 7 Stage 2)
     setQuizQuestions((prev) => [...prev, ...nextQuestions])
     setQuizStage(2)
     setCurrentQuestionIdx(3) // Advance to Question 4
@@ -2452,13 +2915,33 @@ export default function App() {
         </div>
 
         <div className="header-actions">
-          {/* Live Study Alarm Pill */}
-          <div className="alarm-pill" title="Active Study Session Alarm">
-            <span className="pulse-dot" />
-            <span>
-              Next: <strong>{nextAlarmLabel}</strong>
-            </span>
-          </div>
+          {/* Live Next Upcoming Task Button */}
+          {(() => {
+            const nextUpcomingTask = tasks.find((t) => !t.completed)
+            const nextUpcomingTaskDisplay = nextUpcomingTask
+              ? `${nextUpcomingTask.title.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{1FA00}-\u{1FAFF}\u{FE0F}]/gu, '').trim()} (${nextUpcomingTask.timeSlot})`
+              : 'All Tasks Completed'
+
+            return (
+              <button
+                type="button"
+                className="alarm-pill"
+                onClick={() => {
+                  if (nextUpcomingTask) {
+                    openPomodoroModal(`${nextUpcomingTask.title.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{1FA00}-\u{1FAFF}\u{FE0F}]/gu, '').trim()} (${nextUpcomingTask.timeSlot})`)
+                  } else {
+                    showToast('All study tasks for today are completed!')
+                  }
+                }}
+                title={nextUpcomingTask ? `Next upcoming task: ${nextUpcomingTask.title}. Click to launch focus timer.` : 'All study blocks completed!'}
+              >
+                <span className="pulse-dot" />
+                <span>
+                  Next: <strong>{nextUpcomingTaskDisplay}</strong>
+                </span>
+              </button>
+            )
+          })()}
 
           {/* Calendar Button (Replaces Share / Export) */}
           <button
@@ -2475,7 +2958,13 @@ export default function App() {
           <button
             type="button"
             className="btn-pill"
-            onClick={() => openPomodoroModal('Organic Chemistry (11:00 AM)')}
+            onClick={() => {
+              const nextUpcomingTask = tasks.find((t) => !t.completed)
+              const targetTitle = nextUpcomingTask
+                ? `${nextUpcomingTask.title.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{1FA00}-\u{1FAFF}\u{FE0F}]/gu, '').trim()} (${nextUpcomingTask.timeSlot})`
+                : 'Focus Session'
+              openPomodoroModal(targetTitle)
+            }}
             title="Launch 25-minute Pomodoro Study Timer"
           >
             <Clock size={14} />
@@ -3928,10 +4417,10 @@ export default function App() {
                   onClick={handleProceedToStage2}
                 >
                   {isTransitioningStage ? (
-                    <span>Unlocking 2 {adaptiveDifficulty?.toUpperCase()} questions...</span>
+                    <span>Unlocking 7 {adaptiveDifficulty?.toUpperCase()} questions...</span>
                   ) : (
                     <>
-                      <span>Unlock Stage 2 (2 {adaptiveDifficulty?.toUpperCase()} Questions)</span>
+                      <span>Unlock Stage 2 (7 {adaptiveDifficulty?.toUpperCase()} Questions)</span>
                       <ArrowRightIcon size={16} />
                     </>
                   )}
