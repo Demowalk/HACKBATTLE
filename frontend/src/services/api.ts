@@ -252,6 +252,68 @@ export async function deleteTaskFromDb(id: number): Promise<boolean> {
   }
 }
 
+export interface CriticalRemediationResponse {
+  status: string
+  is_critical: boolean
+  score: number
+  total: number
+  free_date: string
+  free_day_name: string
+  time_slot: string
+  message: string
+  task: {
+    id: number
+    title: string
+    subject: string
+    topic: string
+    duration: string
+    duration_minutes: number
+    priority: string
+    timeSlot: string
+    scheduled_date: string
+    completed: boolean
+    alarmEnabled: boolean
+    isCritical: boolean
+    statusTag: string
+    dayNumber: number
+  }
+}
+
+export async function scheduleCriticalRemediation(payload: {
+  subject: string
+  topic: string
+  score: number
+  total: number
+  user_id?: number
+}): Promise<CriticalRemediationResponse | null> {
+  const uid = payload.user_id ?? getStoredUserId()
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 2500)
+
+    const response = await fetch(`${BACKEND_URL}/tasks/schedule-critical-remediation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...payload,
+        user_id: uid,
+      }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch {
+    // offline fallback
+  }
+  return null
+}
+
+
 // ---------------------------------------------------------------------------
 // Chat History & Persistence API
 // ---------------------------------------------------------------------------

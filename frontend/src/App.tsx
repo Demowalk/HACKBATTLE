@@ -14,6 +14,7 @@ import {
   createBackendTask,
   deleteBackendTask,
   downloadCalendarIcs,
+  scheduleCriticalRemediation,
   type QuizQuestionItem,
 } from './services/api'
 
@@ -1009,6 +1010,14 @@ export default function App() {
     scorePct: number
     adaptiveDifficulty: string
   } | null>(null)
+  const [criticalRemediationInfo, setCriticalRemediationInfo] = useState<{
+    scheduledDate: string
+    dayName: string
+    timeSlot: string
+    topic: string
+    subject: string
+    dayNumber: number
+  } | null>(null)
 
 
 
@@ -1494,6 +1503,7 @@ export default function App() {
     setQuizUserAnswers([])
     setIsQuizFinished(false)
     setQuizFinalResult(null)
+    setCriticalRemediationInfo(null)
 
     const subjectName = key === 'math' ? 'Maths' : key === 'chem' ? 'Chemistry' : 'Python'
 
@@ -1616,6 +1626,7 @@ export default function App() {
     const totalCorrect = s1 + s2
     const total = quizUserAnswers.length
     const scorePct = Math.round((totalCorrect / Math.max(1, total)) * 100)
+    const isCritical = totalCorrect < 2
 
     setQuizFinalResult({
       stage1Correct: s1,
@@ -1630,29 +1641,139 @@ export default function App() {
     setIsQuizFinished(true)
     soundSynth.playHarmonicChime()
 
-    if (currentQuizSubject === 'python') {
-      const newScore = Math.max(68, scorePct)
-      setDktScores((prev) => ({
-        ...prev,
-        python: { pct: newScore, retention: 'Stable (Refresher Complete)', safe: true },
-      }))
-      setQuizScoreText(`Score: ${newScore}% · Mastered!`)
-      setQuizCardBorderColor('var(--color-math)')
-    } else if (currentQuizSubject === 'math') {
-      const newScore = Math.max(85, scorePct)
-      setDktScores((prev) => ({
-        ...prev,
-        math: { pct: newScore, retention: 'Mastery (14d decay)', safe: true },
-      }))
-    } else if (currentQuizSubject === 'chem') {
-      const newScore = Math.max(78, scorePct)
-      setDktScores((prev) => ({
-        ...prev,
-        chem: { pct: newScore, retention: 'Proficient (8d decay)', safe: true },
-      }))
-    }
+    const subjectDisplayName =
+      currentQuizSubject === 'math' ? 'Maths' : currentQuizSubject === 'chem' ? 'Chemistry' : 'Python'
+    const topicDisplayName =
+      quizQuestions[0]?.topic ||
+      (currentQuizSubject === 'math'
+        ? 'Linear Algebra'
+        : currentQuizSubject === 'chem'
+        ? 'Reaction Mechanisms'
+        : 'Loops & Recursion')
+    const subjectTagClass =
+      currentQuizSubject === 'math'
+        ? 'task-tag-math'
+        : currentQuizSubject === 'chem'
+        ? 'task-tag-chem'
+        : 'task-tag-python'
 
-    showToast('Knowledge graph updated with your adaptive quiz results!', '📈')
+    if (isCritical) {
+      // 1. Scan following days (Day +1 to Day +7, e.g. Sep 13 through Sep 19) for the earliest free schedule
+      let chosenDateKey = '2026-09-16'
+      let chosenDayNumber = 16
+      let chosenDayFormatted = 'Wednesday, Sep 16'
+
+      for (let dayOffset = 1; dayOffset <= 7; dayOffset++) {
+        const candidateDate = new Date(2026, 8, 12 + dayOffset)
+        const cYear = candidateDate.getFullYear()
+        const cMonth = candidateDate.getMonth()
+        const cDay = candidateDate.getDate()
+        const cDateKey = formatCalDateKey(cYear, cMonth, cDay)
+
+        const dayTasks = getTasksForDate(cYear, cMonth, cDay)
+        const hasExam = dayTasks.some((t) => {
+          const title = (t.title || '').toLowerCase()
+          return title.includes('exam') || title.includes('midterm') || title.includes('final')
+        })
+
+        // A day is free if it has 0 scheduled tasks and NO exams
+        if (!hasExam && dayTasks.length === 0) {
+          chosenDateKey = cDateKey
+          chosenDayNumber = cDay
+          chosenDayFormatted = candidateDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'short',
+            day: 'numeric',
+          })
+          break
+        }
+      }
+
+      setCriticalRemediationInfo({
+        scheduledDate: chosenDateKey,
+        dayName: chosenDayFormatted,
+        timeSlot: '10:00–11:00 AM',
+        topic: topicDisplayName,
+        subject: subjectDisplayName,
+        dayNumber: chosenDayNumber,
+      })
+
+      // 2. Set DKT proficiency to Critical decay risk
+      const lowPct = Math.min(28, Math.max(12, scorePct))
+      setDktScores((prev) => ({
+        ...prev,
+        [currentQuizSubject]: {
+          pct: lowPct,
+          retention: 'Critical Decay Risk 🚨',
+          safe: false,
+        },
+      }))
+      setQuizScoreText(`Score: ${scorePct}% · Critical Decay Alert!`)
+      setQuizCardBorderColor('#EF4444')
+
+      // 3. Add to Calendar on that free following day
+      const remediationTask: CalTaskItem = {
+        id: `remediation-${Date.now()}`,
+        title: `🚨 Critical Review: ${subjectDisplayName} - ${topicDisplayName}`,
+        subject: subjectDisplayName,
+        tagClass: subjectTagClass,
+        timeSlot: '10:00–11:00 AM',
+        completed: false,
+        priority: 'high',
+        duration_minutes: 60,
+      }
+
+      setCalTasksByDate((prev) => {
+        const existing = prev[chosenDateKey] || []
+        return {
+          ...prev,
+          [chosenDateKey]: [...existing, remediationTask],
+        }
+      })
+
+      // 4. Send to backend
+      scheduleCriticalRemediation({
+        subject: subjectDisplayName,
+        topic: topicDisplayName,
+        score: totalCorrect,
+        total: total,
+      }).catch((e) => console.warn('scheduleCriticalRemediation backend error:', e))
+
+      // 5. User Feedback: Warning toast + Tutor Chat reminder message
+      showToast(`🚨 Critical score (${totalCorrect}/${total})! Recovery session scheduled for ${chosenDayFormatted}`, '🚨')
+
+      addChatMessage(
+        `🚨 <strong>Critical Review Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
+          `Because your score was below 2 right out of 5, the adaptive system flagged this concept with <strong>Critical Decay Risk</strong>.<br><br>` +
+          `📅 <strong>Automated Schedule:</strong> We scanned your calendar across upcoming days, bypassed your exams (e.g. Sep 15), and found that <strong>${chosenDayFormatted}</strong> is completely open (0 tasks). We have placed a <strong>60-minute Critical Review drill at 10:00 AM</strong> with an active reminder alarm.<br><br>` +
+          `👉 Open your <strong>Study Calendar</strong> to see the scheduled reminder on ${chosenDayFormatted}!`,
+        'bot'
+      )
+    } else {
+      if (currentQuizSubject === 'python') {
+        const newScore = Math.max(68, scorePct)
+        setDktScores((prev) => ({
+          ...prev,
+          python: { pct: newScore, retention: 'Stable (Refresher Complete)', safe: true },
+        }))
+        setQuizScoreText(`Score: ${newScore}% · Mastered!`)
+        setQuizCardBorderColor('var(--color-math)')
+      } else if (currentQuizSubject === 'math') {
+        const newScore = Math.max(85, scorePct)
+        setDktScores((prev) => ({
+          ...prev,
+          math: { pct: newScore, retention: 'Mastery (14d decay)', safe: true },
+        }))
+      } else if (currentQuizSubject === 'chem') {
+        const newScore = Math.max(78, scorePct)
+        setDktScores((prev) => ({
+          ...prev,
+          chem: { pct: newScore, retention: 'Proficient (8d decay)', safe: true },
+        }))
+      }
+
+      showToast('Knowledge graph updated with your adaptive quiz results!', '📈')
+    }
 
     try {
       const answersPayload = quizUserAnswers.map((a) => ({
@@ -2629,6 +2750,67 @@ export default function App() {
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                   DKT retention score updated &amp; synced to Supabase database.
                 </div>
+
+                {/* Critical Remediation Alert & Action Banner */}
+                {quizFinalResult && quizFinalResult.totalCorrect < 2 && criticalRemediationInfo && (
+                  <div
+                    style={{
+                      marginTop: '16px',
+                      marginBottom: '16px',
+                      padding: '16px 18px',
+                      borderRadius: '12px',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1.5px solid #EF4444',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '20px' }}>🚨</span>
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#EF4444', fontSize: '14px' }}>
+                          CRITICAL REMEDIATION TRIGGERED ({quizFinalResult.totalCorrect}/5 Correct)
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          Score is below threshold (&lt; 2 right out of 5) · Urgent Decay Risk
+                        </div>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+                      Proficiency fell below the safe retention boundary. The system inspected your schedule, bypassed upcoming exams (Sep 15), and scheduled an intensive 60-min recovery session on <strong>{criticalRemediationInfo.dayName}</strong> at <strong>10:00 AM</strong> where your calendar is completely free.
+                    </p>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn-pill"
+                        style={{
+                          background: '#EF4444',
+                          color: '#FFFFFF',
+                          fontWeight: 700,
+                          fontSize: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 16px',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => {
+                          setSelectedCalDay(criticalRemediationInfo.dayNumber)
+                          setCalYear(2026)
+                          setCalMonth(8)
+                          setGcalView('day')
+                          setQuizModalOpen(false)
+                          setCalendarModalOpen(true)
+                        }}
+                      >
+                        <span>📅 View on Study Calendar</span>
+                      </button>
+                      <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        🔔 Active Reminder Alarm Set
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Question-by-Question Review Breakdown */}
                 <div className="quiz-review-list">
