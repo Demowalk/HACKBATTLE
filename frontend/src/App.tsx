@@ -1308,12 +1308,12 @@ export default function App() {
               <div
                 className="concept-card"
                 style={{
-                  borderTop: '3px solid #ffffff',
+                  borderTop: '3px solid #B39EB5',
                 }}
               >
                 <div className="concept-header">
                   <span className="concept-name">Python (Loops &amp; Logic)</span>
-                  <span className="concept-pct" style={{ color: '#ffffff' }}>
+                  <span className="concept-pct" style={{ color: '#B39EB5' }}>
                     {dktScores.python.pct}%
                   </span>
                 </div>
@@ -1322,7 +1322,7 @@ export default function App() {
                 </div>
                 <div className="decay-risk-bar">
                   <span>Retention:</span>
-                  <span className="decay-danger" style={{ color: '#ffffff' }}>
+                  <span className="decay-danger" style={{ color: '#B39EB5' }}>
                     {dktScores.python.retention}
                   </span>
                 </div>
@@ -1354,7 +1354,7 @@ export default function App() {
                 <span>🎯</span>
                 <span>Focus Areas &amp; Boosters</span>
               </div>
-              <span style={{ fontSize: '11.5px', color: '#ffffff', fontWeight: 700 }}>
+              <span style={{ fontSize: '11.5px', color: '#B39EB5', fontWeight: 700 }}>
                 {pendingBoostersCount} Recommendations Available
               </span>
             </div>
@@ -1362,7 +1362,7 @@ export default function App() {
             {/* Booster 1 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <span style={{ color: '#ffffff', fontSize: '16px' }}>💡</span>
+                <span style={{ color: '#B39EB5', fontSize: '16px' }}>💡</span>
                 <div>
                   <strong>Quick recap suggested:</strong> A 20-min loop refresher will make your upcoming lab a breeze!
                 </div>
@@ -1545,8 +1545,8 @@ export default function App() {
                 className="quiz-feedback-box"
                 style={{
                   display: 'block',
-                  background: quizFeedback.isCorrect ? 'var(--color-math-subtle)' : 'rgba(255, 255, 255, 0.1)',
-                  color: quizFeedback.isCorrect ? 'var(--color-math)' : '#ffffff',
+                  background: quizFeedback.isCorrect ? 'var(--color-math-subtle)' : 'rgba(179, 158, 181, 0.15)',
+                  color: quizFeedback.isCorrect ? 'var(--color-math)' : '#B39EB5',
                 }}
               >
                 {quizFeedback.text}
@@ -1627,15 +1627,15 @@ export default function App() {
               style={{
                 width: '66px',
                 height: '66px',
-                background: 'rgba(255, 255, 255, 0.12)',
-                border: '1.5px solid rgba(255, 255, 255, 0.25)',
+                background: 'rgba(179, 158, 181, 0.15)',
+                border: '1.5px solid rgba(179, 158, 181, 0.3)',
                 color: '#ffffff',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: '12px',
-                boxShadow: '0 4px 20px rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 4px 20px rgba(179, 158, 181, 0.2)',
               }}
             >
               <BellIcon size={32} color="#ffffff" />
