@@ -8,7 +8,8 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from database.connection import Base, engine, SessionLocal
-from database.models import User, Task, ConceptMastery
+from database.models import User, Task, ConceptMastery, CriticalAction, ChatMessage, StudySession
+
 
 
 def init_database():
@@ -138,12 +139,69 @@ def seed_demo_data():
                 topic="AsyncIO Event Loops & Coroutines",
                 mastery_score=0.35,
                 decay_risk=0.58,
+                low_proficiency=True,
+                projected_note="Critical decay alert! Requires active recall session.",
             ),
         ]
         db.add_all(mastery_records)
 
+        # 4. Seed Critical Actions (Focus Areas)
+        critical_actions = [
+            CriticalAction(
+                user_id=user.id,
+                badge_label="URGENT",
+                desc_html="Python AsyncIO retention has dropped to 35% with 58% decay risk.",
+                btn_text="Rebalance Schedule",
+                is_scheduled=False,
+                target_slot="5:30–6:15 PM",
+                action_key="python_remediation",
+            ),
+            CriticalAction(
+                user_id=user.id,
+                badge_label="UPCOMING EXAM",
+                desc_html="Linear Algebra Final Exam is in 3 days (Sep 15). Review formula sheets.",
+                btn_text="Add Practice Exam Block",
+                is_scheduled=False,
+                target_slot="9:00 AM–12:00 PM",
+                action_key="math_midterm",
+            ),
+            CriticalAction(
+                user_id=user.id,
+                badge_label="CRITICAL REMINDER",
+                desc_html="Organic Chemistry lab submission deadline is tomorrow at 5:00 PM.",
+                btn_text="View Lab Notes",
+                is_scheduled=False,
+                target_slot="4:00–5:00 PM",
+                action_key="chem_lab",
+            ),
+        ]
+        db.add_all(critical_actions)
+
+        # 5. Seed Initial Chat Messages
+        chat_messages = [
+            ChatMessage(
+                user_id=user.id,
+                sender="bot",
+                text="Hello Laksh! I am Reviso, your autonomous study copilot. How can I optimize your learning schedule today?",
+                timestamp_str="02:00 PM",
+            ),
+            ChatMessage(
+                user_id=user.id,
+                sender="user",
+                text="Can you review my Python AsyncIO retention score?",
+                timestamp_str="02:02 PM",
+            ),
+            ChatMessage(
+                user_id=user.id,
+                sender="bot",
+                text="Your Python AsyncIO mastery is currently at 35% with high decay danger. I have placed a remediation study block in your schedule for 5:30 PM today!",
+                timestamp_str="02:02 PM",
+            ),
+        ]
+        db.add_all(chat_messages)
+
         db.commit()
-        print("🎉 Database seeded with initial student, tasks, and concept mastery!")
+        print("🎉 Database seeded with initial student, tasks, mastery, focus areas, and chat messages!")
     except Exception as e:
         db.rollback()
         print(f"❌ Error during database seeding: {e}")

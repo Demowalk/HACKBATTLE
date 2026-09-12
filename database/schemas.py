@@ -11,10 +11,12 @@ class TaskBase(BaseModel):
     subject: str
     topic: str
     duration_minutes: int = 60
-    priority: str = "medium"
+    priority: str = "medium"  # high, medium, low
     time_slot: str = "5:00–6:00 PM"
     scheduled_date: str = "2026-09-12"
     alarm_active: bool = True
+    is_critical: bool = False
+    status_tag: str = "Upcoming"
 
 
 class TaskCreate(TaskBase):
@@ -31,6 +33,8 @@ class TaskUpdate(BaseModel):
     scheduled_date: Optional[str] = None
     completed: Optional[bool] = None
     alarm_active: Optional[bool] = None
+    is_critical: Optional[bool] = None
+    status_tag: Optional[str] = None
 
 
 class TaskOut(TaskBase):
@@ -99,6 +103,12 @@ class ConceptMasteryBase(BaseModel):
     topic: str
     mastery_score: float = 0.5
     decay_risk: float = 0.2
+    low_proficiency: bool = False
+    projected_note: Optional[str] = None
+
+
+class ConceptMasteryCreate(ConceptMasteryBase):
+    user_id: Optional[int] = None
 
 
 class ConceptMasteryOut(ConceptMasteryBase):
@@ -110,11 +120,83 @@ class ConceptMasteryOut(ConceptMasteryBase):
 
 
 # ---------------------------------------------------------------------------
-# User Schemas
+# Critical Actions / Remediation Alerts Schemas
+# ---------------------------------------------------------------------------
+class CriticalActionBase(BaseModel):
+    badge_label: str = "URGENT"
+    desc_html: str
+    btn_text: str = "Rebalance Schedule"
+    is_scheduled: bool = False
+    target_slot: str = "5:30–6:15 PM"
+    action_key: str
+
+
+class CriticalActionCreate(CriticalActionBase):
+    user_id: Optional[int] = None
+
+
+class CriticalActionOut(CriticalActionBase):
+    id: int
+    user_id: Optional[int] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------------------------------------------------------------------------
+# Chat Message Schemas
+# ---------------------------------------------------------------------------
+class ChatMessageBase(BaseModel):
+    sender: str  # 'user' or 'bot'
+    text: str
+    timestamp_str: Optional[str] = None
+
+
+class ChatMessageCreate(ChatMessageBase):
+    user_id: Optional[int] = None
+
+
+class ChatMessageOut(ChatMessageBase):
+    id: int
+    user_id: Optional[int] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------------------------------------------------------------------------
+# Study Session (Pomodoro) Schemas
+# ---------------------------------------------------------------------------
+class StudySessionBase(BaseModel):
+    subject: str
+    topic: Optional[str] = None
+    duration_minutes: int = 25
+    session_type: str = "pomodoro"
+
+
+class StudySessionCreate(StudySessionBase):
+    user_id: Optional[int] = None
+
+
+class StudySessionOut(StudySessionBase):
+    id: int
+    user_id: Optional[int] = None
+    completed_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------------------------------------------------------------------------
+# User Profile Schemas
 # ---------------------------------------------------------------------------
 class UserBase(BaseModel):
     username: Optional[str] = None
     email: Optional[str] = None
+    full_name: Optional[str] = "Laksh Scholar"
+    role: Optional[str] = "Student"
+    grade: Optional[str] = "Grade 12 / Engineering Prep"
+    streak: int = 7
+    total_study_minutes: int = 1260
 
 
 class UserCreate(UserBase):
@@ -123,8 +205,6 @@ class UserCreate(UserBase):
 
 class UserOut(UserBase):
     id: int
-    streak: int
-    total_study_minutes: int
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

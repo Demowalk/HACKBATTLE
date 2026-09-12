@@ -100,19 +100,111 @@ tasks = [
 
 @app.get("/")
 def read_root():
-    return {"message": "Backend is running"}
+    return {
+        "message": "Backend is running",
+        "database_connected": DATABASE_AVAILABLE,
+        "engine": "Reviso Autonomous Study Engine",
+    }
 
 @app.get("/tasks")
-def get_tasks():
+def get_tasks(db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+    if DATABASE_AVAILABLE and db:
+        try:
+            db_tasks = crud.get_tasks(db)
+            if db_tasks:
+                return [
+                    {
+                        "id": t.id,
+                        "title": t.title,
+                        "subject": t.subject,
+                        "topic": t.topic,
+                        "duration_minutes": t.duration_minutes,
+                        "priority": t.priority,
+                        "timeSlot": t.time_slot,
+                        "scheduled_date": t.scheduled_date,
+                        "completed": t.completed,
+                        "alarmEnabled": t.alarm_active,
+                        "isCritical": t.is_critical,
+                        "statusTag": t.status_tag,
+                    }
+                    for t in db_tasks
+                ]
+        except Exception as e:
+            print(f"⚠️ Error fetching from database: {e}")
     return tasks
 
 @app.patch("/tasks/{id}")
-def update_task(id: int):
+def update_task(id: int, db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+    if DATABASE_AVAILABLE and db:
+        try:
+            updated = crud.toggle_task_completion(db, id)
+            if updated:
+                return {
+                    "id": updated.id,
+                    "title": updated.title,
+                    "subject": updated.subject,
+                    "completed": updated.completed,
+                    "statusTag": updated.status_tag,
+                }
+        except Exception as e:
+            print(f"⚠️ Error updating task in database: {e}")
+
     for task in tasks:
         if task["id"] == id:
-            task["completed"] = True
+            task["completed"] = not task.get("completed", False)
             return task
     return {"error": "Task not found"}
+
+@app.get("/concept-mastery")
+def get_concept_mastery_endpoint(db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+    if DATABASE_AVAILABLE and db:
+        records = crud.get_concept_mastery_list(db)
+        return [
+            {
+                "id": r.id,
+                "subject": r.subject,
+                "topic": r.topic,
+                "masteryScore": r.mastery_score,
+                "decayRisk": r.decay_risk,
+                "lowProficiency": r.low_proficiency,
+                "projectedNote": r.projected_note,
+            }
+            for r in records
+        ]
+    return []
+
+@app.get("/critical-actions")
+def get_critical_actions_endpoint(db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+    if DATABASE_AVAILABLE and db:
+        actions = crud.get_critical_actions(db)
+        return [
+            {
+                "id": a.id,
+                "badgeLabel": a.badge_label,
+                "descHtml": a.desc_html,
+                "btnText": a.btn_text,
+                "isScheduled": a.is_scheduled,
+                "targetSlot": a.target_slot,
+                "actionKey": a.action_key,
+            }
+            for a in actions
+        ]
+    return []
+
+@app.get("/chat/history")
+def get_chat_history_endpoint(db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+    if DATABASE_AVAILABLE and db:
+        msgs = crud.get_chat_history(db)
+        return [
+            {
+                "id": m.id,
+                "sender": m.sender,
+                "text": m.text,
+                "timestamp": m.timestamp_str,
+            }
+            for m in msgs
+        ]
+    return []
 
 def build_prompt(subjects, hours_available):
     subject_list = ""
