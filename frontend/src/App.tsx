@@ -2154,10 +2154,6 @@ export default function App() {
       } else if (actionText.includes('drill') || actionText.includes('Quiz')) {
         launchQuiz('python')
       } else if (actionText.includes('retention')) {
-        addToolExecutionTrace('memory_retention_check', {
-          student_id: 'laksh_01',
-          focus_topic: 'python.nested_loops',
-        })
         addChatMessage(
           `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
           'bot'
@@ -2192,6 +2188,11 @@ export default function App() {
       } else if (lower.includes('theme') || lower.includes('dark') || lower.includes('light')) {
         toggleTheme()
         addChatMessage('Switched theme mode as requested.', 'bot')
+      } else if (lower.includes('retention') || lower.includes('memory')) {
+        addChatMessage(
+          `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
+          'bot'
+        )
       } else {
         addChatMessage(
           `Got it, Laksh! Noted: "<em>${text}</em>". I'm keeping your schedule smooth, balanced, and stress-free.`,
@@ -3140,6 +3141,7 @@ export default function App() {
           <div className="chat-messages">
             {chatList.map((entry) => {
               if (entry.type === 'trace') {
+                if (entry.toolName === 'memory_retention_check') return null
                 return (
                   <div key={entry.id} className="tool-call-trace">
                     <div className="tool-header">
