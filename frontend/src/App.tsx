@@ -1800,9 +1800,37 @@ export default function App() {
   }
 
   // Pomodoro handlers
-  const openPomodoroModal = (sessionName: string) => {
+  const openPomodoroModal = (sessionName: string, defaultMinutes?: number) => {
     setPomoSessionName(sessionName)
+    const targetMins = defaultMinutes && defaultMinutes > 0 ? defaultMinutes : (pomoDurationMinutes || 25)
+    setPomoDurationMinutes(targetMins)
+    setPomoSeconds(targetMins * 60)
+    setPomoRunning(false)
     setPomoModalOpen(true)
+  }
+
+  const changePomoDuration = (newMins: number) => {
+    const clamped = Math.max(1, Math.min(180, newMins))
+    setPomoDurationMinutes(clamped)
+    setPomoSeconds(clamped * 60)
+    setPomoRunning(false)
+    soundSynth.playResetClick()
+  }
+
+  const adjustPomoDuration = (deltaMins: number) => {
+    const next = Math.max(1, Math.min(180, pomoDurationMinutes + deltaMins))
+    changePomoDuration(next)
+    showToast(`Focus duration: ${next} min`, '⏱️')
+  }
+
+  const formatTimerDigits = (totalSecs: number) => {
+    const h = Math.floor(totalSecs / 3600)
+    const m = Math.floor((totalSecs % 3600) / 60)
+    const s = totalSecs % 60
+    if (h > 0) {
+      return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    }
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   }
 
   const togglePomodoro = () => {
@@ -3954,7 +3982,7 @@ export default function App() {
           <div className="modal-body">
             <div className="timer-display">
               <div className="timer-digits">
-                {`${String(Math.floor(pomoSeconds / 60)).padStart(2, '0')}:${String(pomoSeconds % 60).padStart(2, '0')}`}
+                {formatTimerDigits(pomoSeconds)}
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                 {pomoDurationMinutes <= 15 ? '☕ Break & Recovery Buffer' : '⚡ Deep Focus Block · Take it one step at a time'}
@@ -3969,15 +3997,90 @@ export default function App() {
                   }}
                 />
               </div>
+
+              {/* Interactive Duration Stepper & Custom Input */}
+              <div className="timer-duration-adjuster">
+                <button
+                  type="button"
+                  className="btn-duration-step"
+                  onClick={() => adjustPomoDuration(-5)}
+                  title="Decrease by 5 minutes"
+                  disabled={pomoDurationMinutes <= 5}
+                >
+                  -5m
+                </button>
+                <button
+                  type="button"
+                  className="btn-duration-step"
+                  onClick={() => adjustPomoDuration(-1)}
+                  title="Decrease by 1 minute"
+                  disabled={pomoDurationMinutes <= 1}
+                >
+                  -1m
+                </button>
+
+                <div className="duration-input-wrapper" title="Type custom minutes">
+                  <input
+                    type="number"
+                    min="1"
+                    max="180"
+                    value={pomoDurationMinutes}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10)
+                      if (!isNaN(val) && val > 0 && val <= 300) {
+                        changePomoDuration(val)
+                      }
+                    }}
+                    className="duration-number-input"
+                    aria-label="Pomodoro duration in minutes"
+                  />
+                  <span className="duration-unit">min</span>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-duration-step"
+                  onClick={() => adjustPomoDuration(1)}
+                  title="Increase by 1 minute"
+                  disabled={pomoDurationMinutes >= 180}
+                >
+                  +1m
+                </button>
+                <button
+                  type="button"
+                  className="btn-duration-step"
+                  onClick={() => adjustPomoDuration(5)}
+                  title="Increase by 5 minutes"
+                  disabled={pomoDurationMinutes >= 180}
+                >
+                  +5m
+                </button>
+              </div>
+
+              {/* Smooth Quick Drag Range Slider */}
+              <div className="duration-slider-row">
+                <input
+                  type="range"
+                  min="5"
+                  max="120"
+                  step="5"
+                  value={Math.min(120, Math.max(5, pomoDurationMinutes))}
+                  onChange={(e) => changePomoDuration(parseInt(e.target.value, 10))}
+                  className="duration-range-slider"
+                  title={`Slide to adjust duration: ${pomoDurationMinutes} min`}
+                />
+              </div>
             </div>
 
             {/* Quick Presets Row */}
             <div className="timer-presets-row">
               {[
-                { label: '25m Focus', mins: 25, icon: '🎯' },
-                { label: '50m Deep', mins: 50, icon: '⚡' },
+                { label: '15m Focus', mins: 15, icon: '⚡' },
+                { label: '25m Pomodoro', mins: 25, icon: '🎯' },
+                { label: '45m Deep', mins: 45, icon: '🧠' },
+                { label: '60m Block', mins: 60, icon: '📚' },
+                { label: '90m Exam Prep', mins: 90, icon: '🏆' },
                 { label: '5m Break', mins: 5, icon: '☕' },
-                { label: '15m Break', mins: 15, icon: '🌿' },
               ].map((preset) => (
                 <button
                   key={preset.mins}
