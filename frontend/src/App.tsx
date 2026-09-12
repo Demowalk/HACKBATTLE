@@ -826,28 +826,35 @@ export default function App() {
     if (sLower.includes('python') || tLower.includes('loop') || tLower.includes('comprehension') || tLower.includes('async')) {
       if (tLower.includes('async')) {
         return {
-          title: 'Python AsyncIO & Generators In-Depth Masterclass',
+          title: 'Intro to async Python | Writing a Web Crawler',
           channel: 'mCoding',
-          url: 'https://www.youtube.com/watch?v=t5Bo1Je9EmE',
+          url: 'https://www.youtube.com/watch?v=ftmdDlwMwwQ',
+        }
+      }
+      if (tLower.includes('comprehension')) {
+        return {
+          title: 'Python Tutorial: Comprehensions - How they work & why you should use them',
+          channel: 'Corey Schafer',
+          url: 'https://www.youtube.com/watch?v=3dt4OGnU5sM',
         }
       }
       return {
-        title: 'Python Nested Loops & List Comprehensions Tutorial',
+        title: 'Python Tutorial for Beginners: Loops and Iterations - For/While Loops',
         channel: 'Corey Schafer',
-        url: 'https://www.youtube.com/watch?v=3dt4xGsF9qM',
+        url: 'https://www.youtube.com/watch?v=6iF8Xb7Z3wQ',
       }
     }
 
     if (sLower.includes('math') || tLower.includes('algebra') || tLower.includes('vector') || tLower.includes('matrix')) {
       return {
-        title: 'Essence of Linear Algebra: Visualizing Transformations & Matrices',
+        title: 'Vectors & Linear Transformations | Essence of linear algebra',
         channel: '3Blue1Brown',
-        url: 'https://www.youtube.com/watch?v=PFDu9oVAE-g',
+        url: 'https://www.youtube.com/watch?v=fNk_zzaMoSs',
       }
     }
     if (tLower.includes('calculus') || tLower.includes('derivative') || tLower.includes('integral')) {
       return {
-        title: 'The Essence of Calculus: Chapter 1',
+        title: 'The Essence of Calculus | Visual Introduction',
         channel: '3Blue1Brown',
         url: 'https://www.youtube.com/watch?v=WUvTyaaNkzM',
       }
@@ -856,23 +863,23 @@ export default function App() {
     if (sLower.includes('chem') || tLower.includes('reaction') || tLower.includes('organic') || tLower.includes('nernst')) {
       if (tLower.includes('nernst') || tLower.includes('electro')) {
         return {
-          title: 'Nernst Equation & Electrochemical Cells Explained',
+          title: 'Nernst Equation Explained, Electrochemistry, Example Problems',
           channel: 'The Organic Chemistry Tutor',
-          url: 'https://www.youtube.com/watch?v=lQ6F9RWBNE8',
+          url: 'https://www.youtube.com/watch?v=jousNNceCXs',
         }
       }
       return {
-        title: 'Organic Chemistry Reaction Mechanisms & Kinetics',
+        title: 'Organic Chemistry Reaction Mechanisms - Addition, Elimination, Substitution',
         channel: 'The Organic Chemistry Tutor',
-        url: 'https://www.youtube.com/watch?v=0tZ_2hPq1tA',
+        url: 'https://www.youtube.com/watch?v=Efh5GkVbhEc',
       }
     }
 
     if (sLower.includes('ai') || tLower.includes('transformer') || tLower.includes('attention')) {
       return {
-        title: 'Attention in Transformers, Visually Explained',
+        title: 'Attention in transformers, step-by-step | Deep Learning Chapter 6',
         channel: '3Blue1Brown',
-        url: 'https://www.youtube.com/watch?v=wjZofJX0v4U',
+        url: 'https://www.youtube.com/watch?v=eMlx5fFNoYc',
       }
     }
 
@@ -2180,7 +2187,29 @@ export default function App() {
         scheduled_date: chosenDateKey,
         time_slot: chosenTimeSlot,
         duration_minutes: 60,
-      }).catch((e) => console.warn('scheduleCriticalRemediation backend error:', e))
+      })
+        .then((res) => {
+          if (res?.video && res.video.url) {
+            setCriticalRemediationInfo((prev) => (prev ? { ...prev, video: res.video } : null))
+            setCalTasksByDate((prev) => {
+              const existing = prev[chosenDateKey] || []
+              return {
+                ...prev,
+                [chosenDateKey]: existing.map((t) =>
+                  t.id === remediationTaskId
+                    ? {
+                        ...t,
+                        videoUrl: res.video!.url,
+                        videoTitle: res.video!.title,
+                        videoChannel: res.video!.channel,
+                      }
+                    : t
+                ),
+              }
+            })
+          }
+        })
+        .catch((e) => console.warn('scheduleCriticalRemediation backend error:', e))
 
       // 5. User Feedback: Warning toast + Audio + Tutor Chat reminder message
       soundSynth.playSuccessBeep()

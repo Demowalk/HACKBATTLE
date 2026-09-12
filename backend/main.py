@@ -1249,7 +1249,7 @@ def debug_quiz_answers():
     return quiz_questions
 
 def get_curated_youtube_video(subject: str, topic: str) -> dict:
-    """Returns curated high-yield YouTube tutorial video metadata for a given topic."""
+    """Returns verified high-yield YouTube tutorial video metadata for a given topic."""
     s_lower = (subject or "").lower()
     t_lower = (topic or "").lower()
 
@@ -1257,26 +1257,32 @@ def get_curated_youtube_video(subject: str, topic: str) -> dict:
     if "python" in s_lower or "loop" in t_lower or "comprehension" in t_lower or "async" in t_lower:
         if "async" in t_lower:
             return {
-                "title": "Python AsyncIO & Generators In-Depth Masterclass",
+                "title": "Intro to async Python | Writing a Web Crawler",
                 "channel": "mCoding",
-                "url": "https://www.youtube.com/watch?v=t5Bo1Je9EmE",
+                "url": "https://www.youtube.com/watch?v=ftmdDlwMwwQ",
+            }
+        if "comprehension" in t_lower:
+            return {
+                "title": "Python Tutorial: Comprehensions - How they work & why you should use them",
+                "channel": "Corey Schafer",
+                "url": "https://www.youtube.com/watch?v=3dt4OGnU5sM",
             }
         return {
-            "title": "Python Nested Loops & List Comprehensions Tutorial",
+            "title": "Python Tutorial for Beginners: Loops and Iterations - For/While Loops",
             "channel": "Corey Schafer",
-            "url": "https://www.youtube.com/watch?v=3dt4xGsF9qM",
+            "url": "https://www.youtube.com/watch?v=6iF8Xb7Z3wQ",
         }
     
     # Maths topics
     if "math" in s_lower or "algebra" in t_lower or "vector" in t_lower or "matrix" in t_lower:
         return {
-            "title": "Essence of Linear Algebra: Visualizing Transformations & Matrices",
+            "title": "Vectors & Linear Transformations | Essence of linear algebra",
             "channel": "3Blue1Brown",
-            "url": "https://www.youtube.com/watch?v=PFDu9oVAE-g",
+            "url": "https://www.youtube.com/watch?v=fNk_zzaMoSs",
         }
     if "calculus" in t_lower or "derivative" in t_lower or "integral" in t_lower:
         return {
-            "title": "The Essence of Calculus: Chapter 1",
+            "title": "The Essence of Calculus | Visual Introduction",
             "channel": "3Blue1Brown",
             "url": "https://www.youtube.com/watch?v=WUvTyaaNkzM",
         }
@@ -1285,25 +1291,46 @@ def get_curated_youtube_video(subject: str, topic: str) -> dict:
     if "chem" in s_lower or "reaction" in t_lower or "organic" in t_lower or "nernst" in t_lower:
         if "nernst" in t_lower or "electro" in t_lower:
             return {
-                "title": "Nernst Equation & Electrochemical Cells Explained",
+                "title": "Nernst Equation Explained, Electrochemistry, Example Problems",
                 "channel": "The Organic Chemistry Tutor",
-                "url": "https://www.youtube.com/watch?v=lQ6F9RWBNE8",
+                "url": "https://www.youtube.com/watch?v=jousNNceCXs",
             }
         return {
-            "title": "Organic Chemistry Reaction Mechanisms & Kinetics",
+            "title": "Organic Chemistry Reaction Mechanisms - Addition, Elimination, Substitution",
             "channel": "The Organic Chemistry Tutor",
-            "url": "https://www.youtube.com/watch?v=0tZ_2hPq1tA",
+            "url": "https://www.youtube.com/watch?v=Efh5GkVbhEc",
         }
 
     # AI / Machine Learning
     if "ai" in s_lower or "transformer" in t_lower or "attention" in t_lower:
         return {
-            "title": "Attention in Transformers, Visually Explained",
+            "title": "Attention in transformers, step-by-step | Deep Learning Chapter 6",
             "channel": "3Blue1Brown",
-            "url": "https://www.youtube.com/watch?v=wjZofJX0v4U",
+            "url": "https://www.youtube.com/watch?v=eMlx5fFNoYc",
         }
 
-    # Generic fallback
+    # Dynamic Live YouTube Video Lookup
+    import urllib.request, urllib.parse, re, ssl
+    try:
+        ctx = ssl._create_unverified_context()
+        search_query = f"{subject} {topic} tutorial masterclass"
+        search_url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote(search_query)
+        req = urllib.request.Request(
+            search_url,
+            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        )
+        html = urllib.request.urlopen(req, context=ctx, timeout=3.0).read().decode("utf-8")
+        video_ids = re.findall(r'\"videoId\":\"([a-zA-Z0-9_-]{11})\"', html)
+        titles = re.findall(r'\"title\":\{\"runs\":\[\{\"text\":\"([^\"]+)\"\}\]', html)
+        if video_ids:
+            return {
+                "title": titles[0] if titles else f"Master {topic} Educational Tutorial",
+                "channel": "YouTube Educational Creator",
+                "url": f"https://www.youtube.com/watch?v={video_ids[0]}",
+            }
+    except Exception:
+        pass
+
     import urllib.parse
     query = urllib.parse.quote(f"{subject} {topic} tutorial masterclass")
     return {
