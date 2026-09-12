@@ -3373,15 +3373,7 @@ export default function App() {
           <div className="chat-messages">
             {chatList.map((entry) => {
               if (entry.type === 'trace') {
-                if (entry.toolName === 'memory_retention_check') return null
-                return (
-                  <div key={entry.id} className="tool-call-trace">
-                    <div className="tool-header">
-                      <Zap size={12} className="inline mr-1 text-amber-400" /> <span>copilot_action:</span> <strong>{entry.toolName}()</strong>
-                    </div>
-                    <div>{JSON.stringify(entry.toolArgs, null, 2)}</div>
-                  </div>
-                )
+                return null
               }
               return (
                 <div
