@@ -1826,6 +1826,198 @@ html[data-theme="light"] .btn-alarm-bell.active:hover svg {
   background: var(--bg-canvas);
 }
 
+/* UPCOMING TESTS & ALARM MODAL */
+.test-alarm-modal {
+  max-width: 580px;
+  border: 1.5px solid var(--border-strong);
+}
+
+.upcoming-tests-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.upcoming-test-card {
+  background: var(--bg-surface-elevated);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.upcoming-test-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* WHEN TEST IS WITHIN 1 DAY -> TURNS RED */
+.upcoming-test-card.urgent-red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.04) 100%);
+  border: 1.5px solid #EF4444;
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.18);
+}
+
+.upcoming-test-card.urgent-red:hover {
+  border-color: #DC2626;
+  box-shadow: 0 6px 22px rgba(239, 68, 68, 0.28);
+}
+
+.upcoming-test-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+
+.upcoming-test-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  transition: all 0.25s ease;
+}
+
+/* ICON TURNS RED FOR TESTS WITHIN 1 DAY */
+.upcoming-test-icon-box.urgent-red {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1.5px solid #EF4444;
+  color: #EF4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  animation: urgentIconPulse 2s infinite ease-in-out;
+}
+
+@keyframes urgentIconPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+    transform: scale(1.05);
+  }
+}
+
+.upcoming-test-details {
+  min-width: 0;
+  flex: 1;
+}
+
+.upcoming-test-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.upcoming-test-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-test-card.urgent-red .upcoming-test-title {
+  color: #F87171;
+}
+
+.upcoming-test-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.upcoming-test-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.upcoming-test-urgency-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.upcoming-test-urgency-pill.urgent-red {
+  background: rgba(239, 68, 68, 0.2);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
+.upcoming-test-urgency-pill.normal {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.upcoming-test-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-test-chime {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-test-chime:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: #ffffff;
+}
+
+.btn-test-chime.urgent-red {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #F87171;
+}
+
+.btn-test-chime.urgent-red:hover {
+  background: #EF4444;
+  border-color: #DC2626;
+  color: #ffffff;
+}
+
 /* QUIZ ENGINE */
 .quiz-question-box {
   font-size: 14px;

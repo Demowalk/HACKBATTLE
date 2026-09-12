@@ -1387,11 +1387,9 @@ export default function App() {
   })
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Alarms
+  // Alarms & Upcoming Tests
   const [alarmModalOpen, setAlarmModalOpen] = useState<boolean>(false)
-  const [activeAlarmTitle, setActiveAlarmTitle] = useState<string>('Organic chemistry reaction mechanisms')
-  const [activeAlarmTime, setActiveAlarmTime] = useState<string>('11:00 AM')
-  const [nextAlarmLabel, setNextAlarmLabel] = useState<string>('Organic Chemistry (11:00 AM)')
+  const [nextAlarmLabel] = useState<string>('Organic Chemistry (11:00 AM)')
 
   // Pomodoro
   const [pomoModalOpen, setPomoModalOpen] = useState<boolean>(false)
@@ -1623,23 +1621,10 @@ export default function App() {
     }, 400)
   }
 
-  // Trigger Audio Alarm
-  const triggerAlarm = (title = 'Loop structures & list comprehension', time = '1:30 PM') => {
-    setActiveAlarmTitle(title)
-    setActiveAlarmTime(time)
+  // Trigger Audio Alarm & Open Upcoming Tests Modal
+  const triggerAlarm = () => {
     setAlarmModalOpen(true)
     soundSynth.playHarmonicChime()
-  }
-
-  const dismissAlarm = () => {
-    setAlarmModalOpen(false)
-    showToast(`Alarm dismissed for ${activeAlarmTitle}`, 'bell-off')
-  }
-
-  const snoozeAlarm = () => {
-    setAlarmModalOpen(false)
-    showToast(`Alarm snoozed for 5 minutes`)
-    setNextAlarmLabel(`${activeAlarmTitle} (in 5 min)`)
   }
 
   const toggleAlarmBell = (taskId: string, title: string) => {
@@ -2413,8 +2398,8 @@ export default function App() {
     setTimeout(() => {
       const lower = text.toLowerCase()
       if (lower.includes('alarm') || lower.includes('bell')) {
-        triggerAlarm('Interactive Study Alarm Test', 'Right Now')
-        addChatMessage("I've triggered a test of your Study Alarm chime with snooze and dismiss options!", 'bot')
+        triggerAlarm()
+        addChatMessage("I've opened your Upcoming Tests & Alarms monitor with sound testing controls.", 'bot')
       } else if (lower.includes('pdf') || lower.includes('export') || lower.includes('share')) {
         exportSharePdf()
         addChatMessage('Opening your print-ready PDF export now!', 'bot')
@@ -2501,8 +2486,8 @@ export default function App() {
           <button
             type="button"
             className="btn-pill"
-            onClick={() => triggerAlarm('Loop structures & list comprehension', '1:30 PM')}
-            title="Test Web Audio synthesizer alarm chime"
+            onClick={triggerAlarm}
+            title="Open Upcoming Tests and test alarm sound"
           >
             <BellIcon size={14} color="#ffffff" />
             <span>Test Alarm</span>
@@ -4168,6 +4153,9 @@ export default function App() {
       {/* ==========================================================================
            MODAL 3: STUDY ALARM RINGING DIALOG
            ========================================================================== */}
+      {/* ==========================================================================
+           UPCOMING TESTS & STUDY ALARMS MODAL WINDOW (Next 3 Tests)
+           ========================================================================== */}
       <div
         className={`modal-backdrop ${alarmModalOpen ? 'active' : ''}`}
         onClick={(e) => {
@@ -4175,61 +4163,213 @@ export default function App() {
         }}
       >
         <div
-          className="modal-window"
-          style={{ maxWidth: '430px', textAlign: 'center', borderColor: 'var(--accent-primary)' }}
+          className="modal-window test-alarm-modal"
+          style={{ maxWidth: '580px', width: '92%' }}
         >
-          <div className="modal-body" style={{ alignItems: 'center', padding: '32px 22px' }}>
-            {/* Alarm Ringing Icon */}
+          {/* Header */}
+          <div className="modal-header" style={{ padding: '18px 22px', borderBottom: '1.5px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <BellIcon size={18} color="var(--accent-primary, #34d399)" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                  Upcoming Tests &amp; Study Alarms
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                  Next 3 scheduled assessments · Auto-alarm monitoring enabled
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={() => setAlarmModalOpen(false)}
+              aria-label="Close test alarms"
+              style={{ width: '32px', height: '32px' }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Modal Body */}
+          <div className="modal-body" style={{ padding: '20px 22px', gap: '14px' }}>
+            <div className="upcoming-tests-container">
+              {[
+                {
+                  id: 'test-1',
+                  title: 'Linear Algebra & Vector Spaces Diagnostic',
+                  subject: 'Maths',
+                  tagClass: 'task-tag-math',
+                  dateDisplay: 'Today (Sep 13)',
+                  timeSlot: '10:00 – 11:30 AM',
+                  location: 'Interactive Drill Room',
+                  daysAway: 0,
+                },
+                {
+                  id: 'test-2',
+                  title: 'Organic Chemistry Reaction Mechanisms Chapter Test',
+                  subject: 'Chemistry',
+                  tagClass: 'task-tag-chem',
+                  dateDisplay: 'Tomorrow (Sep 14)',
+                  timeSlot: '9:30 – 11:00 AM',
+                  location: 'Science Wing Hall B',
+                  daysAway: 1,
+                },
+                {
+                  id: 'test-3',
+                  title: 'Linear Algebra Semester Exam',
+                  subject: 'Maths',
+                  tagClass: 'task-tag-math',
+                  dateDisplay: 'Tuesday, Sep 15',
+                  timeSlot: '9:00 AM – 12:00 PM',
+                  location: 'Examination Hall A',
+                  daysAway: 2,
+                },
+              ].map((test) => {
+                const isWithinDay = test.daysAway <= 1
+                return (
+                  <div
+                    key={test.id}
+                    className={`upcoming-test-card ${isWithinDay ? 'urgent-red' : ''}`}
+                  >
+                    <div className="upcoming-test-left">
+                      {/* Icon: Turns RED for tests within 1 day */}
+                      <div className={`upcoming-test-icon-box ${isWithinDay ? 'urgent-red' : ''}`}>
+                        <BellIcon
+                          size={18}
+                          color={isWithinDay ? '#EF4444' : 'var(--text-secondary)'}
+                        />
+                      </div>
+
+                      <div className="upcoming-test-details">
+                        <div className="upcoming-test-title-row">
+                          <span className="upcoming-test-title">{test.title}</span>
+                          <span className={`task-tag ${test.tagClass}`}>{test.subject}</span>
+                          <span
+                            className={`upcoming-test-urgency-pill ${
+                              isWithinDay ? 'urgent-red' : 'normal'
+                            }`}
+                          >
+                            {isWithinDay ? (
+                              <>
+                                <AlertCircle size={10} className="inline mr-1" />
+                                {test.daysAway === 0 ? 'Today · Urgent' : 'Within 24h · Urgent'}
+                              </>
+                            ) : (
+                              `In ${test.daysAway} Days`
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="upcoming-test-meta">
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Calendar size={12} />
+                            {test.dateDisplay}
+                          </span>
+                          <span>·</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={12} />
+                            {test.timeSlot}
+                          </span>
+                          <span>·</span>
+                          <span style={{ color: 'var(--text-tertiary)' }}>{test.location}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="upcoming-test-actions">
+                      <button
+                        type="button"
+                        className={`btn-test-chime ${isWithinDay ? 'urgent-red' : ''}`}
+                        onClick={() => {
+                          soundSynth.playHarmonicChime()
+                          showToast(`Alarm chime triggered for ${test.title}!`)
+                        }}
+                        title="Test audio chime for this specific test"
+                      >
+                        <BellIcon size={12} color={isWithinDay ? '#EF4444' : 'currentColor'} />
+                        <span>Test Chime</span>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Bottom Alert / Info Strip */}
             <div
               style={{
-                width: '66px',
-                height: '66px',
-                background: 'rgba(0, 77, 64, 0.35)',
-                border: '1.5px solid #00695c',
-                color: '#ffffff',
-                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '10px',
+                padding: '10px 14px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '12px',
-                boxShadow: '0 4px 20px rgba(0, 77, 64, 0.35)',
+                gap: '10px',
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
               }}
             >
-              <BellIcon size={32} color="#ffffff" />
+              <AlertCircle size={16} color="#EF4444" style={{ flexShrink: 0 }} />
+              <span>
+                Tests occurring within <strong style={{ color: '#F87171' }}>24 hours</strong> are highlighted in red with high-priority study alarms armed.
+              </span>
             </div>
-            <h3
-              style={{
-                fontSize: '20px',
-                fontWeight: 800,
-                marginBottom: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
+          </div>
+
+          {/* Footer */}
+          <div
+            className="modal-footer"
+            style={{
+              padding: '14px 22px',
+              borderTop: '1.5px solid var(--border-subtle)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <button
+              type="button"
+              className="btn-pill"
+              onClick={() => {
+                soundSynth.playHarmonicChime()
+                showToast('Master alarm audio synthesizer tested successfully!')
               }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              <BellIcon size={18} color="#ffffff" />
-              <span>Time for {activeAlarmTitle}</span>
-            </h3>
-            <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '22px', lineHeight: 1.45 }}>
-              Your session ({activeAlarmTime}) is starting now. Grab some water, get comfortable, and let's make progress!
-            </p>
-            <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+              <BellIcon size={13} color="currentColor" />
+              <span>Play Master Alarm Sound</span>
+            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 type="button"
                 className="btn-pill"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={dismissAlarm}
+                onClick={() => {
+                  setAlarmModalOpen(false)
+                  setCalendarModalOpen(true)
+                }}
               >
-                Dismiss
+                <Calendar size={13} className="inline mr-1" />
+                <span>View Full Calendar</span>
               </button>
               <button
                 type="button"
                 className="btn-pill btn-primary"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={snoozeAlarm}
+                onClick={() => setAlarmModalOpen(false)}
               >
-                Snooze 5 Min
+                <span>Close</span>
               </button>
             </div>
           </div>
