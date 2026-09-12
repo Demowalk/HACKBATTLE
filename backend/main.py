@@ -1,12 +1,32 @@
+import sys
 import os
 import json
+from datetime import datetime
+from typing import List, Optional, Dict, Any
+
 from dotenv import load_dotenv
 from groq import Groq
-from fastapi import FastAPI
-from fastapi.responses import Response
+import uvicorn
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Body
+from fastapi.responses import Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field, ConfigDict
+from sqlalchemy.orm import Session
+
+# Ensure project root is in sys.path so 'database' package can be imported reliably
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Database imports
+try:
+    from database.connection import get_db, engine, Base, SessionLocal
+    from database import models as db_models
+    from database import crud, schemas
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+
 
 class Subject(BaseModel):
     name: str
