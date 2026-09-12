@@ -1963,12 +1963,23 @@ export default function App() {
         : 'task-tag-python'
 
     if (isCritical) {
-      // 1. Scan following days (Day +1 to Day +7, e.g. Sep 13 through Sep 19) for the earliest free schedule
-      let chosenDateKey = '2026-09-16'
-      let chosenDayNumber = 16
-      let chosenDayFormatted = 'Wednesday, Sep 16'
+      // 1. Automatically find the earliest available 1-hour study slot (starting from TODAY, Sep 12)
+      const candidateHours = [
+        { slot: '4:30–5:30 PM', startMin: 990, durationMin: 60 },
+        { slot: '5:30–6:30 PM', startMin: 1050, durationMin: 60 },
+        { slot: '2:30–3:30 PM', startMin: 870, durationMin: 60 },
+        { slot: '10:00–11:00 AM', startMin: 600, durationMin: 60 },
+        { slot: '11:30 AM–12:30 PM', startMin: 690, durationMin: 60 },
+        { slot: '6:30–7:30 PM', startMin: 1110, durationMin: 60 },
+      ]
 
-      for (let dayOffset = 1; dayOffset <= 7; dayOffset++) {
+      let chosenDateKey = '2026-09-12'
+      let chosenDayNumber = 12
+      let chosenDayFormatted = 'Today (Saturday, Sep 12)'
+      let chosenTimeSlot = '4:30–5:30 PM'
+      let foundSlot = false
+
+      for (let dayOffset = 0; dayOffset <= 7; dayOffset++) {
         const candidateDate = new Date(2026, 8, 12 + dayOffset)
         const cYear = candidateDate.getFullYear()
         const cMonth = candidateDate.getMonth()
@@ -1981,23 +1992,43 @@ export default function App() {
           return title.includes('exam') || title.includes('midterm') || title.includes('final')
         })
 
-        // A day is free if it has 0 scheduled tasks and NO exams
-        if (!hasExam && dayTasks.length === 0) {
-          chosenDateKey = cDateKey
-          chosenDayNumber = cDay
-          chosenDayFormatted = candidateDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'short',
-            day: 'numeric',
+        if (hasExam) continue // Never schedule over exams
+
+        for (const candidate of candidateHours) {
+          const slotStart = candidate.startMin
+          const slotEnd = candidate.startMin + candidate.durationMin
+
+          const hasCollision = dayTasks.some((t) => {
+            const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
+            const tStart = startMinutes
+            const tEnd = startMinutes + (durationMinutes || 60)
+            return slotStart < tEnd && slotEnd > tStart
           })
-          break
+
+          if (!hasCollision) {
+            chosenDateKey = cDateKey
+            chosenDayNumber = cDay
+            chosenDayFormatted =
+              dayOffset === 0
+                ? 'Today (Saturday, Sep 12)'
+                : candidateDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+            chosenTimeSlot = candidate.slot
+            foundSlot = true
+            break
+          }
         }
+
+        if (foundSlot) break
       }
 
       setCriticalRemediationInfo({
         scheduledDate: chosenDateKey,
         dayName: chosenDayFormatted,
-        timeSlot: '10:00–11:00 AM',
+        timeSlot: chosenTimeSlot,
         topic: topicDisplayName,
         subject: subjectDisplayName,
         dayNumber: chosenDayNumber,
@@ -2016,13 +2047,14 @@ export default function App() {
       setQuizScoreText(`Score: ${scorePct}% · Critical Decay Alert!`)
       setQuizCardBorderColor('#EF4444')
 
-      // 3. Add to Calendar on that free following day
+      // 3. Add 1-Hour Study Time Slot directly to Calendar
+      const remediationTaskId = `remediation-${Date.now()}`
       const remediationTask: CalTaskItem = {
-        id: `remediation-${Date.now()}`,
-        title: `🚨 Critical Review: ${subjectDisplayName} - ${topicDisplayName}`,
+        id: remediationTaskId,
+        title: `🚨 Critical 1hr Study: ${subjectDisplayName} - ${topicDisplayName}`,
         subject: subjectDisplayName,
         tagClass: subjectTagClass,
-        timeSlot: '10:00–11:00 AM',
+        timeSlot: chosenTimeSlot,
         completed: false,
         priority: 'high',
         duration_minutes: 60,
@@ -2032,26 +2064,47 @@ export default function App() {
         const existing = prev[chosenDateKey] || []
         return {
           ...prev,
-          [chosenDateKey]: [...existing, remediationTask],
+          [chosenDateKey]: [...existing.filter((t) => !t.title.includes('Critical 1hr Study')), remediationTask],
         }
       })
 
-      // 4. Send to backend
+      // If scheduled for Today (2026-09-12), also inject into active timeline tasks so it is immediately visible
+      if (chosenDateKey === '2026-09-12') {
+        setTasks((prev) => [
+          ...prev.filter((t) => !t.title.includes('Critical 1hr Study')),
+          {
+            id: remediationTaskId,
+            title: `🚨 Critical 1hr Study: ${subjectDisplayName} - ${topicDisplayName}`,
+            subject: subjectDisplayName,
+            tagClass: subjectTagClass,
+            tagIcon: currentQuizSubject === 'math' ? '📐' : currentQuizSubject === 'chem' ? '⚗️' : '💻',
+            timeSlot: chosenTimeSlot,
+            completed: false,
+            alarmActive: true,
+            status: 'Critical Remediation',
+          },
+        ])
+      }
+
+      // 4. Send to backend with chosen_date and chosenTimeSlot
       scheduleCriticalRemediation({
         subject: subjectDisplayName,
         topic: topicDisplayName,
         score: totalCorrect,
         total: total,
+        scheduled_date: chosenDateKey,
+        time_slot: chosenTimeSlot,
+        duration_minutes: 60,
       }).catch((e) => console.warn('scheduleCriticalRemediation backend error:', e))
 
-      // 5. User Feedback: Warning toast + Tutor Chat reminder message
-      showToast(`🚨 Critical score (${totalCorrect}/${total})! Recovery session scheduled for ${chosenDayFormatted}`, '🚨')
+      // 5. User Feedback: Warning toast + Audio + Tutor Chat reminder message
+      soundSynth.playSuccessBeep()
+      showToast(`🚨 Scored ${totalCorrect}/${total} (< 2)! Added 1-hour study slot to calendar: ${chosenTimeSlot}`, '📅')
 
       addChatMessage(
-        `🚨 <strong>Critical Review Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
-          `Because your score was below 2 right out of 5, the adaptive system flagged this concept with <strong>Critical Decay Risk</strong>.<br><br>` +
-          `📅 <strong>Automated Schedule:</strong> We scanned your calendar across upcoming days, bypassed your exams (e.g. Sep 15), and found that <strong>${chosenDayFormatted}</strong> is completely open (0 tasks). We have placed a <strong>60-minute Critical Review drill at 10:00 AM</strong> with an active reminder alarm.<br><br>` +
-          `👉 Open your <strong>Study Calendar</strong> to see the scheduled reminder on ${chosenDayFormatted}!`,
+        `🚨 <strong>Critical Diagnostic Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
+          `Because you scored less than 2 right, I have automatically added a <strong>1-hour study time slot (60 mins)</strong> to your calendar on <strong>${chosenDayFormatted} from ${chosenTimeSlot}</strong> with an active study alarm to guarantee recovery.<br><br>` +
+          `👉 Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
         'bot'
       )
     } else {
@@ -3259,7 +3312,7 @@ export default function App() {
                       </div>
                     </div>
                     <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', margin: '0 0 12px 0', lineHeight: 1.5 }}>
-                      Proficiency fell below the safe retention boundary. The system inspected your schedule, bypassed upcoming exams (Sep 15), and scheduled an intensive 60-min recovery session on <strong>{criticalRemediationInfo.dayName}</strong> at <strong>10:00 AM</strong> where your calendar is completely free.
+                      Proficiency fell below the safe retention boundary. The system inspected your schedule, bypassed upcoming exams (Sep 15), and automatically scheduled a <strong>1-hour study time slot (60 mins)</strong> on <strong>{criticalRemediationInfo.dayName}</strong> from <strong>{criticalRemediationInfo.timeSlot}</strong>.
                     </p>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <button

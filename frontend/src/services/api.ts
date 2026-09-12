@@ -284,6 +284,9 @@ export async function scheduleCriticalRemediation(payload: {
   topic: string
   score: number
   total: number
+  scheduled_date?: string
+  time_slot?: string
+  duration_minutes?: number
   user_id?: number
 }): Promise<CriticalRemediationResponse | null> {
   const uid = payload.user_id ?? getStoredUserId()

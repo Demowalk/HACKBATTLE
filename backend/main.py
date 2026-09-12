@@ -109,6 +109,9 @@ class CriticalRemediationRequest(BaseModel):
     topic: str = "Nested Loops & Recursion"
     score: int = 1
     total: int = 5
+    scheduled_date: Optional[str] = None
+    time_slot: Optional[str] = None
+    duration_minutes: Optional[int] = 60
 
 load_dotenv()
 # Also check backend/.env if not loaded
@@ -1314,11 +1317,19 @@ def schedule_critical_remediation(
         else:
             free_slot = candidate_dates[0]
 
-    chosen_date_str = free_slot["date"]
-    chosen_day_name = free_slot["dt"].strftime("%A, %b %d")
+    if req.scheduled_date:
+        chosen_date_str = req.scheduled_date
+        try:
+            chosen_day_name = datetime.strptime(req.scheduled_date, "%Y-%m-%d").strftime("%A, %b %d")
+        except Exception:
+            chosen_day_name = req.scheduled_date
+    else:
+        chosen_date_str = free_slot["date"]
+        chosen_day_name = free_slot["dt"].strftime("%A, %b %d")
 
-    task_title = f"🚨 Critical Review: {req.subject} - {req.topic}"
-    time_slot = "10:00–11:00 AM"
+    duration_mins = req.duration_minutes or 60
+    time_slot = req.time_slot or "4:30–5:30 PM"
+    task_title = f"🚨 Critical 1hr Study: {req.subject} - {req.topic}"
 
     # 1. Update Concept Mastery in DB if available
     if DATABASE_AVAILABLE and db:
