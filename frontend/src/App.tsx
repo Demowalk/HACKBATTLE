@@ -1389,7 +1389,8 @@ export default function App() {
 
   // Alarms & Upcoming Tests
   const [alarmModalOpen, setAlarmModalOpen] = useState<boolean>(false)
-  const [nextAlarmLabel] = useState<string>('Organic Chemistry (11:00 AM)')
+  const [alarmPopoverOpen, setAlarmPopoverOpen] = useState<boolean>(false)
+  const alarmPopoverRef = useRef<HTMLDivElement | null>(null)
 
   // Pomodoro
   const [pomoModalOpen, setPomoModalOpen] = useState<boolean>(false)
@@ -1643,6 +1644,39 @@ export default function App() {
         return t
       })
     )
+  }
+
+  // Dynamic next upcoming task with active alarm
+  const nextAlarmTask = tasks.find((t) => !t.completed && t.alarmActive) || tasks.find((t) => !t.completed)
+  const nextAlarmLabel = nextAlarmTask
+    ? `${nextAlarmTask.subject} (${nextAlarmTask.timeSlot.split('–')[0].trim()})`
+    : 'All Caught Up'
+
+  // Click outside to close alarm popover
+  useEffect(() => {
+    function handleAlarmOutside(e: MouseEvent) {
+      if (alarmPopoverRef.current && !alarmPopoverRef.current.contains(e.target as Node)) {
+        setAlarmPopoverOpen(false)
+      }
+    }
+    if (alarmPopoverOpen) {
+      document.addEventListener('mousedown', handleAlarmOutside)
+      return () => document.removeEventListener('mousedown', handleAlarmOutside)
+    }
+  }, [alarmPopoverOpen])
+
+  // Smooth scroll and highlight task in schedule
+  const scrollToTask = (taskId: string) => {
+    setAlarmPopoverOpen(false)
+    const el = document.getElementById(taskId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('task-card-highlight')
+      setTimeout(() => el.classList.remove('task-card-highlight'), 2100)
+      showToast('Found upcoming session in schedule', 'calendar')
+    } else {
+      showToast('Upcoming session active in schedule', 'calendar')
+    }
   }
 
   // Toggle Task Completion
@@ -2452,12 +2486,107 @@ export default function App() {
         </div>
 
         <div className="header-actions">
-          {/* Live Study Alarm Pill */}
-          <div className="alarm-pill" title="Active Study Session Alarm">
-            <span className="pulse-dot" />
-            <span>
-              Next: <strong>{nextAlarmLabel}</strong>
-            </span>
+          {/* Live Study Alarm Pill with Interactive Quick Hub */}
+          <div className="alarm-pill-wrapper" ref={alarmPopoverRef}>
+            <button
+              type="button"
+              className={`alarm-pill ${alarmPopoverOpen ? 'active' : ''}`}
+              onClick={() => setAlarmPopoverOpen((prev) => !prev)}
+              title="Click to open Alarm & Focus Hub"
+            >
+              <span className={`pulse-dot ${!nextAlarmTask ? 'pulse-dot-done' : ''}`} />
+              <span>
+                Next: <strong>{nextAlarmLabel}</strong>
+              </span>
+            </button>
+
+            {alarmPopoverOpen && (
+              <div className="alarm-popover">
+                <div className="alarm-popover-header">
+                  <div className="alarm-popover-title">
+                    <BellIcon size={14} color="#f97316" />
+                    <span>Next Study Session</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-close-popover"
+                    onClick={() => setAlarmPopoverOpen(false)}
+                    aria-label="Close"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+
+                {nextAlarmTask ? (
+                  <div className="alarm-popover-body">
+                    <div className="alarm-popover-task-card">
+                      <div className="alarm-task-top">
+                        <span className={`task-tag ${nextAlarmTask.tagClass}`}>{nextAlarmTask.subject}</span>
+                        <span className="alarm-time-badge">
+                          <Clock size={11} style={{ marginRight: '4px' }} />
+                          {nextAlarmTask.timeSlot}
+                        </span>
+                      </div>
+                      <div className="alarm-task-title">{nextAlarmTask.title}</div>
+                      <div className="alarm-task-status-row">
+                        <span className={`alarm-status-pill ${nextAlarmTask.alarmActive ? 'armed' : 'muted'}`}>
+                          <BellIcon size={11} color={nextAlarmTask.alarmActive ? '#f97316' : '#8b949e'} />
+                          {nextAlarmTask.alarmActive ? 'Alarm Armed' : 'Alarm Muted'}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn-toggle-alarm-mini"
+                          onClick={() => toggleAlarmBell(nextAlarmTask.id, nextAlarmTask.title)}
+                        >
+                          {nextAlarmTask.alarmActive ? 'Mute' : 'Arm Alarm'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="alarm-popover-actions">
+                      <button
+                        type="button"
+                        className="btn-popover-action btn-popover-primary"
+                        onClick={() => {
+                          setAlarmPopoverOpen(false)
+                          openPomodoroModal(nextAlarmTask.title)
+                        }}
+                      >
+                        <Clock size={13} />
+                        <span>Start Focus Session</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn-popover-action"
+                        onClick={() => {
+                          triggerAlarm()
+                          setAlarmPopoverOpen(false)
+                        }}
+                      >
+                        <BellIcon size={13} color="#f97316" />
+                        <span>Ring Alarm Chime (Test)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn-popover-action"
+                        onClick={() => scrollToTask(nextAlarmTask.id)}
+                      >
+                        <Target size={13} />
+                        <span>Locate in Schedule</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="alarm-popover-empty">
+                    <CheckCircle size={22} className="text-emerald-400" />
+                    <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: '4px 0 2px' }}>All Sessions Done!</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>All scheduled tasks for today have been completed.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Calendar Button (Replaces Share / Export) */}
@@ -2949,7 +3078,7 @@ export default function App() {
             {/* Schedule List with De-cluttered Task Cards & Smart Free Time Chips */}
             <div className="timeline-list">
               {tasks.map((task) => (
-                <div key={task.id} className={`task-card ${task.completed ? 'completed' : ''}`}>
+                <div key={task.id} id={task.id} className={`task-card ${task.completed ? 'completed' : ''}`}>
                   <div className="task-card-left">
                     <div className="task-check-circle" onClick={() => toggleTask(task.id)}>
                       <Check size={12} strokeWidth={2.5} />
