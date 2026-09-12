@@ -493,6 +493,7 @@ interface ChatEntry {
   text?: string
   toolName?: string
   toolArgs?: Record<string, unknown>
+  timestamp?: string
 }
 
 // ============================================================================
@@ -524,6 +525,10 @@ export default function App() {
   const [editGrade, setEditGrade] = useState<string>('Grade 12 • Engineering Prep')
   const [editTargetExam, setEditTargetExam] = useState<string>('JEE / Advanced STEM')
   const [editDailyGoal, setEditDailyGoal] = useState<number>(120)
+  const [profileTab, setProfileTab] = useState<'profile' | 'history'>('profile')
+  const [historySearchQuery, setHistorySearchQuery] = useState<string>('')
+  const [isChatHistoryModalOpen, setIsChatHistoryModalOpen] = useState<boolean>(false)
+  const [isRefreshingHistory, setIsRefreshingHistory] = useState<boolean>(false)
   const profileRef = useRef<HTMLDivElement>(null)
 
   type TimelineTask = {
@@ -571,6 +576,19 @@ export default function App() {
   const [gcalSearchQuery, setGcalSearchQuery] = useState<string>('')
   const [gcalActiveEvent, setGcalActiveEvent] = useState<(CalTaskItem & { dateKey?: string }) | null>(null)
   const [gcalQuickCreateOpen, setGcalQuickCreateOpen] = useState<boolean>(false)
+
+  // Calendar Drag and Drop State
+  const [draggedCalEvent, setDraggedCalEvent] = useState<{
+    task: CalTaskItem
+    sourceDateKey: string
+    durationMinutes: number
+  } | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<{
+    dateKey: string
+    snappedMinutes: number
+    timeSlotPreview: string
+  } | null>(null)
+  const [dragOverMonthDay, setDragOverMonthDay] = useState<number | null>(null)
 
   // New Calendar Task Form State
   const [newCalTaskTitle, setNewCalTaskTitle] = useState<string>('')
@@ -753,6 +771,28 @@ export default function App() {
     return { startMinutes, durationMinutes }
   }
 
+  const formatMinutesToTimeSlot = (startMinutes: number, durationMinutes: number): string => {
+    const safeDuration = Math.max(15, durationMinutes || 60)
+    const startH = Math.floor(startMinutes / 60)
+    const startM = startMinutes % 60
+    const startH12 = startH % 12 === 0 ? 12 : startH % 12
+    const startAmPm = startH >= 12 && startH < 24 ? 'PM' : 'AM'
+    const startMStr = startM === 0 ? ':00' : `:${String(startM).padStart(2, '0')}`
+
+    const endMinutes = startMinutes + safeDuration
+    const endH = Math.floor(endMinutes / 60)
+    const endM = endMinutes % 60
+    const endH12 = endH % 12 === 0 ? 12 : endH % 12
+    const endAmPm = endH >= 12 && endH < 24 ? 'PM' : 'AM'
+    const endMStr = endM === 0 ? ':00' : `:${String(endM).padStart(2, '0')}`
+
+    if (startAmPm === endAmPm) {
+      return `${startH12}${startMStr}–${endH12}${endMStr} ${endAmPm}`
+    } else {
+      return `${startH12}${startMStr} ${startAmPm}–${endH12}${endMStr} ${endAmPm}`
+    }
+  }
+
   const GCAL_HOURS = [
     { hour: 7, label: '7 AM' },
     { hour: 8, label: '8 AM' },
@@ -921,6 +961,193 @@ export default function App() {
       .catch((err) => console.error('Failed to fetch tasks from backend:', err))
   }, [])
 
+  // Move / Reschedule Calendar Task Block (Drag-and-Drop or Quick Move)
+  const moveCalTask = (
+    task: CalTaskItem,
+    sourceDateKey: string,
+    targetDateKey: string,
+    newTimeSlot: string,
+    newDurationMinutes?: number
+  ) => {
+    const duration = newDurationMinutes || task.duration_minutes || 60
+    const updatedTask: CalTaskItem = {
+      ...task,
+      timeSlot: newTimeSlot,
+      duration_minutes: duration,
+    }
+
+    setCalTasksByDate((prev) => {
+      const nextState = { ...prev }
+      // Remove from source date
+      const sourceList = (nextState[sourceDateKey] || []).filter((t) => t.id !== task.id)
+      nextState[sourceDateKey] = sourceList
+
+      // Add to target date
+      const targetList = (nextState[targetDateKey] || []).filter((t) => t.id !== task.id)
+      nextState[targetDateKey] = [...targetList, updatedTask]
+
+      return nextState
+    })
+
+    if (sourceDateKey === '2026-09-12' || targetDateKey === '2026-09-12') {
+      setTasks((prev) => {
+        if (targetDateKey === '2026-09-12') {
+          const existing = prev.find((t) => String(t.id) === String(task.id))
+          if (existing) {
+            return prev.map((t) => (String(t.id) === String(task.id) ? { ...t, timeSlot: newTimeSlot } : t))
+          } else {
+            return [
+              ...prev,
+              {
+                id: String(task.id),
+                title: task.title,
+                subject: task.subject,
+                tagClass: task.tagClass,
+                tagIcon: task.tagClass.includes('math') ? '📐' : task.tagClass.includes('chem') ? '⚗️' : '💻',
+                timeSlot: newTimeSlot,
+                completed: task.completed,
+                alarmActive: true,
+                status: task.completed ? 'Done' : 'Upcoming',
+              },
+            ]
+          }
+        } else {
+          return prev.filter((t) => String(t.id) !== String(task.id))
+        }
+      })
+    }
+
+    soundSynth.playSuccessBeep()
+    const targetDateObj = new Date(targetDateKey + 'T00:00:00')
+    const formattedTargetDay = targetDateObj.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    })
+    showToast(`Moved "${task.title}" to ${formattedTargetDay} at ${newTimeSlot}`, '📅')
+  }
+
+  // Drag and Drop Handlers for Calendar Event Blocks
+  const handleEventDragStart = (
+    e: React.DragEvent,
+    task: CalTaskItem,
+    sourceDateKey: string
+  ) => {
+    e.stopPropagation()
+    const { durationMinutes } = parseTimeSlot(task.timeSlot)
+    setDraggedCalEvent({
+      task,
+      sourceDateKey,
+      durationMinutes: durationMinutes || 60,
+    })
+    e.dataTransfer.setData('text/plain', task.id)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleGridDayColDragOver = (e: React.DragEvent, dateKey: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (!draggedCalEvent) return
+
+    const colElem = e.currentTarget as HTMLElement
+    const rect = colElem.getBoundingClientRect()
+    const offsetY = e.clientY - rect.top
+
+    // 7 AM = 420 min. 1px = 1 min. Snap to 15 min.
+    const duration = draggedCalEvent.durationMinutes || 60
+    const rawMin = 420 + offsetY
+    const snapped = Math.max(420, Math.min(1320 - duration, Math.round(rawMin / 15) * 15))
+    const timePreview = formatMinutesToTimeSlot(snapped, duration)
+
+    setDragOverCol({
+      dateKey,
+      snappedMinutes: snapped,
+      timeSlotPreview: timePreview,
+    })
+  }
+
+  const handleGridDayColDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setDragOverCol(null)
+  }
+
+  const handleGridDayColDrop = (e: React.DragEvent, targetDateKey: string) => {
+    e.preventDefault()
+    if (!draggedCalEvent) return
+
+    const colElem = e.currentTarget as HTMLElement
+    const rect = colElem.getBoundingClientRect()
+    const offsetY = e.clientY - rect.top
+    const duration = draggedCalEvent.durationMinutes || 60
+    const rawMin = 420 + offsetY
+    const snapped = Math.max(420, Math.min(1320 - duration, Math.round(rawMin / 15) * 15))
+    const newTimeSlot = formatMinutesToTimeSlot(snapped, duration)
+
+    moveCalTask(
+      draggedCalEvent.task,
+      draggedCalEvent.sourceDateKey,
+      targetDateKey,
+      newTimeSlot,
+      duration
+    )
+
+    setDraggedCalEvent(null)
+    setDragOverCol(null)
+  }
+
+  const handleMonthCellDragOver = (e: React.DragEvent, dayNum: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverMonthDay(dayNum)
+  }
+
+  const handleMonthCellDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setDragOverMonthDay(null)
+  }
+
+  const handleMonthCellDrop = (e: React.DragEvent, dayNum: number) => {
+    e.preventDefault()
+    setDragOverMonthDay(null)
+    if (!draggedCalEvent) return
+
+    const targetDateKey = formatCalDateKey(calYear, calMonth, dayNum)
+    moveCalTask(
+      draggedCalEvent.task,
+      draggedCalEvent.sourceDateKey,
+      targetDateKey,
+      draggedCalEvent.task.timeSlot,
+      draggedCalEvent.durationMinutes
+    )
+    setDraggedCalEvent(null)
+  }
+
+  const handleShiftEventTime = (deltaMinutes: number) => {
+    if (!gcalActiveEvent) return
+    const { startMinutes, durationMinutes } = parseTimeSlot(gcalActiveEvent.timeSlot)
+    const duration = durationMinutes || gcalActiveEvent.duration_minutes || 45
+    const newStart = Math.max(420, Math.min(1320 - duration, startMinutes + deltaMinutes))
+    const newSlot = formatMinutesToTimeSlot(newStart, duration)
+    const dateKey = gcalActiveEvent.dateKey || formatCalDateKey(calYear, calMonth, selectedCalDay)
+
+    moveCalTask(gcalActiveEvent, dateKey, dateKey, newSlot, duration)
+    setGcalActiveEvent((prev) => (prev ? { ...prev, timeSlot: newSlot } : null))
+  }
+
+  const handleShiftEventDay = (deltaDays: number) => {
+    if (!gcalActiveEvent) return
+    const dateKey = gcalActiveEvent.dateKey || formatCalDateKey(calYear, calMonth, selectedCalDay)
+    const [y, m, d] = dateKey.split('-').map(Number)
+    const dateObj = new Date(y, m - 1, d)
+    dateObj.setDate(dateObj.getDate() + deltaDays)
+    const targetDateKey = formatCalDateKey(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate())
+    const { durationMinutes } = parseTimeSlot(gcalActiveEvent.timeSlot)
+    const duration = durationMinutes || gcalActiveEvent.duration_minutes || 45
+
+    moveCalTask(gcalActiveEvent, dateKey, targetDateKey, gcalActiveEvent.timeSlot, duration)
+    setGcalActiveEvent((prev) => (prev ? { ...prev, dateKey: targetDateKey } : null))
+  }
+
   // Dynamic Free Time / Brain Break Blocks
   const [emptyBlocks, setEmptyBlocks] = useState({
     'empty-1': {
@@ -1063,11 +1290,47 @@ export default function App() {
             type: 'msg' as const,
             sender: (m.sender === 'user' ? 'user' : 'bot') as 'user' | 'bot',
             text: m.text,
+            timestamp: m.timestamp,
           }))
         )
       }
     })
   }, [])
+
+  // Refresh chat history on demand
+  const refreshChatHistory = async () => {
+    setIsRefreshingHistory(true)
+    try {
+      const history = await fetchChatHistory()
+      if (history && history.length > 0) {
+        setChatList(
+          history.map((m) => ({
+            id: `msg-${m.id}`,
+            type: 'msg' as const,
+            sender: (m.sender === 'user' ? 'user' : 'bot') as 'user' | 'bot',
+            text: m.text,
+            timestamp: m.timestamp,
+          }))
+        )
+        showToast('Chat history synced with database!', '🕒')
+      }
+    } catch {
+      showToast('Could not reload chat history', '⚠️')
+    } finally {
+      setIsRefreshingHistory(false)
+    }
+  }
+
+  // Filtered chat messages for history viewer
+  const filteredChatList = chatList.filter((entry) => {
+    if (entry.type !== 'msg') return false
+    if (!historySearchQuery.trim()) return true
+    const q = historySearchQuery.toLowerCase()
+    return (
+      (entry.text && entry.text.toLowerCase().includes(q)) ||
+      (entry.sender && entry.sender.toLowerCase().includes(q))
+    )
+  })
 
   // Click outside to close profile
   useEffect(() => {
@@ -1075,6 +1338,7 @@ export default function App() {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setIsProfileOpen(false)
         setIsEditingName(false)
+        setProfileTab('profile')
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -1089,6 +1353,8 @@ export default function App() {
         setQuizModalOpen(false)
         setPomoModalOpen(false)
         setAlarmModalOpen(false)
+        setIsChatHistoryModalOpen(false)
+        setIsProfileOpen(false)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -1403,6 +1669,7 @@ export default function App() {
 
   // Add chat message
   const addChatMessage = (text: string, sender: 'bot' | 'user' = 'bot') => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     setChatList((prev) => [
       ...prev,
       {
@@ -1410,6 +1677,7 @@ export default function App() {
         type: 'msg',
         sender,
         text,
+        timestamp: timeStr,
       },
     ])
     sendChatMessage(sender, text)
@@ -1941,190 +2209,367 @@ export default function App() {
             </button>
 
             {isProfileOpen && (
-              <div className="profile-dropdown-menu">
-                <div className="dropdown-user-info">
-                  <div className="dropdown-avatar-large">
-                    {userName.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="dropdown-meta">
-                    <span className="dropdown-full-name">{userName}</span>
-                    <span className="dropdown-email">laksh.hs@adaptive.ai</span>
-                    <span className="dropdown-badge">{userRole} • {userGrade}</span>
-                    <span style={{ fontSize: '11px', color: 'var(--brand-mint)', marginTop: '3px', fontWeight: 600 }}>
-                      🎯 {userTargetExam} • ⏱️ {userDailyGoal}m/day
-                    </span>
-                  </div>
-                </div>
-                <div className="dropdown-divider" />
-                {isEditingName ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
-                    <div>
-                      <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                        Your Name
-                      </label>
-                      <input
-                        type="text"
-                        value={editNameValue}
-                        onChange={(e) => setEditNameValue(e.target.value)}
-                        placeholder="Enter full name"
-                        style={{
-                          width: '100%',
-                          background: 'var(--bg-canvas)',
-                          border: '1px solid var(--border-strong)',
-                          color: 'var(--text-primary)',
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          marginTop: '2px',
-                        }}
-                        autoFocus
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                        Target Exam / Focus
-                      </label>
-                      <input
-                        type="text"
-                        value={editTargetExam}
-                        onChange={(e) => setEditTargetExam(e.target.value)}
-                        placeholder="e.g. JEE Advanced, NEET, SAT"
-                        style={{
-                          width: '100%',
-                          background: 'var(--bg-canvas)',
-                          border: '1px solid var(--border-strong)',
-                          color: 'var(--text-primary)',
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          marginTop: '2px',
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                          Grade
-                        </label>
-                        <input
-                          type="text"
-                          value={editGrade}
-                          onChange={(e) => setEditGrade(e.target.value)}
-                          placeholder="e.g. Grade 12"
-                          style={{
-                            width: '100%',
-                            background: 'var(--bg-canvas)',
-                            border: '1px solid var(--border-strong)',
-                            color: 'var(--text-primary)',
-                            padding: '5px 8px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            marginTop: '2px',
-                          }}
-                        />
-                      </div>
-                      <div style={{ width: '80px' }}>
-                        <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                          Goal (min)
-                        </label>
-                        <input
-                          type="number"
-                          value={editDailyGoal}
-                          onChange={(e) => setEditDailyGoal(Math.max(15, parseInt(e.target.value, 10) || 60))}
-                          style={{
-                            width: '100%',
-                            background: 'var(--bg-canvas)',
-                            border: '1px solid var(--border-strong)',
-                            color: 'var(--text-primary)',
-                            padding: '5px 8px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            marginTop: '2px',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (editNameValue.trim()) {
-                            const trimmed = editNameValue.trim()
-                            const trimmedGrade = editGrade.trim() || 'Grade 12 • Engineering Prep'
-                            const trimmedExam = editTargetExam.trim() || 'JEE / Advanced STEM'
-                            setUserName(trimmed)
-                            setUserGrade(trimmedGrade)
-                            setUserTargetExam(trimmedExam)
-                            setUserDailyGoal(editDailyGoal)
-                            setStoredUserName(trimmed)
-                            updateUserProfile(1, {
-                              fullName: trimmed,
-                              grade: trimmedGrade,
-                              targetExam: trimmedExam,
-                              dailyGoalMinutes: editDailyGoal,
-                            })
-                            setIsEditingName(false)
-                            showToast(`Saved to database: ${trimmed} (${trimmedExam})`)
-                          }
-                        }}
-                        style={{
-                          flex: 1,
-                          background: 'var(--grad-primary)',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '5px',
-                          padding: '6px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Save Profile
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditNameValue(userName)
-                          setEditGrade(userGrade)
-                          setEditTargetExam(userTargetExam)
-                          setEditDailyGoal(userDailyGoal)
-                          setIsEditingName(false)
-                        }}
-                        style={{
-                          background: 'var(--bg-surface-elevated)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid var(--border-subtle)',
-                          borderRadius: '5px',
-                          padding: '6px 10px',
-                          fontSize: '11px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
+              <div className={`profile-dropdown-menu ${profileTab === 'history' ? 'history-mode' : ''}`}>
+                {/* Profile Top Segmented Tabs with History Icon */}
+                <div className="profile-tabs-header">
                   <button
                     type="button"
-                    className="dropdown-action-btn"
-                    onClick={() => setIsEditingName(true)}
+                    className={`profile-tab-btn ${profileTab === 'profile' ? 'active' : ''}`}
+                    onClick={() => setProfileTab('profile')}
                   >
-                    <span>⚙️</span>
-                    <span>Edit Profile & Goals</span>
+                    <span>👤 Profile</span>
                   </button>
+                  <button
+                    type="button"
+                    className={`profile-tab-btn ${profileTab === 'history' ? 'active' : ''}`}
+                    onClick={() => setProfileTab('history')}
+                  >
+                    <span className="tab-history-icon">🕒</span>
+                    <span>Chat History</span>
+                    <span className="profile-tab-badge">
+                      {chatList.filter((c) => c.type === 'msg').length}
+                    </span>
+                  </button>
+                </div>
+
+                {profileTab === 'profile' ? (
+                  <div>
+                    <div className="dropdown-user-info">
+                      <div className="dropdown-avatar-large">
+                        {userName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="dropdown-meta">
+                        <span className="dropdown-full-name">{userName}</span>
+                        <span className="dropdown-email">laksh.hs@adaptive.ai</span>
+                        <span className="dropdown-badge">{userRole} • {userGrade}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--brand-mint)', marginTop: '3px', fontWeight: 600 }}>
+                          🎯 {userTargetExam} • ⏱️ {userDailyGoal}m/day
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="dropdown-divider" />
+
+                    {/* Dedicated Chat History Card Button with prominent clock icon */}
+                    <button
+                      type="button"
+                      className="dropdown-action-btn history-action-card-btn"
+                      onClick={() => setProfileTab('history')}
+                      style={{
+                        padding: '10px 12px',
+                        background: 'var(--bg-surface-elevated)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '8px',
+                        marginBottom: '8px',
+                        width: '100%',
+                      }}
+                    >
+                      <span style={{ fontSize: '18px' }}>🕒</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
+                        <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-primary)' }}>
+                          Chat History
+                        </span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
+                          {chatList.filter((c) => c.type === 'msg').length} messages recorded
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--brand-mint)', fontWeight: 700 }}>
+                        View ›
+                      </span>
+                    </button>
+
+                    {isEditingName ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
+                        <div>
+                          <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                            Your Name
+                          </label>
+                          <input
+                            type="text"
+                            value={editNameValue}
+                            onChange={(e) => setEditNameValue(e.target.value)}
+                            placeholder="Enter full name"
+                            style={{
+                              width: '100%',
+                              background: 'var(--bg-canvas)',
+                              border: '1px solid var(--border-strong)',
+                              color: 'var(--text-primary)',
+                              padding: '5px 8px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              marginTop: '2px',
+                            }}
+                            autoFocus
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                            Target Exam / Focus
+                          </label>
+                          <input
+                            type="text"
+                            value={editTargetExam}
+                            onChange={(e) => setEditTargetExam(e.target.value)}
+                            placeholder="e.g. JEE Advanced, NEET, SAT"
+                            style={{
+                              width: '100%',
+                              background: 'var(--bg-canvas)',
+                              border: '1px solid var(--border-strong)',
+                              color: 'var(--text-primary)',
+                              padding: '5px 8px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              marginTop: '2px',
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                              Grade
+                            </label>
+                            <input
+                              type="text"
+                              value={editGrade}
+                              onChange={(e) => setEditGrade(e.target.value)}
+                              placeholder="e.g. Grade 12"
+                              style={{
+                                width: '100%',
+                                background: 'var(--bg-canvas)',
+                                border: '1px solid var(--border-strong)',
+                                color: 'var(--text-primary)',
+                                padding: '5px 8px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                marginTop: '2px',
+                              }}
+                            />
+                          </div>
+                          <div style={{ width: '80px' }}>
+                            <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                              Goal (min)
+                            </label>
+                            <input
+                              type="number"
+                              value={editDailyGoal}
+                              onChange={(e) => setEditDailyGoal(Math.max(15, parseInt(e.target.value, 10) || 60))}
+                              style={{
+                                width: '100%',
+                                background: 'var(--bg-canvas)',
+                                border: '1px solid var(--border-strong)',
+                                color: 'var(--text-primary)',
+                                padding: '5px 8px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                marginTop: '2px',
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (editNameValue.trim()) {
+                                const trimmed = editNameValue.trim()
+                                const trimmedGrade = editGrade.trim() || 'Grade 12 • Engineering Prep'
+                                const trimmedExam = editTargetExam.trim() || 'JEE / Advanced STEM'
+                                setUserName(trimmed)
+                                setUserGrade(trimmedGrade)
+                                setUserTargetExam(trimmedExam)
+                                setUserDailyGoal(editDailyGoal)
+                                setStoredUserName(trimmed)
+                                updateUserProfile(1, {
+                                  fullName: trimmed,
+                                  grade: trimmedGrade,
+                                  targetExam: trimmedExam,
+                                  dailyGoalMinutes: editDailyGoal,
+                                })
+                                setIsEditingName(false)
+                                showToast(`Saved to database: ${trimmed} (${trimmedExam})`)
+                              }
+                            }}
+                            style={{
+                              flex: 1,
+                              background: 'var(--grad-primary)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '5px',
+                              padding: '6px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Save Profile
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditNameValue(userName)
+                              setEditGrade(userGrade)
+                              setEditTargetExam(userTargetExam)
+                              setEditDailyGoal(userDailyGoal)
+                              setIsEditingName(false)
+                            }}
+                            style={{
+                              background: 'var(--bg-surface-elevated)',
+                              color: 'var(--text-secondary)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '5px',
+                              padding: '6px 10px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="dropdown-action-btn"
+                        onClick={() => setIsEditingName(true)}
+                      >
+                        <span>⚙️</span>
+                        <span>Edit Profile & Goals</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="dropdown-action-btn logout-btn"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <span>🚪</span>
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                ) : (
+                  /* ================= CHAT HISTORY VIEW ================= */
+                  <div className="profile-history-panel">
+                    <div className="profile-history-header">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="history-back-btn"
+                          onClick={() => setProfileTab('profile')}
+                          title="Back to Profile"
+                        >
+                          ‹
+                        </button>
+                        <span style={{ fontSize: '16px' }}>🕒</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>
+                            Chat History
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
+                            {chatList.filter((c) => c.type === 'msg').length} messages logged
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <button
+                          type="button"
+                          className="history-header-icon-btn"
+                          onClick={refreshChatHistory}
+                          title="Refresh from Database"
+                          disabled={isRefreshingHistory}
+                        >
+                          <span style={{ display: 'inline-block', transform: isRefreshingHistory ? 'rotate(180deg)' : 'none', transition: 'transform 0.5s ease' }}>
+                            🔄
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="history-header-icon-btn"
+                          onClick={() => {
+                            setIsProfileOpen(false)
+                            setIsChatHistoryModalOpen(true)
+                          }}
+                          title="Expand Full Transcript Modal"
+                        >
+                          ⤢
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search Input */}
+                    <div className="history-search-bar">
+                      <span style={{ fontSize: '12px', opacity: 0.6 }}>🔍</span>
+                      <input
+                        type="text"
+                        placeholder="Search conversation history..."
+                        value={historySearchQuery}
+                        onChange={(e) => setHistorySearchQuery(e.target.value)}
+                        className="history-search-input"
+                      />
+                      {historySearchQuery && (
+                        <button
+                          type="button"
+                          className="history-clear-search-btn"
+                          onClick={() => setHistorySearchQuery('')}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Scrollable Conversation History Stream */}
+                    <div className="profile-history-list">
+                      {filteredChatList.length === 0 ? (
+                        <div className="history-empty-state">
+                          <span style={{ fontSize: '24px' }}>💬</span>
+                          <div style={{ fontWeight: 600, fontSize: '12px', marginTop: '6px' }}>
+                            {historySearchQuery ? 'No matching messages found' : 'No chat history recorded yet'}
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                            {historySearchQuery ? 'Try another search term' : 'Ask Reviso a question in the tutor panel'}
+                          </div>
+                        </div>
+                      ) : (
+                        filteredChatList.map((entry, idx) => (
+                          <div key={entry.id || idx} className={`history-item ${entry.sender || 'bot'}`}>
+                            <div className="history-item-meta">
+                              <span className="history-sender-badge">
+                                {entry.sender === 'user' ? '👤 You' : '🤖 Reviso AI Tutor'}
+                              </span>
+                              {entry.timestamp && (
+                                <span className="history-timestamp">{entry.timestamp}</span>
+                              )}
+                            </div>
+                            <div
+                              className="history-item-bubble"
+                              dangerouslySetInnerHTML={{ __html: entry.text || '' }}
+                            />
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Bottom Action Footer */}
+                    <div className="profile-history-footer">
+                      <button
+                        type="button"
+                        className="history-jump-chat-btn"
+                        onClick={() => {
+                          setIsProfileOpen(false)
+                          const chatInputElem = document.querySelector('.chat-input-field') as HTMLInputElement
+                          if (chatInputElem) {
+                            chatInputElem.focus()
+                          }
+                          showToast('Jumped to active tutor chat! 💬')
+                        }}
+                      >
+                        <span>💬 Continue in Tutor Chat</span>
+                      </button>
+                    </div>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  className="dropdown-action-btn logout-btn"
-                  onClick={() => setIsProfileOpen(false)}
-                >
-                  <span>🚪</span>
-                  <span>Sign Out</span>
-                </button>
               </div>
             )}
           </div>
@@ -3469,9 +3914,16 @@ export default function App() {
                       {/* 7 Day Columns */}
                       {weekDays.map((wDay) => {
                         const dayTasks = getTasksForDate(wDay.year, wDay.month, wDay.day).filter(filterTask)
+                        const isDragOverThisCol = dragOverCol?.dateKey === wDay.dateKey
 
                         return (
-                          <div key={wDay.dateKey} className="gcal-grid-day-col">
+                          <div
+                            key={wDay.dateKey}
+                            className={`gcal-grid-day-col ${isDragOverThisCol ? 'drag-over' : ''}`}
+                            onDragOver={(e) => handleGridDayColDragOver(e, wDay.dateKey)}
+                            onDragLeave={handleGridDayColDragLeave}
+                            onDrop={(e) => handleGridDayColDrop(e, wDay.dateKey)}
+                          >
                             {/* Horizontal Hour Guidelines */}
                             {GCAL_HOURS.map((h) => (
                               <div
@@ -3498,6 +3950,24 @@ export default function App() {
                               </div>
                             )}
 
+                            {/* Live Drag & Drop Ghost Slot Preview */}
+                            {isDragOverThisCol && draggedCalEvent && dragOverCol && (
+                              <div
+                                className="gcal-drag-ghost-preview"
+                                style={{
+                                  top: `${Math.max(0, dragOverCol.snappedMinutes - 420)}px`,
+                                  height: `${Math.max(34, draggedCalEvent.durationMinutes)}px`,
+                                }}
+                              >
+                                <div className="gcal-ghost-title">
+                                  {draggedCalEvent.task.title}
+                                </div>
+                                <div className="gcal-ghost-time">
+                                  ⏱️ {dragOverCol.timeSlotPreview}
+                                </div>
+                              </div>
+                            )}
+
                             {/* Positioned Event Blocks */}
                             {dayTasks.map((t) => {
                               const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
@@ -3514,19 +3984,28 @@ export default function App() {
                               else if (subLower.includes('python')) cardClass = 'python'
                               else if (subLower.includes('ai')) cardClass = 'ai'
 
+                              const isBeingDragged = draggedCalEvent?.task.id === t.id
+
                               return (
                                 <div
                                   key={t.id}
-                                  className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''}`}
+                                  className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''} ${isBeingDragged ? 'dragging' : ''}`}
                                   style={{
                                     top: `${topPx}px`,
                                     height: `${heightPx}px`,
+                                  }}
+                                  draggable={true}
+                                  onDragStart={(e) => handleEventDragStart(e, t, wDay.dateKey)}
+                                  onDragEnd={() => {
+                                    setDraggedCalEvent(null)
+                                    setDragOverCol(null)
                                   }}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setGcalActiveEvent({ ...t, dateKey: wDay.dateKey })
                                     soundSynth.playHarmonicChime()
                                   }}
+                                  title="Drag to change time or day • Click to view"
                                 >
                                   <div className="gcal-event-title">
                                     {t.completed ? '✓ ' : ''}{t.title}
@@ -3572,15 +4051,21 @@ export default function App() {
                     const hasExam = rawTasks.some(
                       (t) => t.title.toLowerCase().includes('exam') || t.title.toLowerCase().includes('midterm')
                     )
+                    const isDragOver = dragOverMonthDay === d
+                    const dateKey = formatCalDateKey(calYear, calMonth, d)
 
                     let cellClass = 'gcal-month-cell'
                     if (isToday) cellClass += ' today'
                     if (isSelected) cellClass += ' selected'
+                    if (isDragOver) cellClass += ' drag-over'
 
                     return (
                       <div
                         key={d}
                         className={cellClass}
+                        onDragOver={(e) => handleMonthCellDragOver(e, d)}
+                        onDragLeave={handleMonthCellDragLeave}
+                        onDrop={(e) => handleMonthCellDrop(e, d)}
                         onClick={() => {
                           setSelectedCalDay(d)
                           soundSynth.playHarmonicChime()
@@ -3616,16 +4101,24 @@ export default function App() {
                             col = '#e9d5ff'
                           }
 
+                          const isBeingDragged = draggedCalEvent?.task.id === t.id
+
                           return (
                             <div
                               key={t.id}
-                              className="gcal-month-pill"
+                              className={`gcal-month-pill ${isBeingDragged ? 'dragging' : ''}`}
                               style={{ background: bg, color: col }}
+                              draggable={true}
+                              onDragStart={(e) => handleEventDragStart(e, t, dateKey)}
+                              onDragEnd={() => {
+                                setDraggedCalEvent(null)
+                                setDragOverMonthDay(null)
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setGcalActiveEvent({ ...t, dateKey: formatCalDateKey(calYear, calMonth, d) })
+                                setGcalActiveEvent({ ...t, dateKey })
                               }}
-                              title={`${t.subject}: ${t.title}`}
+                              title={`Drag to move date • ${t.subject}: ${t.title}`}
                             >
                               {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
                             </div>
@@ -3678,71 +4171,113 @@ export default function App() {
                       </div>
 
                       {/* Full-Width Day Column */}
-                      <div className="gcal-grid-day-col" style={{ borderRight: 'none' }}>
-                        {GCAL_HOURS.map((h) => (
+                      {(() => {
+                        const dayDateKey = formatCalDateKey(calYear, calMonth, selectedCalDay)
+                        const isDragOverThisCol = dragOverCol?.dateKey === dayDateKey
+
+                        return (
                           <div
-                            key={h.hour}
-                            className="gcal-hour-row-guide"
-                            onClick={() => {
-                              const startHour12 = h.hour > 12 ? h.hour - 12 : h.hour
-                              const endHour12 = (h.hour + 1) > 12 ? (h.hour + 1) - 12 : h.hour + 1
-                              const ampm = h.hour >= 12 ? 'PM' : 'AM'
-                              setNewCalTaskTime(`${startHour12}:00–${endHour12}:00 ${ampm}`)
-                              setGcalQuickCreateOpen(true)
-                            }}
-                          />
-                        ))}
+                            className={`gcal-grid-day-col ${isDragOverThisCol ? 'drag-over' : ''}`}
+                            style={{ borderRight: 'none' }}
+                            onDragOver={(e) => handleGridDayColDragOver(e, dayDateKey)}
+                            onDragLeave={handleGridDayColDragLeave}
+                            onDrop={(e) => handleGridDayColDrop(e, dayDateKey)}
+                          >
+                            {GCAL_HOURS.map((h) => (
+                              <div
+                                key={h.hour}
+                                className="gcal-hour-row-guide"
+                                onClick={() => {
+                                  const startHour12 = h.hour > 12 ? h.hour - 12 : h.hour
+                                  const endHour12 = (h.hour + 1) > 12 ? (h.hour + 1) - 12 : h.hour + 1
+                                  const ampm = h.hour >= 12 ? 'PM' : 'AM'
+                                  setNewCalTaskTime(`${startHour12}:00–${endHour12}:00 ${ampm}`)
+                                  setGcalQuickCreateOpen(true)
+                                }}
+                              />
+                            ))}
 
-                        {/* Current Time Indicator */}
-                        {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
-                          <div className="gcal-current-time-line" style={{ top: `${curTop}px` }}>
-                            <div className="gcal-current-time-dot" />
-                          </div>
-                        )}
-
-                        {/* Event blocks */}
-                        {dayTasks.map((t) => {
-                          const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
-                          const topPx = Math.max(0, startMinutes - 420)
-                          const heightPx = Math.max(40, durationMinutes)
-
-                          const subLower = (t.subject || '').toLowerCase()
-                          const isExam =
-                            t.title.toLowerCase().includes('exam') ||
-                            t.title.toLowerCase().includes('midterm')
-                          let cardClass = 'math'
-                          if (isExam) cardClass = 'exam'
-                          else if (subLower.includes('chem')) cardClass = 'chem'
-                          else if (subLower.includes('python')) cardClass = 'python'
-                          else if (subLower.includes('ai')) cardClass = 'ai'
-
-                          return (
-                            <div
-                              key={t.id}
-                              className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''}`}
-                              style={{
-                                top: `${topPx}px`,
-                                height: `${heightPx}px`,
-                                left: '12px',
-                                right: '12px',
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setGcalActiveEvent({ ...t, dateKey: formatCalDateKey(calYear, calMonth, selectedCalDay) })
-                                soundSynth.playHarmonicChime()
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span className="gcal-event-title" style={{ fontSize: '13px' }}>
-                                  {t.completed ? '✓ ' : ''}{t.title}
-                                </span>
-                                <span style={{ fontSize: '10.5px', opacity: 0.8 }}>{t.subject}</span>
+                            {/* Current Time Indicator */}
+                            {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
+                              <div className="gcal-current-time-line" style={{ top: `${curTop}px` }}>
+                                <div className="gcal-current-time-dot" />
                               </div>
-                              <div className="gcal-event-time">{t.timeSlot} • {t.duration_minutes || 45} mins</div>
-                            </div>
-                          )
-                        })}
-                      </div>
+                            )}
+
+                            {/* Drag Ghost Preview */}
+                            {isDragOverThisCol && draggedCalEvent && dragOverCol && (
+                              <div
+                                className="gcal-drag-ghost-preview"
+                                style={{
+                                  top: `${Math.max(0, dragOverCol.snappedMinutes - 420)}px`,
+                                  height: `${Math.max(40, draggedCalEvent.durationMinutes)}px`,
+                                  left: '12px',
+                                  right: '12px',
+                                }}
+                              >
+                                <div className="gcal-ghost-title">
+                                  {draggedCalEvent.task.title}
+                                </div>
+                                <div className="gcal-ghost-time">
+                                  ⏱️ {dragOverCol.timeSlotPreview}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Event blocks */}
+                            {dayTasks.map((t) => {
+                              const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
+                              const topPx = Math.max(0, startMinutes - 420)
+                              const heightPx = Math.max(40, durationMinutes)
+
+                              const subLower = (t.subject || '').toLowerCase()
+                              const isExam =
+                                t.title.toLowerCase().includes('exam') ||
+                                t.title.toLowerCase().includes('midterm')
+                              let cardClass = 'math'
+                              if (isExam) cardClass = 'exam'
+                              else if (subLower.includes('chem')) cardClass = 'chem'
+                              else if (subLower.includes('python')) cardClass = 'python'
+                              else if (subLower.includes('ai')) cardClass = 'ai'
+
+                              const isBeingDragged = draggedCalEvent?.task.id === t.id
+
+                              return (
+                                <div
+                                  key={t.id}
+                                  className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''} ${isBeingDragged ? 'dragging' : ''}`}
+                                  style={{
+                                    top: `${topPx}px`,
+                                    height: `${heightPx}px`,
+                                    left: '12px',
+                                    right: '12px',
+                                  }}
+                                  draggable={true}
+                                  onDragStart={(e) => handleEventDragStart(e, t, dayDateKey)}
+                                  onDragEnd={() => {
+                                    setDraggedCalEvent(null)
+                                    setDragOverCol(null)
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setGcalActiveEvent({ ...t, dateKey: dayDateKey })
+                                    soundSynth.playHarmonicChime()
+                                  }}
+                                  title="Drag to reschedule time slot • Click to view"
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span className="gcal-event-title" style={{ fontSize: '13px' }}>
+                                      {t.completed ? '✓ ' : ''}{t.title}
+                                    </span>
+                                    <span style={{ fontSize: '10.5px', opacity: 0.8 }}>{t.subject}</span>
+                                  </div>
+                                  <div className="gcal-event-time">{t.timeSlot} • {t.duration_minutes || 45} mins</div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -3859,6 +4394,43 @@ export default function App() {
                       • {gcalActiveEvent.priority || 'medium'} priority
                     </span>
                   </div>
+                </div>
+
+                {/* Quick Reschedule / Move Controls */}
+                <div className="gcal-quick-move-row">
+                  <span style={{ fontSize: '11px', color: '#8b949e', fontWeight: 600, marginRight: '4px' }}>Move:</span>
+                  <button
+                    type="button"
+                    className="gcal-shift-btn"
+                    onClick={() => handleShiftEventTime(-30)}
+                    title="Move 30 minutes earlier"
+                  >
+                    ⬅️ 30m Earlier
+                  </button>
+                  <button
+                    type="button"
+                    className="gcal-shift-btn"
+                    onClick={() => handleShiftEventTime(30)}
+                    title="Move 30 minutes later"
+                  >
+                    30m Later ➡️
+                  </button>
+                  <button
+                    type="button"
+                    className="gcal-shift-btn"
+                    onClick={() => handleShiftEventDay(-1)}
+                    title="Move to Previous Day"
+                  >
+                    📅 -1 Day
+                  </button>
+                  <button
+                    type="button"
+                    className="gcal-shift-btn"
+                    onClick={() => handleShiftEventDay(1)}
+                    title="Move to Next Day"
+                  >
+                    📅 +1 Day
+                  </button>
                 </div>
 
                 <div className="gcal-popover-actions">
@@ -4032,6 +4604,185 @@ export default function App() {
           </div>
         )}
       </div>
+
+
+      {/* ==========================================================================
+           MODAL: FULL CHAT HISTORY TRANSCRIPT
+           ========================================================================== */}
+      {isChatHistoryModalOpen && (
+        <div
+          className="chat-history-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsChatHistoryModalOpen(false)
+          }}
+        >
+          <div className="chat-history-modal-card">
+            <div
+              className="modal-header"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'rgba(0, 77, 64, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                  }}
+                >
+                  🕒
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+                    Full Chat History &amp; Conversation Log
+                  </h3>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {chatList.filter((c) => c.type === 'msg').length} total messages with Reviso AI Tutor
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={refreshChatHistory}
+                  title="Reload from Database"
+                  disabled={isRefreshingHistory}
+                >
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      transform: isRefreshingHistory ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.5s ease',
+                    }}
+                  >
+                    🔄
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={() => setIsChatHistoryModalOpen(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: '12px 20px',
+                borderBottom: '1px solid var(--border-subtle)',
+                background: 'var(--bg-canvas)',
+              }}
+            >
+              <div className="history-search-bar" style={{ margin: 0 }}>
+                <span style={{ fontSize: '13px', opacity: 0.6 }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search across all messages and tutor recommendations..."
+                  value={historySearchQuery}
+                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                  className="history-search-input"
+                />
+                {historySearchQuery && (
+                  <button
+                    type="button"
+                    className="history-clear-search-btn"
+                    onClick={() => setHistorySearchQuery('')}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="chat-history-modal-body">
+              {filteredChatList.length === 0 ? (
+                <div className="history-empty-state" style={{ padding: '60px 20px' }}>
+                  <span style={{ fontSize: '36px' }}>💬</span>
+                  <div style={{ fontWeight: 700, fontSize: '14px', marginTop: '10px' }}>
+                    {historySearchQuery ? 'No matching messages found' : 'No conversation history logged yet'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    {historySearchQuery ? 'Try another query keyword' : 'Ask Reviso for help or start a quiz drill'}
+                  </div>
+                </div>
+              ) : (
+                filteredChatList.map((entry, idx) => (
+                  <div
+                    key={entry.id || idx}
+                    className={`history-item ${entry.sender || 'bot'}`}
+                    style={{ padding: '12px 14px' }}
+                  >
+                    <div className="history-item-meta" style={{ marginBottom: '4px' }}>
+                      <span className="history-sender-badge" style={{ fontSize: '11px' }}>
+                        {entry.sender === 'user' ? '👤 Laksh (You)' : '🤖 Reviso Autonomous Copilot'}
+                      </span>
+                      {entry.timestamp && (
+                        <span className="history-timestamp" style={{ fontSize: '11px' }}>
+                          {entry.timestamp}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className="history-item-bubble"
+                      style={{ fontSize: '13px', lineHeight: 1.55 }}
+                      dangerouslySetInnerHTML={{ __html: entry.text || '' }}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div
+              className="modal-footer"
+              style={{
+                padding: '14px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                Showing {filteredChatList.length} of {chatList.filter((c) => c.type === 'msg').length} messages
+              </span>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-pill"
+                  onClick={() => setIsChatHistoryModalOpen(false)}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="btn-pill"
+                  style={{ background: 'var(--grad-primary)', color: '#fff', border: 'none' }}
+                  onClick={() => {
+                    setIsChatHistoryModalOpen(false)
+                    const chatInputElem = document.querySelector('.chat-input-field') as HTMLInputElement
+                    if (chatInputElem) chatInputElem.focus()
+                    showToast('Focused tutor chat! 💬')
+                  }}
+                >
+                  💬 Open Live Chat
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Interactive Toast */}
       <div className={`toast ${toast.visible ? 'active' : ''}`}>
