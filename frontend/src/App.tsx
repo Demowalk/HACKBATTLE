@@ -132,6 +132,88 @@ function BellOffIcon({
 }
 
 // ============================================================================
+// REVISO BRAND LOGO (Custom Geometric Monogram & Neural Revision Loop)
+// ============================================================================
+function RevisoLogo({ size = 38 }: { size?: number }) {
+  return (
+    <div
+      className="brand-logo-container"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.28),
+        background: 'linear-gradient(135deg, rgba(0, 77, 64, 0.45) 0%, rgba(10, 15, 14, 0.95) 100%)',
+        border: '1.5px solid rgba(38, 166, 154, 0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        boxShadow: '0 4px 16px rgba(0, 77, 64, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.15)',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      <svg
+        width={Math.round(size * 0.72)}
+        height={Math.round(size * 0.72)}
+        viewBox="0 0 32 32"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="revisoGradMain" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#80CBC4" />
+            <stop offset="50%" stopColor="#26A69A" />
+            <stop offset="100%" stopColor="#004D40" />
+          </linearGradient>
+          <linearGradient id="revisoGradCore" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#80CBC4" />
+          </linearGradient>
+          <linearGradient id="revisoGradBeam" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#26A69A" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#80CBC4" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+
+        {/* Ambient Neural Arc */}
+        <path
+          d="M 6 16 C 6 8 10 4 18 4 C 24 4 28 8 28 14 C 28 19 24 22 20 22"
+          stroke="url(#revisoGradBeam)"
+          strokeWidth="1.5"
+          strokeDasharray="2 2"
+          opacity="0.5"
+        />
+
+        {/* Main Geometric "R" Monogram & Revision Path */}
+        <path
+          d="M 7 28 V 6.5 C 7 5.1 8.1 4 9.5 4 H 17.5 C 22.5 4 26.5 7.8 26.5 12.8 C 26.5 16.3 24.3 19.3 21.2 20.7 L 26.2 27.2 C 26.7 27.9 26.2 28.8 25.3 28.8 H 21.5 C 20.8 28.8 20.2 28.5 19.8 27.9 L 15.6 21.8 H 11.5 V 27.8 C 11.5 28.4 11 28.8 10.4 28.8 H 8.1 C 7.5 28.8 7 28.4 7 27.8 Z"
+          fill="url(#revisoGradMain)"
+        />
+
+        {/* Inner Negative Space */}
+        <path
+          d="M 11.5 8.5 V 17.2 H 17.2 C 19.8 17.2 21.8 15.2 21.8 12.85 C 21.8 10.5 19.8 8.5 17.2 8.5 Z"
+          fill="#0a1210"
+        />
+
+        {/* Luminous Inner Focus Core */}
+        <path
+          d="M 12 10.5 H 16.8 C 18.2 10.5 19.5 11.5 19.5 12.85 C 19.5 14.2 18.2 15.2 16.8 15.2 H 12"
+          stroke="url(#revisoGradCore)"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+
+        {/* Synaptic Flash Node (Insight Spark at apex) */}
+        <circle cx="24" cy="6.5" r="1.8" fill="#ffffff" />
+        <circle cx="24" cy="6.5" r="3.2" stroke="#80CBC4" strokeWidth="0.8" opacity="0.6" />
+      </svg>
+    </div>
+  )
+}
+
+// ============================================================================
 // QUIZ QUESTION DATA FOR CONCEPT MASTERY
 // ============================================================================
 interface QuizOption {
@@ -199,7 +281,7 @@ interface ChatEntry {
 export default function App() {
   // Theme State
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('studysync-theme') as 'dark' | 'light') || 'dark'
+    return (localStorage.getItem('reviso-theme') as 'dark' | 'light') || (localStorage.getItem('studysync-theme') as 'dark' | 'light') || 'dark'
   })
 
   // User Profile
@@ -328,7 +410,7 @@ export default function App() {
   // Apply Theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('studysync-theme', theme)
+    localStorage.setItem('reviso-theme', theme)
   }, [theme])
 
   // Click outside to close profile
@@ -680,10 +762,15 @@ export default function App() {
            ========================================================================== */}
       <header className="navbar">
         <div className="brand-group">
-          <div className="brand-logo">⚡</div>
+          <div className="brand-logo-wrap" title="reviso - Self-Learning Engine">
+            <RevisoLogo size={38} />
+          </div>
           <div>
-            <div className="brand-title">StudySync Pro</div>
-            <div className="brand-sub">Autonomous Adaptive Study & Self-Learning Engine</div>
+            <div className="brand-title">
+              <span className="brand-title-name">reviso</span>
+              <span className="brand-badge">PRO</span>
+            </div>
+            <div className="brand-sub">Autonomous Adaptive Study &amp; Self-Learning Engine</div>
           </div>
         </div>
 
@@ -1404,9 +1491,11 @@ export default function App() {
         <aside className="right-column">
           <div className="agent-header">
             <div className="agent-identity">
-              <div className="agent-avatar">✨</div>
+              <div className="agent-avatar" style={{ background: 'transparent', padding: 0, border: 'none' }}>
+                <RevisoLogo size={32} />
+              </div>
               <div>
-                <div className="agent-name">StudySync Copilot</div>
+                <div className="agent-name">Reviso Copilot</div>
                 <div className="agent-status-label">
                   <span>●</span> Ready to help you thrive ✨
                 </div>
