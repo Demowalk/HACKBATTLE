@@ -114,7 +114,7 @@ const soundSynth = new AudioSynthesizer()
 // ============================================================================
 function BellIcon({
   size = 14,
-  color = '#ffffff',
+  color = 'currentColor',
   className = '',
 }: {
   size?: number
@@ -2698,7 +2698,8 @@ export default function App() {
                       type="button"
                       className={`btn-alarm-bell ${task.alarmActive ? 'active' : ''}`}
                       onClick={() => toggleAlarmBell(task.id, task.title)}
-                      title={task.alarmActive ? 'Alarm Active' : 'Muted'}
+                      title={task.alarmActive ? 'Alarm Active (Click to mute)' : 'Alarm Muted (Click to activate)'}
+                      aria-label={task.alarmActive ? 'Alarm Active' : 'Alarm Muted'}
                     >
                       <BellIcon size={14} />
                     </button>
@@ -4874,7 +4875,7 @@ export default function App() {
       <div className={`toast ${toast.visible ? 'active' : ''}`}>
         <span>
           {toast.icon === 'bell' || toast.icon === '🔔' ? (
-            <BellIcon size={15} color="#ffffff" />
+            <BellIcon size={15} color="#f97316" />
           ) : toast.icon === 'bell-off' || toast.icon === '🔕' ? (
             <BellOffIcon size={15} color="#ffffff" />
           ) : (
