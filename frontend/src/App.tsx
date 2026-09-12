@@ -308,9 +308,14 @@ export default function App() {
   })
   const [userRole, setUserRole] = useState<string>('Student')
   const [userGrade, setUserGrade] = useState<string>('Grade 12 • Engineering Prep')
+  const [userTargetExam, setUserTargetExam] = useState<string>('JEE / Advanced STEM')
+  const [userDailyGoal, setUserDailyGoal] = useState<number>(120)
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false)
   const [isEditingName, setIsEditingName] = useState<boolean>(false)
   const [editNameValue, setEditNameValue] = useState<string>(() => getStoredUserName())
+  const [editGrade, setEditGrade] = useState<string>('Grade 12 • Engineering Prep')
+  const [editTargetExam, setEditTargetExam] = useState<string>('JEE / Advanced STEM')
+  const [editDailyGoal, setEditDailyGoal] = useState<number>(120)
   const profileRef = useRef<HTMLDivElement>(null)
 
   // Schedule & Tasks
@@ -480,7 +485,18 @@ export default function App() {
           setEditNameValue(profile.fullName)
         }
         if (profile.role) setUserRole(profile.role)
-        if (profile.grade) setUserGrade(profile.grade)
+        if (profile.grade) {
+          setUserGrade(profile.grade)
+          setEditGrade(profile.grade)
+        }
+        if (profile.targetExam) {
+          setUserTargetExam(profile.targetExam)
+          setEditTargetExam(profile.targetExam)
+        }
+        if (profile.dailyGoalMinutes) {
+          setUserDailyGoal(profile.dailyGoalMinutes)
+          setEditDailyGoal(profile.dailyGoalMinutes)
+        }
         if (profile.streak != null) {
           setUserStreak(profile.streak)
           localStorage.setItem('reviso_user_streak', profile.streak.toString())
@@ -1077,36 +1093,124 @@ export default function App() {
                     <span className="dropdown-full-name">{userName}</span>
                     <span className="dropdown-email">laksh.hs@adaptive.ai</span>
                     <span className="dropdown-badge">{userRole} • {userGrade}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--brand-mint)', marginTop: '3px', fontWeight: 600 }}>
+                      🎯 {userTargetExam} • ⏱️ {userDailyGoal}m/day
+                    </span>
                   </div>
                 </div>
                 <div className="dropdown-divider" />
                 {isEditingName ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <input
-                      type="text"
-                      value={editNameValue}
-                      onChange={(e) => setEditNameValue(e.target.value)}
-                      style={{
-                        background: 'var(--bg-canvas)',
-                        border: '1.5px solid var(--border-strong)',
-                        color: 'var(--text-primary)',
-                        padding: '6px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                      }}
-                      autoFocus
-                    />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
+                    <div>
+                      <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                        Your Name
+                      </label>
+                      <input
+                        type="text"
+                        value={editNameValue}
+                        onChange={(e) => setEditNameValue(e.target.value)}
+                        placeholder="Enter full name"
+                        style={{
+                          width: '100%',
+                          background: 'var(--bg-canvas)',
+                          border: '1px solid var(--border-strong)',
+                          color: 'var(--text-primary)',
+                          padding: '5px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          marginTop: '2px',
+                        }}
+                        autoFocus
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                        Target Exam / Focus
+                      </label>
+                      <input
+                        type="text"
+                        value={editTargetExam}
+                        onChange={(e) => setEditTargetExam(e.target.value)}
+                        placeholder="e.g. JEE Advanced, NEET, SAT"
+                        style={{
+                          width: '100%',
+                          background: 'var(--bg-canvas)',
+                          border: '1px solid var(--border-strong)',
+                          color: 'var(--text-primary)',
+                          padding: '5px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          marginTop: '2px',
+                        }}
+                      />
+                    </div>
+
                     <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                          Grade
+                        </label>
+                        <input
+                          type="text"
+                          value={editGrade}
+                          onChange={(e) => setEditGrade(e.target.value)}
+                          placeholder="e.g. Grade 12"
+                          style={{
+                            width: '100%',
+                            background: 'var(--bg-canvas)',
+                            border: '1px solid var(--border-strong)',
+                            color: 'var(--text-primary)',
+                            padding: '5px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            marginTop: '2px',
+                          }}
+                        />
+                      </div>
+                      <div style={{ width: '80px' }}>
+                        <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                          Goal (min)
+                        </label>
+                        <input
+                          type="number"
+                          value={editDailyGoal}
+                          onChange={(e) => setEditDailyGoal(Math.max(15, parseInt(e.target.value, 10) || 60))}
+                          style={{
+                            width: '100%',
+                            background: 'var(--bg-canvas)',
+                            border: '1px solid var(--border-strong)',
+                            color: 'var(--text-primary)',
+                            padding: '5px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            marginTop: '2px',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
                       <button
                         type="button"
                         onClick={() => {
                           if (editNameValue.trim()) {
                             const trimmed = editNameValue.trim()
+                            const trimmedGrade = editGrade.trim() || 'Grade 12 • Engineering Prep'
+                            const trimmedExam = editTargetExam.trim() || 'JEE / Advanced STEM'
                             setUserName(trimmed)
+                            setUserGrade(trimmedGrade)
+                            setUserTargetExam(trimmedExam)
+                            setUserDailyGoal(editDailyGoal)
                             setStoredUserName(trimmed)
-                            updateUserProfile(1, { fullName: trimmed })
+                            updateUserProfile(1, {
+                              fullName: trimmed,
+                              grade: trimmedGrade,
+                              targetExam: trimmedExam,
+                              dailyGoalMinutes: editDailyGoal,
+                            })
                             setIsEditingName(false)
-                            showToast(`Saved to database as ${trimmed}`)
+                            showToast(`Saved to database: ${trimmed} (${trimmedExam})`)
                           }
                         }}
                         style={{
@@ -1114,27 +1218,30 @@ export default function App() {
                           background: 'var(--grad-primary)',
                           color: '#fff',
                           border: 'none',
-                          borderRadius: '4px',
-                          padding: '4px',
+                          borderRadius: '5px',
+                          padding: '6px',
                           fontSize: '11px',
                           fontWeight: 700,
                           cursor: 'pointer',
                         }}
                       >
-                        Save
+                        Save Profile
                       </button>
                       <button
                         type="button"
                         onClick={() => {
                           setEditNameValue(userName)
+                          setEditGrade(userGrade)
+                          setEditTargetExam(userTargetExam)
+                          setEditDailyGoal(userDailyGoal)
                           setIsEditingName(false)
                         }}
                         style={{
                           background: 'var(--bg-surface-elevated)',
                           color: 'var(--text-secondary)',
                           border: '1px solid var(--border-subtle)',
-                          borderRadius: '4px',
-                          padding: '4px 8px',
+                          borderRadius: '5px',
+                          padding: '6px 10px',
                           fontSize: '11px',
                           cursor: 'pointer',
                         }}
@@ -1150,7 +1257,7 @@ export default function App() {
                     onClick={() => setIsEditingName(true)}
                   >
                     <span>⚙️</span>
-                    <span>Change Display Name</span>
+                    <span>Edit Profile & Goals</span>
                   </button>
                 )}
                 <button
