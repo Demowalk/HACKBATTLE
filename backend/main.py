@@ -10,7 +10,7 @@ import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, status, Query, Body
 from fastapi.responses import Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 # Ensure project root is in sys.path so 'database' package can be imported reliably
