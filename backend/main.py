@@ -29,6 +29,12 @@ class QuizAnswer(BaseModel):
 class QuizAnswersRequest(BaseModel):
     answers: List[QuizAnswer]
 
+class ReplanRequest(BaseModel):
+    subjects: List[Subject]
+    hours_available: int
+    weak_subject: str
+    weak_topic: str
+
 load_dotenv()
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
@@ -105,6 +111,29 @@ Respond ONLY with a valid JSON array, no other text. Example format:
     "options": ["x=2", "x=3", "x=4", "x=5"],
     "correct_answer": "x=3"
   }}
+]
+"""
+    return prompt
+
+def build_replan_prompt(subjects, hours_available, weak_subject, weak_topic):
+    subject_list = ""
+    for subject in subjects:
+        topics_str = ", ".join(subject.topics)
+        subject_list += f"- {subject.name}: {topics_str}\n"
+
+    prompt = f"""You are a study planner AI. Create a study schedule based on the following:
+
+Subjects and topics:
+{subject_list}
+
+Total hours available: {hours_available}
+
+The student is performing weak in "{weak_topic}" under the subject "{weak_subject}". Give this topic significantly more time and priority than the others, since it needs more focus.
+
+For each topic, create a task with a subject, topic, duration in minutes, and priority (high/medium/low).
+Respond ONLY with a valid JSON array, no other text. Example format:
+[
+  {{"subject": "Maths", "topic": "Algebra", "duration_minutes": 90, "priority": "high"}}
 ]
 """
     return prompt
@@ -226,3 +255,40 @@ def export_calendar():
     ics_content = "\n".join(ics_lines)
 
     return Response(content=ics_content, media_type="text/calendar")
+
+@app.post("/replan")
+def replan(request: ReplanRequest):
+    prompt = build_replan_prompt(
+        request.subjects,
+        request.hours_available,
+        request.weak_subject,
+        request.weak_topic
+    )
+
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    ai_reply = response.choices[0].message.content
+    ai_tasks = json.loads(ai_reply)
+
+    global tasks
+    tasks = []
+    next_id = 1
+    for ai_task in ai_tasks:
+        new_task = {
+            "id": next_id,
+            "subject": ai_task["subject"],
+            "topic": ai_task["topic"],
+            "duration_minutes": ai_task["duration_minutes"],
+            "priority": ai_task["priority"],
+            "completed": False,
+            "scheduled_date": "2026-09-13"
+        }
+        tasks.append(new_task)
+        next_id += 1
+
+    return {"tasks": tasks}
