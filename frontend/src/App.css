@@ -24,13 +24,14 @@
   --grad-ai: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
   --grad-dark-card: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
 
-  /* SOFT SLATE & NAVY DARK THEME (#0f172a base, #1e293b cards) */
-  --bg-canvas: #0f172a;
-  --bg-surface: #1e293b;
-  --bg-surface-elevated: #243144;
-  --bg-surface-hover: #2d3d54;
-  --border-subtle: #334155;
-  --border-strong: #475569;
+  /* PURE BLACK (#000000) DARK THEME WITH HIGH-READABILITY SURFACES */
+  --bg-canvas: #000000;
+  --bg-navbar: #000000;
+  --bg-surface: #0e1217;
+  --bg-surface-elevated: #161b24;
+  --bg-surface-hover: #1f2532;
+  --border-subtle: #242935;
+  --border-strong: #384152;
 
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
@@ -50,17 +51,18 @@
   --color-ai: #a78bfa;
   --color-ai-subtle: rgba(139, 92, 246, 0.16);
 
-  --color-empty-block: #172033;
-  --color-empty-border: #334155;
+  --color-empty-block: #090c10;
+  --color-empty-border: #242935;
   --color-empty-text: #94a3b8;
 
-  --card-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-  --modal-overlay: rgba(15, 23, 42, 0.75);
+  --card-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -2px rgba(0, 0, 0, 0.6);
+  --modal-overlay: rgba(0, 0, 0, 0.85);
 }
 
 /* VIVID LIGHT THEME (Warm Porcelain & Linear Ivory Aesthetic) */
 html[data-theme="light"] {
   --bg-canvas: #f8fafc;
+  --bg-navbar: #ffffff;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #f1f5f9;
   --bg-surface-hover: #e2e8f0;
@@ -92,6 +94,10 @@ html[data-theme="light"] {
   --modal-overlay: rgba(15, 23, 42, 0.5);
 }
 
+html {
+  background-color: var(--bg-canvas);
+}
+
 body {
   background-color: var(--bg-canvas);
   color: var(--text-primary);
@@ -106,7 +112,7 @@ body {
    HEADER & NAVIGATION BAR
    ========================================================================== */
 header.navbar {
-  background-color: var(--bg-surface);
+  background-color: var(--bg-navbar);
   border-bottom: 1.5px solid var(--border-subtle);
   padding: 14px 30px;
   display: flex;
@@ -761,32 +767,62 @@ header.navbar {
   transform: translateY(-1px);
 }
 
-/* Subtle alarm bell */
+/* Basic White Alarm Bell */
 .btn-alarm-bell {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--text-tertiary);
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
+  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-  opacity: 0.4;
+  transition: all 0.2s ease;
+  opacity: 0.55;
+  padding: 0;
 }
 
 .task-card:hover .btn-alarm-bell,
-.btn-alarm-bell.active {
+.empty-block .btn-alarm-bell {
+  opacity: 0.85;
+}
+
+.btn-alarm-bell:hover {
   opacity: 1;
-  color: var(--accent-primary);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: scale(1.06);
 }
 
 .btn-alarm-bell.active {
-  background: var(--accent-primary-subtle);
-  border-color: var(--accent-primary);
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
+}
+
+.btn-alarm-bell svg {
+  display: block;
+  fill: #ffffff;
+  width: 15px;
+  height: 15px;
+}
+
+html[data-theme="light"] .btn-alarm-bell {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .btn-alarm-bell svg {
+  fill: #0f172a;
+}
+
+html[data-theme="light"] .btn-alarm-bell.active {
+  background: rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 23, 42, 0.2);
+  color: #0f172a;
 }
 
 /* Subtle Status Badges */

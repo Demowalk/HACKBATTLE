@@ -73,6 +73,65 @@ class AudioSynthesizer {
 const soundSynth = new AudioSynthesizer()
 
 // ============================================================================
+// BASIC WHITE BELL VECTOR ICONS (Clean, Modern, Non-Emoji)
+// ============================================================================
+function BellIcon({
+  size = 14,
+  color = '#ffffff',
+  className = '',
+}: {
+  size?: number
+  color?: string
+  className?: string
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={color}
+      className={className}
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+    </svg>
+  )
+}
+
+function BellOffIcon({
+  size = 14,
+  color = '#ffffff',
+  className = '',
+}: {
+  size?: number
+  color?: string
+  className?: string
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      <path d="M18.63 13A17.89 17.89 0 0 1 18 8" />
+      <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14" />
+      <path d="M18 8a6 6 0 0 0-9.33-5" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  )
+}
+
+// ============================================================================
 // QUIZ QUESTION DATA FOR CONCEPT MASTERY
 // ============================================================================
 interface QuizOption {
@@ -344,7 +403,7 @@ export default function App() {
 
   const dismissAlarm = () => {
     setAlarmModalOpen(false)
-    showToast(`Alarm dismissed for ${activeAlarmTitle}`, '🔕')
+    showToast(`Alarm dismissed for ${activeAlarmTitle}`, 'bell-off')
   }
 
   const snoozeAlarm = () => {
@@ -359,10 +418,10 @@ export default function App() {
         if (t.id === taskId) {
           const next = !t.alarmActive
           if (next) {
-            showToast(`Alarm enabled for ${title}`, '🔔')
+            showToast(`Alarm enabled for ${title}`, 'bell')
             soundSynth.playHarmonicChime()
           } else {
-            showToast(`Alarm muted for ${title}`, '🔕')
+            showToast(`Alarm muted for ${title}`, 'bell-off')
           }
           return { ...t, alarmActive: next }
         }
@@ -666,7 +725,7 @@ export default function App() {
             onClick={() => triggerAlarm('Loop structures & list comprehension', '1:30 PM')}
             title="Test Web Audio synthesizer alarm chime"
           >
-            <span>🔔</span>
+            <BellIcon size={14} color="#ffffff" />
             <span>Test Alarm</span>
           </button>
 
@@ -883,7 +942,7 @@ export default function App() {
                     onClick={() => toggleAlarmBell(tasks[0].id, tasks[0].title)}
                     title={tasks[0].alarmActive ? 'Alarm Active' : 'Muted'}
                   >
-                    🔔
+                    <BellIcon size={14} />
                   </button>
                   <span className="badge badge-done">{tasks[0].status}</span>
                 </div>
@@ -932,9 +991,9 @@ export default function App() {
                   <button
                     type="button"
                     className="btn-alarm-bell active"
-                    onClick={() => showToast('Alarm active for scheduled break', '🔔')}
+                    onClick={() => showToast('Alarm active for scheduled break', 'bell')}
                   >
-                    🔔
+                    <BellIcon size={14} />
                   </button>
                 )}
               </div>
@@ -968,7 +1027,7 @@ export default function App() {
                     onClick={() => toggleAlarmBell(tasks[1].id, tasks[1].title)}
                     title="Alarm notification"
                   >
-                    🔔
+                    <BellIcon size={14} />
                   </button>
                   <span className="badge badge-upcoming">{tasks[1].status}</span>
                 </div>
@@ -1004,9 +1063,9 @@ export default function App() {
                     <button
                       type="button"
                       className="btn-alarm-bell active"
-                      onClick={() => showToast('Alarm set for Python practice', '🔔')}
+                      onClick={() => showToast('Alarm set for Python practice', 'bell')}
                     >
-                      🔔
+                      <BellIcon size={14} />
                     </button>
                     <span className="badge badge-upcoming">Review Slotted</span>
                   </div>
@@ -1082,7 +1141,7 @@ export default function App() {
                     className={`btn-alarm-bell ${tasks[2].alarmActive ? 'active' : ''}`}
                     onClick={() => toggleAlarmBell(tasks[2].id, tasks[2].title)}
                   >
-                    🔔
+                    <BellIcon size={14} />
                   </button>
                   <span className="badge badge-upcoming">{tasks[2].status}</span>
                 </div>
@@ -1138,9 +1197,9 @@ export default function App() {
                   <button
                     type="button"
                     className="btn-alarm-bell active"
-                    onClick={() => showToast('Alarm active for scheduled break', '🔔')}
+                    onClick={() => showToast('Alarm active for scheduled break', 'bell')}
                   >
-                    🔔
+                    <BellIcon size={14} />
                   </button>
                 )}
               </div>
@@ -1166,7 +1225,7 @@ export default function App() {
                     className="btn-alarm-bell"
                     onClick={() => toggleAlarmBell(tasks[3].id, tasks[3].title)}
                   >
-                    🔔
+                    <BellIcon size={14} />
                   </button>
                   <span className="badge badge-done">{tasks[3].status}</span>
                 </div>
@@ -1567,25 +1626,37 @@ export default function App() {
           style={{ maxWidth: '430px', textAlign: 'center', borderColor: 'var(--accent-primary)' }}
         >
           <div className="modal-body" style={{ alignItems: 'center', padding: '32px 22px' }}>
+            {/* Alarm Ringing Icon */}
             <div
               style={{
                 width: '66px',
                 height: '66px',
-                background: 'var(--grad-primary)',
+                background: 'rgba(255, 255, 255, 0.12)',
+                border: '1.5px solid rgba(255, 255, 255, 0.25)',
                 color: '#ffffff',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '32px',
                 marginBottom: '12px',
-                boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)',
+                boxShadow: '0 4px 20px rgba(255, 255, 255, 0.15)',
               }}
             >
-              🔔
+              <BellIcon size={32} color="#ffffff" />
             </div>
-            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '6px' }}>
-              🔔 Time for {activeAlarmTitle}
+            <h3
+              style={{
+                fontSize: '20px',
+                fontWeight: 800,
+                marginBottom: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+            >
+              <BellIcon size={18} color="#ffffff" />
+              <span>Time for {activeAlarmTitle}</span>
             </h3>
             <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '22px', lineHeight: 1.45 }}>
               Your session ({activeAlarmTime}) is starting now. Grab some water, get comfortable, and let's make progress!
@@ -1614,7 +1685,15 @@ export default function App() {
 
       {/* Interactive Toast */}
       <div className={`toast ${toast.visible ? 'active' : ''}`}>
-        <span>{toast.icon}</span>
+        <span>
+          {toast.icon === 'bell' || toast.icon === '🔔' ? (
+            <BellIcon size={15} color="#ffffff" />
+          ) : toast.icon === 'bell-off' || toast.icon === '🔕' ? (
+            <BellOffIcon size={15} color="#ffffff" />
+          ) : (
+            toast.icon
+          )}
+        </span>
         <span>{toast.message}</span>
       </div>
     </div>
