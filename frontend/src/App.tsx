@@ -954,7 +954,7 @@ export default function App() {
               <div className="daily-progress-title-wrap">
                 <span className="streak-pill">🔥 5-Day Streak!</span>
                 <span className="daily-progress-text">
-                  {completedCount} of {totalCount} study blocks completed ({progressPct}%)
+                  {completedCount} of {totalCount} study blocks completed <span className="daily-pct-highlight">({progressPct}%)</span>
                 </span>
               </div>
               <span className="daily-progress-sub">
