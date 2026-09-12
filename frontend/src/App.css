@@ -2556,6 +2556,49 @@ html[data-theme="light"] .btn-alarm-bell.active:hover svg {
   margin-top: 3px;
 }
 
+/* Spaced Repetition Mistake Bank */
+.quiz-spaced-repetition-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  color: #fbbf24;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.badge-mistake-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.concept-mistake-pill {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* 2. Stage Breakdown Dual Cards */
 .quiz-stages-row {
   display: grid;

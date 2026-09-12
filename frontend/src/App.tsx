@@ -2247,6 +2247,33 @@ export default function App() {
   const [stage1Score, setStage1Score] = useState<number>(0)
   const [adaptiveDifficulty, setAdaptiveDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
   const [adaptiveNotice, setAdaptiveNotice] = useState<string | null>(null)
+  const [mistakeNotice, setMistakeNotice] = useState<string | null>(null)
+  const [mistakeBank, setMistakeBank] = useState<Record<string, QuizQuestionItem[]>>(() => {
+    try {
+      const saved = localStorage.getItem('reviso_mistake_bank')
+      if (saved) {
+        return JSON.parse(saved)
+      }
+    } catch {
+      // fallback
+    }
+    return {
+      python: [
+        {
+          id: 104,
+          subject: 'Python',
+          topic: 'Nested Loops',
+          difficulty: 'medium',
+          question: 'What is the output of <code>[[j for j in range(2)] for i in range(2)]</code>?',
+          options: ['[[0, 1], [0, 1]]', '[[0, 0], [1, 1]]', '[0, 1, 0, 1]', '[[1, 2], [1, 2]]'],
+          correct_answer: '[[0, 1], [0, 1]]',
+          explanation: 'The inner comprehension creates [0, 1] twice within the outer loop.',
+        },
+      ],
+      math: [],
+      chem: [],
+    }
+  })
   const [isTransitioningStage, setIsTransitioningStage] = useState<boolean>(false)
   const [quizFinalResult, setQuizFinalResult] = useState<{
     stage1Correct: number
@@ -2871,22 +2898,46 @@ export default function App() {
 
     const subjectName = key === 'math' ? 'Maths' : key === 'chem' ? 'Chemistry' : 'Python'
 
-    try {
-      const data = await fetchGeneratedQuiz(subjectName, undefined, 'medium', 3)
-      if (data && data.questions && data.questions.length > 0) {
-        setQuizQuestions(data.questions)
-        setActiveQuizId(data.quiz_id)
-        setQuizLoading(false)
-        return
-      }
-    } catch {
-      // Backend error fallback
+    // 1. Spaced Repetition: Check if student has recorded past mistakes for this subject
+    const subjectMistakes = mistakeBank[key] || []
+    let initialQuestions: QuizQuestionItem[] = []
+
+    if (subjectMistakes.length > 0) {
+      // Prioritize up to 2 past mistakes in the diagnostic round!
+      const mistakesToInclude = subjectMistakes.slice(0, 2)
+      initialQuestions = [...mistakesToInclude]
+      setMistakeNotice(
+        `Spaced Repetition Active: Retrying ${mistakesToInclude.length} question${mistakesToInclude.length > 1 ? 's' : ''} you previously missed to reinforce recall.`
+      )
+      showToast(`Loaded ${mistakesToInclude.length} past missed question(s) for review!`, 'zap')
+    } else {
+      setMistakeNotice(null)
     }
 
-    // Client-side fallback: sample 3 questions from FALLBACK_QUIZ_BANK
-    const pool = FALLBACK_QUIZ_BANK[key] || FALLBACK_QUIZ_BANK.python
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 3)
-    setQuizQuestions(shuffled)
+    // 2. Fill remaining slots up to 3 questions with fresh items
+    const needed = 3 - initialQuestions.length
+    if (needed > 0) {
+      const existingIds = new Set(initialQuestions.map((q) => q.id))
+      try {
+        const data = await fetchGeneratedQuiz(subjectName, undefined, 'medium', needed)
+        if (data && data.questions && data.questions.length > 0) {
+          const fresh = data.questions.filter((q) => !existingIds.has(q.id)).slice(0, needed)
+          initialQuestions = [...initialQuestions, ...fresh]
+        }
+      } catch {
+        // Backend error fallback
+      }
+
+      if (initialQuestions.length < 3) {
+        const pool = FALLBACK_QUIZ_BANK[key] || FALLBACK_QUIZ_BANK.python
+        const remaining = pool.filter((q) => !existingIds.has(q.id))
+        const sourcePool = remaining.length >= (3 - initialQuestions.length) ? remaining : pool
+        const shuffled = [...sourcePool].sort(() => Math.random() - 0.5).slice(0, 3 - initialQuestions.length)
+        initialQuestions = [...initialQuestions, ...shuffled]
+      }
+    }
+
+    setQuizQuestions(initialQuestions)
     setActiveQuizId(undefined)
     setQuizLoading(false)
   }
@@ -2908,10 +2959,36 @@ export default function App() {
         isCorrect: true,
         text: `Spot on! ${currentQ.explanation || 'Great job identifying the right answer!'}`,
       })
+
+      // If user got this question right, remove from mistake bank (mastered!)
+      setMistakeBank((prev) => {
+        const list = prev[currentQuizSubject] || []
+        const wasInBank = list.some((q) => q.id === currentQ.id || q.question === currentQ.question)
+        if (!wasInBank) return prev
+        const updatedList = list.filter((q) => q.id !== currentQ.id && q.question !== currentQ.question)
+        const updated = { ...prev, [currentQuizSubject]: updatedList }
+        try {
+          localStorage.setItem('reviso_mistake_bank', JSON.stringify(updated))
+        } catch {}
+        showToast('Past mistake mastered! Removed from review queue.', 'check')
+        return updated
+      })
     } else {
       setQuizFeedback({
         isCorrect: false,
         text: `Not quite. Correct answer: ${currentQ.correct_answer || 'the indicated option'}. ${currentQ.explanation || ''}`,
+      })
+
+      // If user got it wrong, add to the mistake bank for future spaced repetition!
+      setMistakeBank((prev) => {
+        const list = prev[currentQuizSubject] || []
+        const alreadyExists = list.some((q) => q.id === currentQ.id || q.question === currentQ.question)
+        if (alreadyExists) return prev
+        const updated = { ...prev, [currentQuizSubject]: [...list, currentQ] }
+        try {
+          localStorage.setItem('reviso_mistake_bank', JSON.stringify(updated))
+        } catch {}
+        return updated
       })
     }
 
@@ -4218,6 +4295,12 @@ export default function App() {
                         {dktScores.math.retention}
                       </span>
                     </div>
+                    {(mistakeBank['math'] || []).length > 0 && (
+                      <div className="concept-mistake-pill">
+                        <RotateCcw size={10} className="inline mr-1 text-amber-400" />
+                        {(mistakeBank['math'] || []).length} past missed question(s) queued
+                      </div>
+                    )}
                     <button
                       type="button"
                       className="btn-concept-quiz"
@@ -4258,6 +4341,12 @@ export default function App() {
                         {dktScores.chem.retention}
                       </span>
                     </div>
+                    {(mistakeBank['chem'] || []).length > 0 && (
+                      <div className="concept-mistake-pill">
+                        <RotateCcw size={10} className="inline mr-1 text-amber-400" />
+                        {(mistakeBank['chem'] || []).length} past missed question(s) queued
+                      </div>
+                    )}
                     <button
                       type="button"
                       className="btn-concept-quiz"
@@ -4298,6 +4387,12 @@ export default function App() {
                         {dktScores.python.retention}
                       </span>
                     </div>
+                    {(mistakeBank['python'] || []).length > 0 && (
+                      <div className="concept-mistake-pill">
+                        <RotateCcw size={10} className="inline mr-1 text-amber-400" />
+                        {(mistakeBank['python'] || []).length} past missed question(s) queued
+                      </div>
+                    )}
                     <button
                       type="button"
                       className="btn-concept-quiz"
@@ -5006,6 +5101,14 @@ export default function App() {
             ) : quizQuestions.length > 0 ? (
               /* ACTIVE QUESTION STEPPER */
               <div>
+                {/* Spaced Repetition Notice for Retrying Past Mistakes */}
+                {quizStage === 1 && mistakeNotice && (
+                  <div className="quiz-spaced-repetition-banner">
+                    <RotateCcw size={13} className="text-amber-400" />
+                    <span>{mistakeNotice}</span>
+                  </div>
+                )}
+
                 {/* Adaptive Stage 2 Notification Banner */}
                 {quizStage === 2 && adaptiveNotice && (
                   <div className={`quiz-adaptive-banner ${adaptiveDifficulty || 'medium'}`}>
@@ -5023,6 +5126,15 @@ export default function App() {
                     {quizQuestions[currentQuestionIdx]?.difficulty && (
                       <span className={`quiz-difficulty-tag ${quizQuestions[currentQuestionIdx]?.difficulty}`}>
                         {quizQuestions[currentQuestionIdx]?.difficulty}
+                      </span>
+                    )}
+                    {/* Spaced Repetition Badge if this question is from user's past mistakes */}
+                    {(mistakeBank[currentQuizSubject] || []).some(
+                      (q) => q.id === quizQuestions[currentQuestionIdx]?.id || q.question === quizQuestions[currentQuestionIdx]?.question
+                    ) && (
+                      <span className="badge-mistake-retry">
+                        <RotateCcw size={10} className="inline mr-1 text-amber-400" />
+                        Retrying Past Mistake
                       </span>
                     )}
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
