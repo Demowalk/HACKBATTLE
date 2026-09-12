@@ -138,9 +138,11 @@ Respond ONLY with a valid JSON array, no other text. Example format:
 """
     return prompt
 
-
 @app.post("/generate-plan")
 def generate_plan(request: GeneratePlanRequest):
+    if not request.subjects or request.hours_available <= 0:
+        return {"error": "Please provide at least one subject and a positive number of hours."}
+
     prompt = build_prompt(request.subjects, request.hours_available)
 
     try:
@@ -170,6 +172,7 @@ def generate_plan(request: GeneratePlanRequest):
         next_id += 1
 
     return {"tasks": tasks}
+
 
 quiz_questions = []
 
