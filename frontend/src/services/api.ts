@@ -386,6 +386,7 @@ export interface QuizQuestionItem {
   options: string[]
   correct_answer?: string
   explanation?: string
+  difficulty?: 'easy' | 'medium' | 'hard'
 }
 
 export interface GeneratedQuizResponse {

@@ -1619,6 +1619,99 @@ html[data-theme="light"] .btn-alarm-bell.active {
   font-size: 12px;
 }
 
+/* ADAPTIVE MULTI-STAGE STYLES */
+.quiz-difficulty-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quiz-difficulty-tag.easy {
+  background: var(--color-math-subtle);
+  color: var(--color-math);
+  border: 1px solid var(--color-math);
+}
+
+.quiz-difficulty-tag.medium {
+  background: rgba(0, 180, 216, 0.15);
+  color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+}
+
+.quiz-difficulty-tag.hard {
+  background: rgba(255, 183, 3, 0.15);
+  color: #ffb703;
+  border: 1px solid #ffb703;
+}
+
+.quiz-adaptive-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 600;
+  animation: slideDown 0.3s ease-out;
+}
+
+.quiz-adaptive-banner.easy {
+  background: rgba(46, 196, 182, 0.12);
+  border: 1px solid rgba(46, 196, 182, 0.4);
+  color: #2ec4b6;
+}
+
+.quiz-adaptive-banner.medium {
+  background: rgba(0, 180, 216, 0.12);
+  border: 1px solid rgba(0, 180, 216, 0.4);
+  color: #00b4d8;
+}
+
+.quiz-adaptive-banner.hard {
+  background: rgba(255, 183, 3, 0.12);
+  border: 1px solid rgba(255, 183, 3, 0.4);
+  color: #ffb703;
+}
+
+.quiz-stage-score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.quiz-stage-score-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+
+.quiz-stage-score-card .stage-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.quiz-stage-score-card .stage-value {
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 4px;
+  color: var(--text-primary);
+}
+
+
 
 /* POMODORO TIMER */
 .timer-display {

@@ -233,28 +233,69 @@ function RevisoLogo({ size = 38 }: { size?: number }) {
 // ============================================================================
 const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
   python: [
+    // Easy
     {
       id: 101,
       subject: 'Python',
+      topic: 'Booleans',
+      difficulty: 'easy',
+      question: `In Python, what is the boolean evaluation of <code>bool([])</code> and <code>bool([0])</code>?`,
+      options: ['False and False', 'False and True', 'True and False', 'True and True'],
+      correct_answer: 'False and True',
+      explanation: 'Empty collections evaluate to False, while any non-empty list—even containing 0—evaluates to True.',
+    },
+    {
+      id: 102,
+      subject: 'Python',
+      topic: 'Slicing',
+      difficulty: 'easy',
+      question: `What is the output of slicing string <code>s = 'REVISO'[::-1]</code>?`,
+      options: ["'OSIVER'", "'REVISO'", "'OSIVER' in lowercase", "'R'"],
+      correct_answer: "'OSIVER'",
+      explanation: 'Using a step of -1 traverses and reverses the sequence from the last element to the first.',
+    },
+    {
+      id: 103,
+      subject: 'Python',
+      topic: 'Dictionaries',
+      difficulty: 'easy',
+      question: `What does <code>dict.get('missing_key', 'fallback')</code> return if <code>'missing_key'</code> is absent?`,
+      options: ['KeyError', 'None', "'fallback'", 'False'],
+      correct_answer: "'fallback'",
+      explanation: 'The .get() method returns the specified fallback argument instead of raising an unhandled KeyError.',
+    },
+    // Medium
+    {
+      id: 104,
+      subject: 'Python',
       topic: 'List Comprehensions',
+      difficulty: 'medium',
       question: `What is the evaluated result of the following Python expression?<br><pre style="background:var(--bg-canvas); padding:10px; border-radius:8px; margin-top:8px; font-family:var(--font-mono); font-size:12px; border:1px solid var(--border-subtle);">[x * 2 for x in range(4) if x % 2 == 1]</pre>`,
       options: ['[0, 2, 4, 6]', '[2, 6]', '[1, 3]', '[4, 8]'],
       correct_answer: '[2, 6]',
       explanation: 'range(4) produces [0, 1, 2, 3]. The condition `if x % 2 == 1` filters odd numbers: 1 and 3. Then `x * 2` yields [2, 6].',
     },
     {
-      id: 102,
+      id: 105,
       subject: 'Python',
-      topic: 'Dictionaries',
-      question: `What does <code>dict.get('missing_key', 'fallback')</code> return if <code>'missing_key'</code> is absent?`,
-      options: ['KeyError', 'None', "'fallback'", 'False'],
-      correct_answer: "'fallback'",
-      explanation: 'The .get() method returns the specified fallback argument instead of raising an unhandled KeyError.',
+      topic: 'Object Identity',
+      difficulty: 'medium',
+      question: `What is the key difference between <code>==</code> and <code>is</code> in Python?`,
+      options: [
+        '`==` compares values for equality, while `is` compares object identity in memory',
+        '`==` checks memory addresses, while `is` checks value equivalence',
+        '`is` is only for numerical primitives, `==` is for strings and lists',
+        'There is no difference; they are exact aliases'
+      ],
+      correct_answer: '`==` compares values for equality, while `is` compares object identity in memory',
+      explanation: '`==` checks value equality, while `is` checks whether two variables refer to the exact same memory address (`id(a) == id(b)`).',
     },
+    // Hard
     {
-      id: 103,
+      id: 106,
       subject: 'Python',
       topic: 'Functions & Arguments',
+      difficulty: 'hard',
       question: `What happens when using a mutable default argument like <code>def append_val(val, target=[])</code>?`,
       options: [
         'A new empty list is created on every call',
@@ -266,18 +307,10 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       explanation: 'Default arguments are evaluated once at module/function definition time, persisting mutable state across calls.',
     },
     {
-      id: 104,
-      subject: 'Python',
-      topic: 'Slicing & Sequences',
-      question: `What is the output of slicing string <code>s = 'REVISO'[::-1]</code>?`,
-      options: ["'OSIVER'", "'REVISO'", "'OSIVER' in lowercase", "'R'"],
-      correct_answer: "'OSIVER'",
-      explanation: 'Using a step of -1 traverses and reverses the sequence from the last element to the first.',
-    },
-    {
-      id: 105,
+      id: 107,
       subject: 'Python',
       topic: 'Generators',
+      difficulty: 'hard',
       question: `Which syntax creates a lazy generator expression in memory rather than a full list?`,
       options: [
         '[x**2 for x in range(100)]',
@@ -290,10 +323,12 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
     },
   ],
   math: [
+    // Easy
     {
       id: 201,
       subject: 'Maths',
       topic: 'Quadratic Equations',
+      difficulty: 'easy',
       question: `What are the roots of the quadratic equation: <br><strong style="font-size:16px; display:block; margin-top:6px;">2x² - 7x + 3 = 0</strong>`,
       options: ['x = 3 and x = 1/2', 'x = -3 and x = -1/2', 'x = 2 and x = 3', 'x = 7 and x = 3'],
       correct_answer: 'x = 3 and x = 1/2',
@@ -302,7 +337,29 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
     {
       id: 202,
       subject: 'Maths',
+      topic: 'Linear Equations',
+      difficulty: 'easy',
+      question: `What is the slope of the linear equation <code>y = 4x - 9</code>?`,
+      options: ['4', '-9', '9/4', '-4'],
+      correct_answer: '4',
+      explanation: 'In slope-intercept form y = mx + b, slope m is the coefficient of x, which is 4.',
+    },
+    {
+      id: 203,
+      subject: 'Maths',
+      topic: 'Probability',
+      difficulty: 'easy',
+      question: `When rolling two fair six-sided dice, what is the probability of the sum being 7?`,
+      options: ['1/6', '1/12', '7/36', '5/36'],
+      correct_answer: '1/6',
+      explanation: 'There are 6 combinations summing to 7 out of 36 possible outcomes: 6/36 = 1/6.',
+    },
+    // Medium
+    {
+      id: 204,
+      subject: 'Maths',
       topic: 'Calculus & Derivatives',
+      difficulty: 'medium',
       question: `What is the derivative of <code>f(x) = x³ · e^x</code>?`,
       options: [
         '3x² · e^x',
@@ -314,38 +371,75 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       explanation: 'Product rule: (u·v)\' = u\'v + uv\' = (3x²)(e^x) + (x³)(e^x) = e^x(x³ + 3x²).',
     },
     {
-      id: 203,
+      id: 205,
       subject: 'Maths',
       topic: 'Definite Integrals',
+      difficulty: 'medium',
       question: `Evaluate the definite integral: <br><strong style="font-size:16px; display:block; margin-top:6px;">∫₀² (3x² - 2x + 1) dx</strong>`,
       options: ['6', '8', '4', '10'],
       correct_answer: '6',
       explanation: 'Antiderivative F(x) = x³ - x² + x. F(2) = 8 - 4 + 2 = 6. F(0) = 0. Difference is 6.',
     },
+    // Hard
     {
-      id: 204,
+      id: 206,
       subject: 'Maths',
-      topic: 'Linear Algebra',
-      question: `What is the determinant of the 2×2 matrix: <br><pre style="background:var(--bg-canvas); padding:8px; border-radius:6px; font-family:var(--font-mono); border:1px solid var(--border-subtle);">[ 4  2 ]\n[ 3  5 ]</pre>`,
-      options: ['14', '26', '20', '6'],
-      correct_answer: '14',
-      explanation: 'det = (4 × 5) - (2 × 3) = 20 - 6 = 14.',
+      topic: 'Logarithms & Algebra',
+      difficulty: 'hard',
+      question: `Solve for x in: <br><strong style="font-size:16px; display:block; margin-top:6px;">log₂(x) + log₂(x - 2) = 3</strong>`,
+      options: ['x = 4', 'x = -2', 'x = 4 and x = -2', 'x = 8'],
+      correct_answer: 'x = 4',
+      explanation: 'log₂(x(x - 2)) = 3 → x² - 2x = 8 → (x - 4)(x + 2) = 0. Since log requires positive argument, x = 4.',
     },
     {
-      id: 205,
+      id: 207,
       subject: 'Maths',
-      topic: 'Probability',
-      question: `When rolling two fair six-sided dice, what is the probability of the sum being 7?`,
-      options: ['1/6', '1/12', '7/36', '5/36'],
-      correct_answer: '1/6',
-      explanation: 'There are 6 combinations summing to 7 out of 36 possible outcomes: 6/36 = 1/6.',
+      topic: 'Linear Algebra',
+      difficulty: 'hard',
+      question: `What are the eigenvalues of matrix <br><pre style="background:var(--bg-canvas); padding:6px; border-radius:6px; font-family:var(--font-mono); border:1px solid var(--border-subtle);">[ 2  1 ]\n[ 1  2 ]</pre>`,
+      options: ['λ = 3 and λ = 1', 'λ = 2 and λ = 2', 'λ = 4 and λ = 0', 'λ = 1 and λ = -1'],
+      correct_answer: 'λ = 3 and λ = 1',
+      explanation: 'det(A - λI) = (2 - λ)² - 1 = λ² - 4λ + 3 = 0 → (λ - 3)(λ - 1) = 0. Roots are λ = 3 and λ = 1.',
     },
   ],
   chem: [
+    // Easy
     {
       id: 301,
       subject: 'Chemistry',
+      topic: 'Oxidation States',
+      difficulty: 'easy',
+      question: `What is the oxidation state of Chromium (Cr) in the dichromate ion (Cr₂O₇²⁻)?`,
+      options: ['+6', '+3', '+7', '+4'],
+      correct_answer: '+6',
+      explanation: '7 oxygens contribute -14. With overall charge -2: 2(Cr) - 14 = -2 → 2(Cr) = +12 → Cr = +6.',
+    },
+    {
+      id: 302,
+      subject: 'Chemistry',
+      topic: 'Acid-Base Equilibria',
+      difficulty: 'easy',
+      question: `What is the pH of a 0.001 M HCl aqueous solution at 25°C?`,
+      options: ['3.0', '1.0', '4.0', '11.0'],
+      correct_answer: '3.0',
+      explanation: 'HCl completely dissociates: [H+] = 10⁻³ M. pH = -log₁₀(10⁻³) = 3.0.',
+    },
+    {
+      id: 303,
+      subject: 'Chemistry',
+      topic: 'Intermolecular Forces',
+      difficulty: 'easy',
+      question: `Which dominant intermolecular force accounts for water's unusually high boiling point compared to H₂S?`,
+      options: ['Hydrogen bonding', 'London dispersion forces', 'Ion-dipole forces', 'Covalent network bonding'],
+      correct_answer: 'Hydrogen bonding',
+      explanation: 'Strong hydrogen bonding between electronegative oxygen and hydrogen requires significant energy to break.',
+    },
+    // Medium
+    {
+      id: 304,
+      subject: 'Chemistry',
       topic: 'Organic Reaction Mechanisms',
+      difficulty: 'medium',
       question: `Which mechanism describes the addition of HBr to an asymmetrical alkene following Markovnikov's rule?`,
       options: [
         'Electrophilic Addition via carbocation intermediate',
@@ -357,36 +451,10 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
       explanation: 'Electrophiles (H+) attack the alkene π-bond to form the more stable carbocation, followed by halide attack.',
     },
     {
-      id: 302,
-      subject: 'Chemistry',
-      topic: 'Chemical Bonding & Hybridization',
-      question: `What is the hybridization state of the carbon atoms in ethyne (HC≡CH)?`,
-      options: ['sp', 'sp²', 'sp³', 'sp³d'],
-      correct_answer: 'sp',
-      explanation: 'Each carbon forms one σ-bond with hydrogen, one σ-bond with carbon, and two π-bonds, forming a linear sp geometry.',
-    },
-    {
-      id: 303,
-      subject: 'Chemistry',
-      topic: 'Oxidation States',
-      question: `What is the oxidation state of Chromium (Cr) in the dichromate ion (Cr₂O₇²⁻)?`,
-      options: ['+6', '+3', '+7', '+4'],
-      correct_answer: '+6',
-      explanation: '7 oxygens contribute -14. With overall charge -2: 2(Cr) - 14 = -2 → 2(Cr) = +12 → Cr = +6.',
-    },
-    {
-      id: 304,
-      subject: 'Chemistry',
-      topic: 'Acid-Base Equilibria',
-      question: `What is the pH of a 0.001 M HCl aqueous solution at 25°C?`,
-      options: ['3.0', '1.0', '4.0', '11.0'],
-      correct_answer: '3.0',
-      explanation: 'HCl completely dissociates: [H+] = 10⁻³ M. pH = -log₁₀(10⁻³) = 3.0.',
-    },
-    {
       id: 305,
       subject: 'Chemistry',
       topic: 'Chemical Equilibrium',
+      difficulty: 'medium',
       question: `According to Le Chatelier's principle, what happens to <code>N₂(g) + 3H₂(g) ⇌ 2NH₃(g)</code> when pressure is increased?`,
       options: [
         'Shifts toward products (fewer moles of gas)',
@@ -395,7 +463,23 @@ const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
         'Equilibrium constant K increases'
       ],
       correct_answer: 'Shifts toward products (fewer moles of gas)',
-      explanation: 'Reactants comprise 4 moles of gas while products comprise 2. Higher pressure shifts toward the side with fewer gas molecules.',
+      explanation: 'Reactants comprise 4 moles of gas while products comprise 2. Higher pressure shifts toward fewer gas molecules.',
+    },
+    // Hard
+    {
+      id: 306,
+      subject: 'Chemistry',
+      topic: 'Stereochemistry',
+      difficulty: 'hard',
+      question: `What stereochemical outcome occurs at an sp³ chiral center undergoing an bimolecular nucleophilic substitution (SN2) reaction?`,
+      options: [
+        'Complete Walden inversion of configuration',
+        'Complete retention of configuration',
+        'Racemization yielding a 50:50 mixture',
+        'Formation of a meso compound'
+      ],
+      correct_answer: 'Complete Walden inversion of configuration',
+      explanation: 'Backside attack by the incoming nucleophile inverts the chiral geometry (Walden inversion).',
     },
   ],
 }
@@ -550,7 +634,7 @@ export default function App() {
   const [pomoSeconds, setPomoSeconds] = useState<number>(25 * 60)
   const [pomoRunning, setPomoRunning] = useState<boolean>(false)
 
-  // Quiz Modal & Multi-Question Stepper State
+  // Quiz Modal & Multi-Question Adaptive Stepper State
   const [quizModalOpen, setQuizModalOpen] = useState<boolean>(false)
   const [currentQuizSubject, setCurrentQuizSubject] = useState<string>('python')
   const [currentQuizTitle, setCurrentQuizTitle] = useState<string>('Concept Drill')
@@ -562,7 +646,21 @@ export default function App() {
   const [quizUserAnswers, setQuizUserAnswers] = useState<{ question_id: number; selected_answer: string; isCorrect: boolean }[]>([])
   const [isQuizFinished, setIsQuizFinished] = useState<boolean>(false)
   const [quizLoading, setQuizLoading] = useState<boolean>(false)
-  const [quizFinalResult, setQuizFinalResult] = useState<{ correctCount: number; total: number; scorePct: number } | null>(null)
+  const [quizStage, setQuizStage] = useState<1 | 2>(1)
+  const [stage1Score, setStage1Score] = useState<number>(0)
+  const [adaptiveDifficulty, setAdaptiveDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
+  const [adaptiveNotice, setAdaptiveNotice] = useState<string | null>(null)
+  const [isTransitioningStage, setIsTransitioningStage] = useState<boolean>(false)
+  const [quizFinalResult, setQuizFinalResult] = useState<{
+    stage1Correct: number
+    stage1Total: number
+    stage2Correct: number
+    stage2Total: number
+    totalCorrect: number
+    total: number
+    scorePct: number
+    adaptiveDifficulty: string
+  } | null>(null)
 
   // Calendar Modal & Day Tasks View
   const [calendarModalOpen, setCalendarModalOpen] = useState<boolean>(false)
@@ -1011,18 +1109,22 @@ export default function App() {
     )
   }
 
-  // Quiz Drill Launcher & Stepper Logic
+  // Quiz Drill Launcher & Adaptive Stepper Logic
   const launchQuiz = async (subjectKey: 'python' | 'math' | 'chem' | string) => {
     const key = subjectKey.toLowerCase()
     setCurrentQuizSubject(key)
     const titleMap: Record<string, string> = {
-      python: 'Python Loop & Concepts Quick Drill',
-      math: 'Maths Calculus & Algebra Drill',
-      chem: 'Chemistry Reaction Mechanisms Drill',
+      python: 'Python Adaptive Concept Drill',
+      math: 'Maths Adaptive Problem Drill',
+      chem: 'Chemistry Adaptive Reaction Drill',
     }
     setCurrentQuizTitle(titleMap[key] || `${subjectKey.toUpperCase()} Adaptive Drill`)
     setQuizModalOpen(true)
     setQuizLoading(true)
+    setQuizStage(1)
+    setStage1Score(0)
+    setAdaptiveDifficulty(null)
+    setAdaptiveNotice(null)
     setCurrentQuestionIdx(0)
     setSelectedQuizOpt(null)
     setQuizFeedback(null)
@@ -1044,7 +1146,7 @@ export default function App() {
       // Backend error fallback
     }
 
-    // Client-side fallback: sample 3 random questions from FALLBACK_QUIZ_BANK
+    // Client-side fallback: sample 3 questions from FALLBACK_QUIZ_BANK
     const pool = FALLBACK_QUIZ_BANK[key] || FALLBACK_QUIZ_BANK.python
     const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 3)
     setQuizQuestions(shuffled)
@@ -1076,14 +1178,65 @@ export default function App() {
       })
     }
 
-    setQuizUserAnswers((prev) => [
-      ...prev,
-      {
-        question_id: currentQ.id,
-        selected_answer: chosenOptionText,
-        isCorrect,
-      },
-    ])
+    const newAnswer = {
+      question_id: currentQ.id,
+      selected_answer: chosenOptionText,
+      isCorrect,
+    }
+    const updatedAnswers = [...quizUserAnswers, newAnswer]
+    setQuizUserAnswers(updatedAnswers)
+
+    // Check if Stage 1 (first 3 questions) has just finished
+    if (quizStage === 1 && currentQuestionIdx === 2) {
+      const s1Correct = updatedAnswers.slice(0, 3).filter((a) => a.isCorrect).length
+      setStage1Score(s1Correct)
+
+      let nextDiff: 'easy' | 'medium' | 'hard' = 'medium'
+      let notice = ''
+      if (s1Correct <= 1) {
+        nextDiff = 'easy'
+        notice = `Adaptive Booster: Scored ${s1Correct}/3 — Generating 2 Easy practice questions to rebuild fundamentals.`
+      } else if (s1Correct === 2) {
+        nextDiff = 'medium'
+        notice = `Reinforcement Round: Scored 2/3 — Generating 2 Medium practice questions to lock in proficiency.`
+      } else {
+        nextDiff = 'hard'
+        notice = `Mastery Challenge: Perfect 3/3! 🚀 — Generating 2 Hard challenge questions to test advanced skills.`
+      }
+      setAdaptiveDifficulty(nextDiff)
+      setAdaptiveNotice(notice)
+    }
+  }
+
+  const handleProceedToStage2 = async () => {
+    if (!adaptiveDifficulty) return
+    setIsTransitioningStage(true)
+    const subjectName = currentQuizSubject === 'math' ? 'Maths' : currentQuizSubject === 'chem' ? 'Chemistry' : 'Python'
+
+    let nextQuestions: QuizQuestionItem[] = []
+    try {
+      const data = await fetchGeneratedQuiz(subjectName, undefined, adaptiveDifficulty, 2)
+      if (data && data.questions && data.questions.length > 0) {
+        nextQuestions = data.questions
+      }
+    } catch {
+      // offline fallback
+    }
+
+    if (nextQuestions.length === 0) {
+      const pool = FALLBACK_QUIZ_BANK[currentQuizSubject] || FALLBACK_QUIZ_BANK.python
+      const diffPool = pool.filter((q) => q.difficulty === adaptiveDifficulty)
+      const fallbackPool = diffPool.length >= 2 ? diffPool : pool
+      nextQuestions = [...fallbackPool].sort(() => Math.random() - 0.5).slice(0, 2)
+    }
+
+    // Append 2 adaptive questions (total is now 5)
+    setQuizQuestions((prev) => [...prev, ...nextQuestions])
+    setQuizStage(2)
+    setCurrentQuestionIdx(3) // Advance to Question 4
+    setSelectedQuizOpt(null)
+    setQuizFeedback(null)
+    setIsTransitioningStage(false)
   }
 
   const handleNextQuestion = () => {
@@ -1095,14 +1248,21 @@ export default function App() {
   }
 
   const handleFinishQuiz = async () => {
-    const total = quizQuestions.length
-    const correctCount = quizUserAnswers.filter((a) => a.isCorrect).length
-    const scorePct = Math.round((correctCount / Math.max(1, total)) * 100)
+    const s1 = quizUserAnswers.slice(0, 3).filter((a) => a.isCorrect).length
+    const s2 = quizUserAnswers.slice(3).filter((a) => a.isCorrect).length
+    const totalCorrect = s1 + s2
+    const total = quizUserAnswers.length
+    const scorePct = Math.round((totalCorrect / Math.max(1, total)) * 100)
 
     setQuizFinalResult({
-      correctCount,
+      stage1Correct: s1,
+      stage1Total: 3,
+      stage2Correct: s2,
+      stage2Total: Math.max(1, total - 3),
+      totalCorrect,
       total,
       scorePct,
+      adaptiveDifficulty: adaptiveDifficulty || 'adaptive',
     })
     setIsQuizFinished(true)
     soundSynth.playHarmonicChime()
@@ -1129,7 +1289,7 @@ export default function App() {
       }))
     }
 
-    showToast('Knowledge graph updated with your quiz results!', '📈')
+    showToast('Knowledge graph updated with your adaptive quiz results!', '📈')
 
     try {
       const answersPayload = quizUserAnswers.map((a) => ({
@@ -2160,9 +2320,9 @@ export default function App() {
             {quizLoading ? (
               <div style={{ padding: '36px 20px', textAlign: 'center' }}>
                 <div style={{ fontSize: '32px', marginBottom: '12px', animation: 'spin 1.5s linear infinite' }}>⚡</div>
-                <div style={{ fontWeight: 700, fontSize: '15px' }}>Generating Adaptive Drill...</div>
+                <div style={{ fontWeight: 700, fontSize: '15px' }}>Generating Adaptive Baseline Drill...</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                  Sampling 3 distinct practice questions from knowledge bank
+                  Loading 3 diagnostic questions to evaluate concept retention
                 </div>
               </div>
             ) : isQuizFinished ? (
@@ -2173,14 +2333,33 @@ export default function App() {
                 </div>
                 <div>
                   <h3 className="quiz-results-score">
-                    {quizFinalResult?.correctCount} / {quizFinalResult?.total}
+                    {quizFinalResult?.totalCorrect} / {quizFinalResult?.total}
                   </h3>
                   <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-primary)', marginTop: '4px' }}>
-                    {quizFinalResult?.scorePct}% Score · {quizFinalResult && quizFinalResult.scorePct >= 70 ? 'Concept Mastered!' : 'Keep Practicing!'}
+                    {quizFinalResult?.scorePct}% Overall Score · {quizFinalResult && quizFinalResult.scorePct >= 70 ? 'Adaptive Drill Mastered!' : 'Keep Practicing!'}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    DKT retention score updated &amp; synced to Supabase database.
+                </div>
+
+                {/* Stage 1 & Stage 2 Score Breakdown */}
+                <div className="quiz-stage-score-grid">
+                  <div className="quiz-stage-score-card">
+                    <div className="stage-title">Stage 1 (Baseline)</div>
+                    <div className="stage-value">{quizFinalResult?.stage1Correct} / 3</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      {quizFinalResult?.stage1Correct === 3 ? 'Perfect 3/3 ⭐' : quizFinalResult?.stage1Correct === 2 ? 'Proficient 2/3' : 'Foundational'}
+                    </div>
                   </div>
+                  <div className="quiz-stage-score-card">
+                    <div className="stage-title">Stage 2 ({quizFinalResult?.adaptiveDifficulty?.toUpperCase()})</div>
+                    <div className="stage-value">{quizFinalResult?.stage2Correct} / {quizFinalResult?.stage2Total}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Adaptive Branch
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  DKT retention score updated &amp; synced to Supabase database.
                 </div>
 
                 {/* Question-by-Question Review Breakdown */}
@@ -2189,8 +2368,13 @@ export default function App() {
                     <div key={idx} className="quiz-review-item">
                       <span style={{ fontSize: '15px' }}>{ans.isCorrect ? '✅' : '❌'}</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700 }}>
-                          Question {idx + 1}: {ans.isCorrect ? 'Correct' : 'Needs Review'}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontWeight: 700 }}>
+                            Question {idx + 1} {idx >= 3 ? `(Stage 2: ${adaptiveDifficulty?.toUpperCase()})` : '(Stage 1: Baseline)'}
+                          </div>
+                          <span style={{ fontSize: '11px', color: ans.isCorrect ? 'var(--color-math)' : 'var(--color-python)' }}>
+                            {ans.isCorrect ? 'Correct' : 'Needs Review'}
+                          </span>
                         </div>
                         <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
                           Selected: {ans.selected_answer}
@@ -2203,11 +2387,29 @@ export default function App() {
             ) : quizQuestions.length > 0 ? (
               /* ACTIVE QUESTION STEPPER */
               <div>
+                {/* Adaptive Stage 2 Notification Banner */}
+                {quizStage === 2 && adaptiveNotice && (
+                  <div className={`quiz-adaptive-banner ${adaptiveDifficulty || 'medium'}`}>
+                    <span>{adaptiveDifficulty === 'hard' ? '🚀' : adaptiveDifficulty === 'easy' ? '🌱' : '⚡'}</span>
+                    <span><strong>Stage 1: {stage1Score}/3 correct</strong> — {adaptiveNotice}</span>
+                  </div>
+                )}
+
                 {/* Stepper Header with Badge & Progress */}
                 <div className="quiz-stepper-header">
-                  <span className="quiz-counter-pill">
-                    Question {currentQuestionIdx + 1} of {quizQuestions.length}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="quiz-counter-pill">
+                      Question {currentQuestionIdx + 1} of {quizQuestions.length}
+                    </span>
+                    {quizQuestions[currentQuestionIdx]?.difficulty && (
+                      <span className={`quiz-difficulty-tag ${quizQuestions[currentQuestionIdx]?.difficulty}`}>
+                        {quizQuestions[currentQuestionIdx]?.difficulty}
+                      </span>
+                    )}
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      {currentQuestionIdx < 3 ? 'Stage 1' : `Stage 2 (${adaptiveDifficulty?.toUpperCase()})`}
+                    </span>
+                  </div>
                   <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                     {Math.round(((currentQuestionIdx + (selectedQuizOpt !== null ? 1 : 0)) / quizQuestions.length) * 100)}% Complete
                   </span>
@@ -2281,7 +2483,7 @@ export default function App() {
             )}
           </div>
 
-          {/* Modal Footer with Stepper Controls */}
+          {/* Modal Footer with Adaptive Stepper Controls */}
           <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button type="button" className="btn-pill" onClick={() => setQuizModalOpen(false)}>
               {isQuizFinished ? 'Close' : 'Exit Drill'}
@@ -2293,11 +2495,28 @@ export default function App() {
                 className="quiz-next-btn"
                 onClick={() => launchQuiz(currentQuizSubject)}
               >
-                <span>Take Another Drill</span>
+                <span>Take Another Adaptive Drill</span>
                 <span>🔄</span>
               </button>
             ) : selectedQuizOpt !== null ? (
-              currentQuestionIdx < quizQuestions.length - 1 ? (
+              quizStage === 1 && currentQuestionIdx === 2 ? (
+                /* Question 3 answered: Branch to Stage 2 */
+                <button
+                  type="button"
+                  className="quiz-next-btn"
+                  disabled={isTransitioningStage}
+                  onClick={handleProceedToStage2}
+                >
+                  {isTransitioningStage ? (
+                    <span>Unlocking 2 {adaptiveDifficulty?.toUpperCase()} questions...</span>
+                  ) : (
+                    <>
+                      <span>Unlock Stage 2 (2 {adaptiveDifficulty?.toUpperCase()} Questions)</span>
+                      <span>⚡</span>
+                    </>
+                  )}
+                </button>
+              ) : currentQuestionIdx < quizQuestions.length - 1 ? (
                 <button
                   type="button"
                   className="quiz-next-btn"
@@ -2312,7 +2531,7 @@ export default function App() {
                   className="quiz-next-btn"
                   onClick={handleFinishQuiz}
                 >
-                  <span>Finish Quiz &amp; View Results</span>
+                  <span>Finish Adaptive Quiz &amp; View Results</span>
                   <span>🏆</span>
                 </button>
               )
