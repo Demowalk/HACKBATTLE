@@ -168,6 +168,63 @@ function BellOffIcon({
   )
 }
 
+function ArrowRightIcon({
+  size = 16,
+  color = 'currentColor',
+  className = '',
+}: {
+  size?: number
+  color?: string
+  className?: string
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
+  )
+}
+
+function CheckIcon({
+  size = 16,
+  color = 'currentColor',
+  className = '',
+}: {
+  size?: number
+  color?: string
+  className?: string
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
 // ============================================================================
 // REVISO BRAND LOGO (Custom Geometric Monogram & Neural Revision Loop)
 // ============================================================================
@@ -3842,7 +3899,7 @@ export default function App() {
                   ) : (
                     <>
                       <span>Unlock Stage 2 (2 {adaptiveDifficulty?.toUpperCase()} Questions)</span>
-                      <span>⚡</span>
+                      <ArrowRightIcon size={16} />
                     </>
                   )}
                 </button>
@@ -3853,7 +3910,7 @@ export default function App() {
                   onClick={handleNextQuestion}
                 >
                   <span>Next Question</span>
-                  <span>➡️</span>
+                  <ArrowRightIcon size={16} />
                 </button>
               ) : (
                 <button
@@ -3862,7 +3919,7 @@ export default function App() {
                   onClick={handleFinishQuiz}
                 >
                   <span>Finish Adaptive Quiz &amp; View Results</span>
-                  <span>🏆</span>
+                  <CheckIcon size={16} />
                 </button>
               )
             ) : null}
