@@ -407,10 +407,41 @@ export default function App() {
   const [selectedQuizOpt, setSelectedQuizOpt] = useState<number | null>(null)
   const [quizFeedback, setQuizFeedback] = useState<{ isCorrect: boolean; text: string } | null>(null)
 
-  // Calendar Modal
+  // Calendar Modal & Day Tasks View
   const [calendarModalOpen, setCalendarModalOpen] = useState<boolean>(false)
+  const [calViewMode, setCalViewMode] = useState<'month' | 'day'>('month')
   const [selectedCalDay, setSelectedCalDay] = useState<number>(12)
   const [calendarSyncActive, setCalendarSyncActive] = useState<boolean>(false)
+  const [newCalTaskTitle, setNewCalTaskTitle] = useState<string>('')
+  const [newCalTaskTime, setNewCalTaskTime] = useState<string>('5:00–6:00 PM')
+  const [newCalTaskSubject, setNewCalTaskSubject] = useState<'Maths' | 'Chemistry' | 'Python' | 'AI Systems'>('Maths')
+
+  // Other Day Tasks (for days other than 12)
+  const [otherDayTasks, setOtherDayTasks] = useState<Record<number, {
+    id: string
+    title: string
+    subject: string
+    tagClass: string
+    timeSlot: string
+    completed: boolean
+  }[]>>({
+    11: [
+      { id: 'd11-1', title: 'Calculus derivatives recap', subject: 'Maths', tagClass: 'task-tag-math', timeSlot: '10:00–11:00 AM', completed: true },
+      { id: 'd11-2', title: 'Python recursion functions lab', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '2:00–3:00 PM', completed: true },
+    ],
+    13: [
+      { id: 'd13-1', title: 'Linear algebra vector spaces', subject: 'Maths', tagClass: 'task-tag-math', timeSlot: '10:00–11:30 AM', completed: false },
+      { id: 'd13-2', title: 'AI Transformer Attention Mechanisms', subject: 'AI Systems', tagClass: 'task-tag-math', timeSlot: '3:00–4:15 PM', completed: false },
+    ],
+    14: [
+      { id: 'd14-1', title: 'Organic Chemistry reaction mechanisms review', subject: 'Chemistry', tagClass: 'task-tag-chem', timeSlot: '09:30–11:00 AM', completed: false },
+      { id: 'd14-2', title: 'Python hash maps & time complexity drill', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '1:30–2:45 PM', completed: false },
+    ],
+    15: [
+      { id: 'd15-1', title: 'Chemistry Midterm Exam (Hall B)', subject: 'Chemistry', tagClass: 'task-tag-chem', timeSlot: '11:00 AM–12:30 PM', completed: false },
+      { id: 'd15-2', title: 'Post-exam recovery & light Python recap', subject: 'Python', tagClass: 'task-tag-python', timeSlot: '3:30–4:15 PM', completed: false },
+    ],
+  })
 
   // Apply Theme
   useEffect(() => {
@@ -428,6 +459,20 @@ export default function App() {
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Close modals on Escape key
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setCalendarModalOpen(false)
+        setQuizModalOpen(false)
+        setPomoModalOpen(false)
+        setAlarmModalOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   // Auto scroll chat
@@ -536,6 +581,94 @@ export default function App() {
         return t
       })
     )
+  }
+
+  // Toggle task in Calendar Day view
+  const handleToggleCalTask = (day: number, taskId: string) => {
+    if (day === 12) {
+      toggleTask(taskId)
+    } else {
+      setOtherDayTasks((prev) => {
+        const list = prev[day] || []
+        const updated = list.map((t) => {
+          if (t.id === taskId) {
+            const next = !t.completed
+            if (next) {
+              soundSynth.playSuccessBeep()
+              showToast('Task marked complete!', '🎉')
+            }
+            return { ...t, completed: next }
+          }
+          return t
+        })
+        return { ...prev, [day]: updated }
+      })
+    }
+  }
+
+  // Add task in Calendar Day view
+  const handleAddCalendarTask = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!newCalTaskTitle.trim()) return
+
+    const tagClass =
+      newCalTaskSubject === 'Chemistry'
+        ? 'task-tag-chem'
+        : newCalTaskSubject === 'Python'
+        ? 'task-tag-python'
+        : 'task-tag-math'
+
+    const tagIcon =
+      newCalTaskSubject === 'Chemistry'
+        ? '🧪 Chemistry'
+        : newCalTaskSubject === 'Python'
+        ? '🐍 Python'
+        : '📐 Maths'
+
+    if (selectedCalDay === 12) {
+      const newTask = {
+        id: `task-${Date.now()}`,
+        title: newCalTaskTitle.trim(),
+        subject: newCalTaskSubject,
+        tagClass,
+        tagIcon,
+        timeSlot: newCalTaskTime.trim() || '5:00–6:00 PM',
+        completed: false,
+        alarmActive: true,
+        status: 'Upcoming',
+      }
+      setTasks((prev) => [...prev, newTask])
+    } else {
+      const newTask = {
+        id: `cal-${Date.now()}`,
+        title: newCalTaskTitle.trim(),
+        subject: newCalTaskSubject,
+        tagClass,
+        timeSlot: newCalTaskTime.trim() || '5:00–6:00 PM',
+        completed: false,
+      }
+      setOtherDayTasks((prev) => ({
+        ...prev,
+        [selectedCalDay]: [...(prev[selectedCalDay] || []), newTask],
+      }))
+    }
+
+    soundSynth.playHarmonicChime()
+    showToast(`Added "${newCalTaskTitle.trim()}" to Sep ${selectedCalDay}!`, '📅')
+    setNewCalTaskTitle('')
+  }
+
+  // Delete task from Calendar Day view
+  const handleDeleteCalTask = (day: number, taskId: string) => {
+    if (day === 12) {
+      setTasks((prev) => prev.filter((t) => t.id !== taskId))
+    } else {
+      setOtherDayTasks((prev) => ({
+        ...prev,
+        [day]: (prev[day] || []).filter((t) => t.id !== taskId),
+      }))
+    }
+    showToast('Task removed from schedule', '🗑')
   }
 
   // Pomodoro handlers
@@ -1593,7 +1726,12 @@ export default function App() {
       {/* ==========================================================================
            MODAL 1: INTERACTIVE CONCEPT QUIZ
            ========================================================================== */}
-      <div className={`modal-backdrop ${quizModalOpen ? 'active' : ''}`}>
+      <div
+        className={`modal-backdrop ${quizModalOpen ? 'active' : ''}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setQuizModalOpen(false)
+        }}
+      >
         <div className="modal-window">
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1658,7 +1796,12 @@ export default function App() {
       {/* ==========================================================================
            MODAL 2: POMODORO FOCUS TIMER
            ========================================================================== */}
-      <div className={`modal-backdrop ${pomoModalOpen ? 'active' : ''}`}>
+      <div
+        className={`modal-backdrop ${pomoModalOpen ? 'active' : ''}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setPomoModalOpen(false)
+        }}
+      >
         <div className="modal-window" style={{ maxWidth: '420px', textAlign: 'center' }}>
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1710,7 +1853,12 @@ export default function App() {
       {/* ==========================================================================
            MODAL 3: STUDY ALARM RINGING DIALOG
            ========================================================================== */}
-      <div className={`modal-backdrop ${alarmModalOpen ? 'active' : ''}`}>
+      <div
+        className={`modal-backdrop ${alarmModalOpen ? 'active' : ''}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setAlarmModalOpen(false)
+        }}
+      >
         <div
           className="modal-window"
           style={{ maxWidth: '430px', textAlign: 'center', borderColor: 'var(--accent-primary)' }}
@@ -1774,24 +1922,47 @@ export default function App() {
       </div>
 
       {/* ==========================================================================
-           MODAL 4: STUDY CALENDAR & SCHEDULE SYNC
+           MODAL 4: STUDY CALENDAR & SCHEDULE SYNC (Month + Day View with Task Checkout & Add)
            ========================================================================== */}
-      <div className={`modal-backdrop ${calendarModalOpen ? 'active' : ''}`}>
+      <div
+        className={`modal-backdrop ${calendarModalOpen ? 'active' : ''}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setCalendarModalOpen(false)
+        }}
+      >
         <div className="modal-window calendar-modal-window">
+          {/* Header with Segmented View Switcher and Close Button */}
           <div className="modal-header">
-            <div style={{ fontWeight: 800, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>📅</span>
-              <span>Study Calendar &amp; Schedule Sync</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '18px' }}>📅</span>
+              <div className="cal-segmented-control">
+                <button
+                  type="button"
+                  className={`cal-seg-btn ${calViewMode === 'month' ? 'active' : ''}`}
+                  onClick={() => setCalViewMode('month')}
+                >
+                  📅 Month View
+                </button>
+                <button
+                  type="button"
+                  className={`cal-seg-btn ${calViewMode === 'day' ? 'active' : ''}`}
+                  onClick={() => setCalViewMode('day')}
+                >
+                  📋 Day View (Sep {selectedCalDay})
+                </button>
+              </div>
             </div>
             <button
               type="button"
               className="btn-icon"
-              style={{ width: '30px', height: '30px' }}
+              style={{ width: '32px', height: '32px' }}
               onClick={() => setCalendarModalOpen(false)}
+              title="Close Calendar (Esc)"
             >
               ✕
             </button>
           </div>
+
           <div className="modal-body" style={{ gap: '14px' }}>
             {/* Sync Badge */}
             <div className="calendar-sync-badge">
@@ -1804,138 +1975,314 @@ export default function App() {
               </span>
             </div>
 
-            {/* Month Header */}
-            <div className="calendar-month-nav">
-              <div className="calendar-month-title">
-                <span>September 2026</span>
-                <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: 'rgba(0, 77, 64, 0.4)', color: '#80cbc4', border: '1px solid #00695c' }}>
-                  Fall Semester
-                </span>
+            {calViewMode === 'month' ? (
+              <>
+                {/* Month Header */}
+                <div className="calendar-month-nav">
+                  <div className="calendar-month-title">
+                    <span>September 2026</span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        background: 'rgba(0, 77, 64, 0.4)',
+                        color: '#80cbc4',
+                        border: '1px solid #00695c',
+                      }}
+                    >
+                      Fall Semester
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-pill"
+                    style={{ fontSize: '11px', padding: '4px 10px' }}
+                    onClick={() => {
+                      setCalendarSyncActive(true)
+                      soundSynth.playSuccessBeep()
+                      showToast('Re-synced with Google Calendar & iCal!', '✨')
+                      setTimeout(() => setCalendarSyncActive(false), 800)
+                    }}
+                  >
+                    <span>🔄</span>
+                    <span>Sync Now</span>
+                  </button>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="calendar-grid">
+                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                    <div key={d} className="calendar-weekday">
+                      {d}
+                    </div>
+                  ))}
+                  {/* Empty padding for Sun, Mon (Sep 1 2026 starts Tue) */}
+                  <div className="calendar-cell empty" />
+                  <div className="calendar-cell empty" />
+
+                  {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
+                    const isToday = day === 12
+                    const isSelected = day === selectedCalDay
+                    const hasStudy = [
+                      1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 28, 29, 30,
+                    ].includes(day)
+                    const hasExam = [15, 28].includes(day)
+
+                    let cellClass = 'calendar-cell'
+                    if (isToday) cellClass += ' today'
+                    if (isSelected) cellClass += ' selected'
+
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        className={cellClass}
+                        onClick={() => {
+                          setSelectedCalDay(day)
+                          soundSynth.playHarmonicChime()
+                        }}
+                        title={`Select Sep ${day}`}
+                      >
+                        <span>{day}</span>
+                        {hasStudy && (
+                          <div className="calendar-dot-row">
+                            <span className="cal-dot study" />
+                            {hasExam && <span className="cal-dot exam" />}
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Selected Day Agenda Preview in Month View */}
+                <div className="calendar-day-preview">
+                  <div className="calendar-day-preview-title">
+                    <span>
+                      <strong>Sep {selectedCalDay}, 2026</strong> {selectedCalDay === 12 ? '· Today (Active)' : ''}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-pill btn-primary"
+                      style={{ fontSize: '11px', padding: '3px 9px' }}
+                      onClick={() => setCalViewMode('day')}
+                    >
+                      <span>Switch to Day Tasks ➔</span>
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {(selectedCalDay === 12
+                      ? tasks.slice(0, 3)
+                      : (otherDayTasks[selectedCalDay] || []).slice(0, 3)
+                    ).map((t) => (
+                      <div key={t.id} className="calendar-schedule-item">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{t.completed ? '✅' : '⏳'}</span>
+                          <span style={{ fontWeight: 600 }}>{t.title}</span>
+                        </div>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>{t.timeSlot}</span>
+                      </div>
+                    ))}
+                    {(selectedCalDay === 12 ? tasks.length : (otherDayTasks[selectedCalDay] || []).length) === 0 && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '6px' }}>
+                        No tasks scheduled yet. Switch to Day View to add!
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* ==========================================================
+                 DAY VIEW: CHECKOUT TASKS & ADD NEW TASKS
+                 ========================================================== */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* Day Navigation Bar */}
+                <div className="cal-day-nav">
+                  <button
+                    type="button"
+                    className="btn-pill"
+                    style={{ padding: '5px 11px', fontSize: '11.5px' }}
+                    onClick={() => setSelectedCalDay((prev) => Math.max(1, prev - 1))}
+                  >
+                    ◀ Prev Day
+                  </button>
+
+                  <div className="cal-day-heading">
+                    <span className="cal-day-title">September {selectedCalDay}, 2026</span>
+                    {selectedCalDay === 12 && <span className="cal-badge-today">Today</span>}
+                    {selectedCalDay !== 12 && (
+                      <button
+                        type="button"
+                        className="btn-pill"
+                        style={{ fontSize: '10px', padding: '2px 7px' }}
+                        onClick={() => setSelectedCalDay(12)}
+                      >
+                        Today
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-pill"
+                    style={{ padding: '5px 11px', fontSize: '11.5px' }}
+                    onClick={() => setSelectedCalDay((prev) => Math.min(30, prev + 1))}
+                  >
+                    Next Day ▶
+                  </button>
+                </div>
+
+                {/* Day Task Progress Header */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '12.5px',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 600,
+                  }}
+                >
+                  <span>
+                    Tasks for Sep {selectedCalDay} (
+                    {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).filter((t) => t.completed)
+                      .length}
+                    /
+                    {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length} completed)
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#80cbc4' }}>Click checkbox or row to checkout ✓</span>
+                </div>
+
+                {/* Interactive Task List */}
+                <div className="cal-task-list">
+                  {(selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).length === 0 ? (
+                    <div className="cal-empty-state">
+                      🏖️ No study tasks scheduled for September {selectedCalDay}. Add a new task below!
+                    </div>
+                  ) : (
+                    (selectedCalDay === 12 ? tasks : otherDayTasks[selectedCalDay] || []).map((t) => (
+                      <div
+                        key={t.id}
+                        className={`cal-task-row ${t.completed ? 'completed' : ''}`}
+                        onClick={() => handleToggleCalTask(selectedCalDay, t.id)}
+                      >
+                        <button
+                          type="button"
+                          className={`cal-checkbox ${t.completed ? 'checked' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleToggleCalTask(selectedCalDay, t.id)
+                          }}
+                          title={t.completed ? 'Mark upcoming' : 'Checkout task (Mark Done)'}
+                        >
+                          {t.completed ? '✓' : ''}
+                        </button>
+
+                        <div className="cal-task-info">
+                          <div className="cal-task-name">{t.title}</div>
+                          <div className="cal-task-sub">
+                            <span className={`task-tag ${t.tagClass}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
+                              {t.subject}
+                            </span>
+                            <span>{t.timeSlot}</span>
+                          </div>
+                        </div>
+
+                        <div className="cal-task-actions">
+                          <span
+                            className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}
+                            style={{ fontSize: '10px' }}
+                          >
+                            {t.completed ? 'Completed ✓' : 'Upcoming'}
+                          </span>
+                          <button
+                            type="button"
+                            className="cal-btn-delete"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteCalTask(selectedCalDay, t.id)
+                            }}
+                            title="Delete task"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Add Task Form */}
+                <form className="cal-add-form" onSubmit={handleAddCalendarTask}>
+                  <div className="cal-add-title">
+                    <span>➕</span>
+                    <span>Add Task to Sep {selectedCalDay}</span>
+                  </div>
+                  <div className="cal-add-row">
+                    <input
+                      type="text"
+                      className="chat-input-field"
+                      placeholder="Task title (e.g. Physics Quantum Mechanics recap)..."
+                      value={newCalTaskTitle}
+                      onChange={(e) => setNewCalTaskTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="cal-add-row controls">
+                    <select
+                      className="cal-select"
+                      value={newCalTaskSubject}
+                      onChange={(e) => setNewCalTaskSubject(e.target.value as any)}
+                    >
+                      <option value="Maths">📐 Maths</option>
+                      <option value="Chemistry">🧪 Chemistry</option>
+                      <option value="Python">🐍 Python</option>
+                      <option value="AI Systems">🤖 AI Systems</option>
+                    </select>
+
+                    <input
+                      type="text"
+                      className="cal-time-input"
+                      placeholder="Time slot (e.g. 5:00–6:00 PM)"
+                      value={newCalTaskTime}
+                      onChange={(e) => setNewCalTaskTime(e.target.value)}
+                    />
+
+                    <button type="submit" className="btn-pill btn-primary" style={{ padding: '8px 16px' }}>
+                      + Add Task
+                    </button>
+                  </div>
+                </form>
               </div>
+            )}
+          </div>
+
+          <div className="modal-footer" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {calViewMode === 'day' ? (
+                <button type="button" className="btn-pill" onClick={() => setCalViewMode('month')}>
+                  <span>📅 Month View</span>
+                </button>
+              ) : (
+                <button type="button" className="btn-pill btn-primary" onClick={() => setCalViewMode('day')}>
+                  <span>📋 Switch to Day Tasks</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="btn-pill"
-                style={{ fontSize: '11px', padding: '4px 10px' }}
                 onClick={() => {
-                  setCalendarSyncActive(true)
-                  soundSynth.playSuccessBeep()
-                  showToast('Re-synced with Google Calendar & iCal!', '✨')
-                  setTimeout(() => setCalendarSyncActive(false), 800)
+                  setCalendarModalOpen(false)
+                  setTimeout(() => {
+                    document.getElementById('schedule-panel')?.scrollIntoView({ behavior: 'smooth' })
+                  }, 150)
                 }}
               >
-                <span>🔄</span>
-                <span>Sync Now</span>
+                <span>📅 Jump to Timeline</span>
               </button>
             </div>
 
-            {/* Calendar Grid */}
-            <div className="calendar-grid">
-              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-                <div key={d} className="calendar-weekday">
-                  {d}
-                </div>
-              ))}
-              {/* Empty padding for Sun, Mon (Sep 1 2026 starts Tue) */}
-              <div className="calendar-cell empty" />
-              <div className="calendar-cell empty" />
-
-              {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
-                const isToday = day === 12
-                const isSelected = day === selectedCalDay
-                const hasStudy = [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 28, 29, 30].includes(day)
-                const hasExam = [15, 28].includes(day)
-
-                let cellClass = 'calendar-cell'
-                if (isToday) cellClass += ' today'
-                if (isSelected) cellClass += ' selected'
-
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    className={cellClass}
-                    onClick={() => {
-                      setSelectedCalDay(day)
-                      soundSynth.playHarmonicChime()
-                    }}
-                  >
-                    <span>{day}</span>
-                    {hasStudy && (
-                      <div className="calendar-dot-row">
-                        <span className="cal-dot study" />
-                        {hasExam && <span className="cal-dot exam" />}
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Selected Day Agenda Preview */}
-            <div className="calendar-day-preview">
-              <div className="calendar-day-preview-title">
-                <span>
-                  <strong>Sep {selectedCalDay}, 2026</strong> {selectedCalDay === 12 ? '· Today (Active)' : ''}
-                </span>
-                <span style={{ fontSize: '11px', color: '#80cbc4' }}>
-                  {selectedCalDay === 12 ? '4 Blocks Scheduled' : selectedCalDay === 15 ? '⚠️ Chemistry Midterm Exam' : '3 Blocks Scheduled'}
-                </span>
-              </div>
-
-              {selectedCalDay === 12 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {tasks.map((t) => (
-                    <div key={t.id} className="calendar-schedule-item">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{t.completed ? '✅' : '⏳'}</span>
-                        <span style={{ fontWeight: 600 }}>{t.title}</span>
-                      </div>
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>{t.timeSlot}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : selectedCalDay === 15 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div className="calendar-schedule-item" style={{ borderLeft: '3px solid #f59e0b' }}>
-                    <div>
-                      <strong style={{ color: '#f59e0b' }}>Chemistry Midterm Exam</strong>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Hall B · Full Revision Due Sep 14</div>
-                    </div>
-                    <span style={{ color: '#f59e0b', fontWeight: 700 }}>11:00 AM</span>
-                  </div>
-                  <div className="calendar-schedule-item">
-                    <span>Python: Loop Optimization Workshop</span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>2:00 PM</span>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div className="calendar-schedule-item">
-                    <span>Maths: Advanced Integration Review</span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>10:00 AM</span>
-                  </div>
-                  <div className="calendar-schedule-item">
-                    <span>Chemistry: Organic Synthesis Practice</span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>1:30 PM</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="modal-footer" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <button
-              type="button"
-              className="btn-pill btn-primary"
-              onClick={() => {
-                setCalendarModalOpen(false)
-                setTimeout(() => {
-                  document.getElementById('schedule-panel')?.scrollIntoView({ behavior: 'smooth' })
-                }, 150)
-              }}
-            >
-              <span>📅</span>
-              <span>Jump to Today's Timeline</span>
-            </button>
             <button type="button" className="btn-pill" onClick={() => setCalendarModalOpen(false)}>
               Close
             </button>
