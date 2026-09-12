@@ -38,11 +38,13 @@ import {
 import {
   fetchUserProfile,
   updateUserProfile,
+  getStoredUserId,
   getStoredUserName,
   setStoredUserName,
   updateTaskCompletion,
   fetchChatHistory,
   sendChatMessage,
+  askAiCopilot,
   recordStudySession,
   fetchGeneratedQuiz,
   submitQuizAnswers,
@@ -3386,84 +3388,140 @@ export default function App() {
     }
   }
 
-  // Quick action buttons
-  const triggerQuickAction = (actionText: string) => {
-    addChatMessage(actionText, 'user')
+  // Helper to convert AI Markdown responses to clean structured HTML
+  const formatAiResponseMarkdown = (raw: string): string => {
+    if (!raw) return ''
+    let text = raw
 
-    setTimeout(() => {
-      const lower = actionText.toLowerCase()
-      if (
-        lower.includes('schedule') ||
-        lower.includes('review') ||
-        lower.includes('lunch') ||
-        lower.includes('recap') ||
-        lower.includes('practice') ||
-        lower.includes('auto-schedule')
-      ) {
-        triggerAutoSchedule('Python Loop Quick Recap')
-      } else if (lower.includes('drill') || lower.includes('quiz') || lower.includes('diagnostic')) {
-        launchQuiz('python')
-      } else if (lower.includes('retention') || lower.includes('memory') || lower.includes('analyze')) {
-        const allSafe = dktScores.math.safe && dktScores.chem.safe && dktScores.python.safe
-        addChatMessage(
-          `<strong>Memory Retention Snapshot:</strong><br>` +
-            `• <strong>Algebra:</strong> ${dktScores.math.pct}% (${dktScores.math.retention})<br>` +
-            `• <strong>Chemistry:</strong> ${dktScores.chem.pct}% (${dktScores.chem.retention})<br>` +
-            `• <strong>Python Loops:</strong> ${dktScores.python.pct}% (${dktScores.python.retention})<br><br>` +
-            (allSafe
-              ? `Outstanding work! All your concept retention levels are currently safe and protected from decay.`
-              : `Doing a quick 15-minute review today will reinforce your recall strength across all topics!`),
-          'bot'
-        )
-      } else if (lower.includes('pomodoro') || lower.includes('timer') || lower.includes('focus')) {
-        openPomodoroModal('Autonomous Study Session')
-      }
-    }, 400)
+    // 1. Code blocks with language tags
+    text = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_match, lang, code) => {
+      const langLabel = lang ? lang.trim() : 'python'
+      const escapedCode = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+      return `<div class="chat-code-block"><div class="chat-code-header"><span>${langLabel}</span></div><pre><code>${escapedCode}</code></pre></div>`
+    })
+
+    // 2. Inline code
+    text = text.replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>')
+
+    // 3. Headings
+    text = text.replace(/^### (.*$)/gim, '<h4 class="chat-heading-h4">$1</h4>')
+    text = text.replace(/^## (.*$)/gim, '<h3 class="chat-heading-h3">$1</h3>')
+    text = text.replace(/^# (.*$)/gim, '<h3 class="chat-heading-h3">$1</h3>')
+
+    // 4. Bold & Italic
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>')
+
+    // 5. Blockquotes
+    text = text.replace(/^\> (.*$)/gim, '<blockquote class="chat-quote">$1</blockquote>')
+
+    // 6. Math formulas display & inline
+    text = text.replace(/\$\$([\s\S]*?)\$\$/g, '<div class="chat-math-block">$1</div>')
+    text = text.replace(/\$([^\$\n]+)\$/g, '<span class="chat-math-inline">$1</span>')
+
+    // 7. Bullet lists
+    text = text.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="chat-list-item">$1</li>')
+    text = text.replace(/(<li class="chat-list-item">[\s\S]*?<\/li>\n?)+/g, (match) => `<ul class="chat-list">${match}</ul>`)
+
+    // 8. Line breaks
+    text = text.replace(/\n\n+/g, '<br/><br/>')
+    text = text.replace(/\n/g, '<br/>')
+
+    return text
   }
 
-  // Send chat input
-  const sendChat = () => {
-    const text = chatInput.trim()
+  // Quick action buttons
+  const triggerQuickAction = (actionText: string) => {
+    sendChat(actionText)
+  }
+
+  // Send chat input or trigger AI response like GPT
+  const sendChat = async (customPrompt?: string) => {
+    const text = (customPrompt || chatInput).trim()
     if (!text) return
 
-    addChatMessage(text, 'user')
-    setChatInput('')
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 
-    setTimeout(() => {
-      const lower = text.toLowerCase()
-      if (lower.includes('alarm') || lower.includes('bell')) {
-        triggerAlarm()
-        addChatMessage("I've opened your Upcoming Tests & Alarms monitor with sound testing controls.", 'bot')
-      } else if (lower.includes('pdf') || lower.includes('export') || lower.includes('share')) {
-        exportSharePdf()
-        addChatMessage('Opening your print-ready PDF export now!', 'bot')
-      } else if (lower.includes('quiz') || lower.includes('test') || lower.includes('drill')) {
-        launchQuiz('python')
-        addChatMessage('Opened your quick Python concept drill.', 'bot')
-      } else if (lower.includes('recap') || lower.includes('schedule') || lower.includes('practice') || lower.includes('gap')) {
-        triggerAutoSchedule('Python Loop Quick Recap')
-      } else if (lower.includes('theme') || lower.includes('dark') || lower.includes('light')) {
-        toggleTheme()
-        addChatMessage('Switched theme mode as requested.', 'bot')
-      } else if (lower.includes('retention') || lower.includes('memory')) {
-        const allSafe = dktScores.math.safe && dktScores.chem.safe && dktScores.python.safe
-        addChatMessage(
-          `<strong>Memory Retention Snapshot:</strong><br>` +
-            `• <strong>Algebra:</strong> ${dktScores.math.pct}% (${dktScores.math.retention})<br>` +
-            `• <strong>Chemistry:</strong> ${dktScores.chem.pct}% (${dktScores.chem.retention})<br>` +
-            `• <strong>Python Loops:</strong> ${dktScores.python.pct}% (${dktScores.python.retention})<br><br>` +
-            (allSafe
-              ? `Outstanding work! All your concept retention levels are currently safe and protected from decay.`
-              : `Doing a quick 15-minute review today will reinforce your recall strength across all topics!`),
-          'bot'
+    // Add user message to UI
+    setChatList((prev) => [
+      ...prev,
+      {
+        id: `msg-${Date.now()}`,
+        type: 'msg',
+        sender: 'user',
+        text,
+        timestamp: timeStr,
+      },
+    ])
+    if (!customPrompt) setChatInput('')
+
+    // Add animated typing indicator bubble
+    const thinkingId = `typing-${Date.now()}`
+    setChatList((prev) => [
+      ...prev,
+      {
+        id: thinkingId,
+        type: 'msg',
+        sender: 'bot',
+        text: '<div class="chat-typing-dots"><span></span><span></span><span></span></div>',
+        timestamp: 'Thinking...',
+      },
+    ])
+
+    // Trigger any associated UI actions
+    const lower = text.toLowerCase()
+    if (lower.includes('alarm') || lower.includes('bell')) {
+      triggerAlarm()
+    } else if (lower.includes('pdf') || lower.includes('export') || lower.includes('share')) {
+      exportSharePdf()
+    } else if (lower.includes('quiz') || lower.includes('drill')) {
+      launchQuiz('python')
+    } else if (lower.includes('recap') || lower.includes('auto-schedule') || lower.includes('gap')) {
+      triggerAutoSchedule('Python Loop Quick Recap')
+    } else if (lower.includes('theme') || lower.includes('dark mode') || lower.includes('light mode')) {
+      toggleTheme()
+    } else if (lower.includes('pomodoro') || lower.includes('focus timer')) {
+      openPomodoroModal('Autonomous Focus Session')
+    }
+
+    try {
+      const historyPayload = chatList
+        .filter((c) => c.type === 'msg' && c.id !== thinkingId)
+        .slice(-6)
+        .map((c) => ({ sender: String(c.sender || 'user'), text: String(c.text || '') }))
+
+      const aiRawResponse = await askAiCopilot(text, getStoredUserId(), historyPayload)
+      const formattedHtml = formatAiResponseMarkdown(aiRawResponse)
+
+      setChatList((prev) =>
+        prev.map((msg) =>
+          msg.id === thinkingId
+            ? {
+                ...msg,
+                text: formattedHtml,
+                timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              }
+            : msg
         )
-      } else {
-        addChatMessage(
-          `Got it, Laksh! Noted: "<em>${text}</em>". I'm keeping your schedule smooth, balanced, and stress-free.`,
-          'bot'
+      )
+    } catch {
+      setChatList((prev) =>
+        prev.map((msg) =>
+          msg.id === thinkingId
+            ? {
+                ...msg,
+                text: `Got it! I've noted your question: "<em>${text}</em>" and updated your learning workspace.`,
+                timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              }
+            : msg
         )
-      }
-    }, 450)
+      )
+    }
   }
 
   // Progress calculations for Daily Motivation Banner
@@ -4567,7 +4625,7 @@ export default function App() {
               type="button"
               className="chat-send-btn"
               disabled={!chatInput.trim()}
-              onClick={sendChat}
+              onClick={() => sendChat()}
               title="Send message (Enter)"
               aria-label="Send message"
             >
