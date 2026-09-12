@@ -2936,27 +2936,28 @@ export default function App() {
                 <Calendar size={16} className="inline mr-1.5 text-emerald-400" />
                 <span>Today's Adaptive Schedule</span>
               </h2>
+            </div>
 
-              {/* Diagnostic Review Card (Encouraging Tone) */}
-              <div
-                className="sync-card"
-                onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
-                title="Squeeze in a quick friendly recap into your free time"
-                style={{ borderColor: quizCardBorderColor || undefined }}
-              >
-                <div className="sync-badge">
-                  <span>DIAGNOSTIC</span>
-                </div>
-                <div className="sync-meta">
-                  <div className="sync-score">{quizScoreText}</div>
-                  <div className="sync-name">Python Nested Loops &amp; Comprehensions</div>
-                </div>
-                <div className="sync-btn-auto">
-                  <Zap size={12} className="inline mr-1 text-amber-400" />
-                  <span>
-                    {isRemediationScheduled ? 'Recap Slotted (12:00 PM)' : 'Add 20m Practice'}
-                  </span>
-                </div>
+            {/* Diagnostic Review Card (Encouraging Tone) */}
+            <div
+              className="sync-card"
+              onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
+              title="Squeeze in a quick friendly recap into your free time"
+              style={{ borderColor: quizCardBorderColor || undefined }}
+            >
+              <div className="sync-badge">
+                <Brain size={14} className="text-emerald-400" />
+                <span>DIAGNOSTIC</span>
+              </div>
+              <div className="sync-meta">
+                <div className="sync-score">{quizScoreText}</div>
+                <div className="sync-name">Python Nested Loops &amp; Comprehensions</div>
+              </div>
+              <div className="sync-btn-auto">
+                <Zap size={12} className="inline mr-1 text-amber-400" />
+                <span>
+                  {isRemediationScheduled ? 'Recap Slotted (12:00 PM)' : 'Add 20m Practice'}
+                </span>
               </div>
             </div>
 
@@ -2969,7 +2970,7 @@ export default function App() {
                       <Check size={12} strokeWidth={2.5} />
                     </div>
                     <div className="task-info">
-                      <div className="task-title">{task.title}</div>
+                      <div className="task-title">{task.title.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{1FA00}-\u{1FAFF}\u{FE0F}]/gu, '').trim()}</div>
                       <div className="task-meta-row">
                         <span className={`task-tag ${task.tagClass}`}>{task.tagIcon}</span>
                         <span>·</span>
@@ -5145,7 +5146,7 @@ export default function App() {
                     onClick={() => handleShiftEventTime(-30)}
                     title="Move 30 minutes earlier"
                   >
-                    ⬅️ 30m Earlier
+                    -30m
                   </button>
                   <button
                     type="button"
