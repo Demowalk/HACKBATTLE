@@ -32,7 +32,8 @@ import {
   CheckCircle,
   XCircle,
   Bookmark,
-  TrendingDown
+  TrendingDown,
+  Send
 } from 'lucide-react'
 import {
   fetchUserProfile,
@@ -4467,8 +4468,15 @@ export default function App() {
                 if (e.key === 'Enter') sendChat()
               }}
             />
-            <button type="button" className="chat-send-btn" onClick={sendChat} title="Send">
-              Send
+            <button
+              type="button"
+              className="chat-send-btn"
+              disabled={!chatInput.trim()}
+              onClick={sendChat}
+              title="Send message (Enter)"
+              aria-label="Send message"
+            >
+              <Send size={15} className="chat-send-icon" />
             </button>
           </div>
         </aside>
