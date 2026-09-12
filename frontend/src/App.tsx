@@ -1337,6 +1337,7 @@ export default function App() {
     scorePct: number
     adaptiveDifficulty: string
   } | null>(null)
+  const [quizReviewFilter, setQuizReviewFilter] = useState<'all' | 'wrong' | 'correct'>('all')
   const [criticalRemediationInfo, setCriticalRemediationInfo] = useState<{
     scheduledDate: string
     dayName: string
@@ -1892,6 +1893,7 @@ export default function App() {
     setIsQuizFinished(false)
     setQuizFinalResult(null)
     setCriticalRemediationInfo(null)
+    setQuizReviewFilter('all')
 
     const subjectName = key === 'math' ? 'Maths' : key === 'chem' ? 'Chemistry' : 'Python'
 
@@ -3364,7 +3366,7 @@ export default function App() {
           if (e.target === e.currentTarget) setQuizModalOpen(false)
         }}
       >
-        <div className="modal-window" style={{ maxWidth: '580px', width: '92%' }}>
+        <div className="modal-window" style={{ maxWidth: '640px', width: '94%', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -3381,7 +3383,7 @@ export default function App() {
             </button>
           </div>
 
-          <div className="modal-body">
+          <div className="modal-body" style={{ overflowY: 'auto', flex: 1, padding: '20px 24px' }}>
             {quizLoading ? (
               <div style={{ padding: '36px 20px', textAlign: 'center' }}>
                 <div style={{ fontSize: '32px', marginBottom: '12px', animation: 'spin 1.5s linear infinite' }}>⚡</div>
@@ -3391,154 +3393,169 @@ export default function App() {
                 </div>
               </div>
             ) : isQuizFinished ? (
-              /* RESULTS & MASTERY SUMMARY SCREEN */
+              /* RESULTS & MASTERY SUMMARY SCREEN (PREMIUM REDESIGN) */
               <div className="quiz-results-card">
-                <div className="quiz-trophy-circle">
-                  {quizFinalResult && quizFinalResult.scorePct >= 70 ? '🏆' : '🎯'}
-                </div>
-                <div>
-                  <h3 className="quiz-results-score">
-                    {quizFinalResult?.totalCorrect} / {quizFinalResult?.total}
-                  </h3>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-primary)', marginTop: '4px' }}>
-                    {quizFinalResult?.scorePct}% Overall Score · {quizFinalResult && quizFinalResult.scorePct >= 70 ? 'Adaptive Drill Mastered!' : 'Keep Practicing!'}
-                  </div>
-                </div>
+                {/* 1. Hero Score Banner with Animated Radial Gauge */}
+                {(() => {
+                  const isCritical = (quizFinalResult?.totalCorrect ?? 0) < 2
+                  const isMastered = (quizFinalResult?.scorePct ?? 0) >= 70
+                  const scorePct = quizFinalResult?.scorePct ?? 0
+                  const radius = 34
+                  const circ = 2 * Math.PI * radius
+                  const strokeDashoffset = circ - (scorePct / 100) * circ
 
-                {/* Stage 1 & Stage 2 Score Breakdown */}
-                <div className="quiz-stage-score-grid">
-                  <div className="quiz-stage-score-card">
-                    <div className="stage-title">Stage 1 (Baseline)</div>
-                    <div className="stage-value">{quizFinalResult?.stage1Correct} / 3</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      {quizFinalResult?.stage1Correct === 3 ? 'Perfect 3/3 ⭐' : quizFinalResult?.stage1Correct === 2 ? 'Proficient 2/3' : 'Foundational'}
-                    </div>
-                  </div>
-                  <div className="quiz-stage-score-card">
-                    <div className="stage-title">Stage 2 ({quizFinalResult?.adaptiveDifficulty?.toUpperCase()})</div>
-                    <div className="stage-value">{quizFinalResult?.stage2Correct} / {quizFinalResult?.stage2Total}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      Adaptive Branch
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  DKT retention score updated &amp; synced to Supabase database.
-                </div>
-
-                {/* Critical Remediation Alert & Action Banner */}
-                {quizFinalResult && quizFinalResult.totalCorrect < 2 && criticalRemediationInfo && (
-                  <div
-                    style={{
-                      marginTop: '16px',
-                      marginBottom: '16px',
-                      padding: '16px 18px',
-                      borderRadius: '12px',
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      border: '1.5px solid #EF4444',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '20px' }}>🚨</span>
-                      <div>
-                        <div style={{ fontWeight: 800, color: '#EF4444', fontSize: '14px' }}>
-                          CRITICAL REMEDIATION TRIGGERED ({quizFinalResult.totalCorrect}/5 Correct)
+                  return (
+                    <div className={`quiz-hero-banner ${isCritical ? 'critical' : isMastered ? 'mastered' : ''}`}>
+                      <div className="quiz-hero-glow" />
+                      <div className="quiz-hero-left">
+                        <div className={`quiz-hero-badge ${isCritical ? 'critical' : isMastered ? 'mastered' : 'steady'}`}>
+                          <span>{isCritical ? '🚨 Critical Decay Alert' : isMastered ? '🏆 Mastery Confirmed' : '⚡ Concept Reinforced'}</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          Score is below threshold (&lt; 2 right out of 5) · Urgent Decay Risk
+                        <h3 className="quiz-hero-title">
+                          {quizFinalResult?.totalCorrect} <span className="score-total">/ {quizFinalResult?.total} Questions Correct</span>
+                        </h3>
+                        <p className="quiz-hero-sub">
+                          {isCritical
+                            ? `Score fell below threshold (< 2/5). Automated recovery slot has been reserved to prevent concept decay.`
+                            : isMastered
+                            ? `Outstanding diagnostic performance! Spaced repetition decay interval safely extended.`
+                            : `Solid performance! Review targeted problem types below to lock in complete concept mastery.`}
+                        </p>
+                      </div>
+
+                      {/* Circular Radial Gauge */}
+                      <div className="quiz-radial-gauge" title={`${scorePct}% score`}>
+                        <svg viewBox="0 0 86 86">
+                          <circle
+                            className="gauge-bg"
+                            cx="43"
+                            cy="43"
+                            r={radius}
+                            strokeWidth="7"
+                            fill="none"
+                          />
+                          <circle
+                            className="gauge-fill"
+                            cx="43"
+                            cy="43"
+                            r={radius}
+                            strokeWidth="7"
+                            fill="none"
+                            strokeDasharray={circ}
+                            strokeDashoffset={strokeDashoffset}
+                          />
+                        </svg>
+                        <div className="quiz-radial-center">
+                          <div className="quiz-radial-pct">{scorePct}%</div>
+                          <div className="quiz-radial-label">Score</div>
                         </div>
                       </div>
                     </div>
-                    <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', margin: '0 0 12px 0', lineHeight: 1.5 }}>
-                      Proficiency fell below the safe retention boundary. The system inspected your schedule, bypassed upcoming exams (Sep 15), and automatically scheduled a <strong>1-hour study time slot (60 mins)</strong> on <strong>{criticalRemediationInfo.dayName}</strong> from <strong>{criticalRemediationInfo.timeSlot}</strong>.
-                    </p>
+                  )
+                })()}
 
-                    {/* YouTube Video Recommendation Card */}
-                    {criticalRemediationInfo.video && (
-                      <div
-                        style={{
-                          marginBottom: '14px',
-                          padding: '12px 14px',
-                          borderRadius: '10px',
-                          background: 'rgba(0, 0, 0, 0.28)',
-                          border: '1px solid rgba(239, 68, 68, 0.35)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '12px',
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 240px' }}>
+                {/* 2. Stage Progression Dual Cards */}
+                <div className="quiz-stages-row">
+                  <div className="quiz-stage-box">
+                    <div className="quiz-stage-head">
+                      <span className="quiz-stage-pill">Stage 1 · Baseline</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {quizFinalResult?.stage1Correct === 3 ? 'Perfect 3/3 ⭐' : quizFinalResult?.stage1Correct === 2 ? 'Proficient 2/3' : 'Foundational'}
+                      </span>
+                    </div>
+                    <div className="quiz-stage-score-val">
+                      {quizFinalResult?.stage1Correct} <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>/ 3 Correct</span>
+                    </div>
+                    <div className="quiz-segment-bars">
+                      {[0, 1, 2].map((idx) => {
+                        const ans = quizUserAnswers[idx]
+                        return (
                           <div
-                            style={{
-                              width: '38px',
-                              height: '38px',
-                              borderRadius: '8px',
-                              background: '#EF4444',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '18px',
-                              flexShrink: 0,
-                              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
-                            }}
-                          >
-                            ▶️
+                            key={idx}
+                            className={`quiz-segment-bar ${ans ? (ans.isCorrect ? 'correct' : 'wrong') : ''}`}
+                            title={`Q${idx + 1}: ${ans?.isCorrect ? 'Correct' : 'Incorrect'}`}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="quiz-stage-box">
+                    <div className="quiz-stage-head">
+                      <span className="quiz-stage-pill" style={{ color: quizFinalResult?.adaptiveDifficulty === 'hard' ? '#ffb703' : 'var(--accent-primary)' }}>
+                        Stage 2 · {quizFinalResult?.adaptiveDifficulty?.toUpperCase() || 'ADAPTIVE'}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Dynamic Branch
+                      </span>
+                    </div>
+                    <div className="quiz-stage-score-val">
+                      {quizFinalResult?.stage2Correct} <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>/ {quizFinalResult?.stage2Total} Correct</span>
+                    </div>
+                    <div className="quiz-segment-bars">
+                      {[3, 4].map((idx) => {
+                        const ans = quizUserAnswers[idx]
+                        return (
+                          <div
+                            key={idx}
+                            className={`quiz-segment-bar ${ans ? (ans.isCorrect ? 'correct' : 'wrong') : ''}`}
+                            title={`Q${idx + 1}: ${ans?.isCorrect ? 'Correct' : 'Incorrect'}`}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Critical Remediation Intervention & YouTube Masterclass Card */}
+                {quizFinalResult && quizFinalResult.totalCorrect < 2 && criticalRemediationInfo && (
+                  <div className="quiz-critical-remediation-box">
+                    <div className="quiz-critical-top">
+                      <div className="quiz-critical-icon-wrap">
+                        🚨
+                      </div>
+                      <div className="quiz-critical-header-text">
+                        <h4>Critical Intervention Scheduled ({quizFinalResult.totalCorrect}/5 Correct)</h4>
+                        <p>
+                          Retention fell into critical decay risk. The smart scheduler reviewed your schedule, avoided upcoming exam days (Sep 15), and auto-reserved a <strong>1-Hour Focused Study Slot</strong> to reinforce this concept.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Calendar Slot Strip */}
+                    <div className="quiz-cal-slot-strip">
+                      <div className="quiz-cal-slot-left">
+                        <div className="quiz-cal-date-chip">
+                          <span className="day-num">{criticalRemediationInfo.dayNumber}</span>
+                          <span className="day-name">Sep</span>
+                        </div>
+                        <div className="quiz-cal-details">
+                          <div className="quiz-cal-title-line">
+                            🚨 1-Hour Dedicated Study: {criticalRemediationInfo.subject} - {criticalRemediationInfo.topic}
                           </div>
-                          <div>
-                            <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#EF4444', fontWeight: 800 }}>
-                              Recommended Mastery Video
-                            </div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                              {criticalRemediationInfo.video.title}
-                            </div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                              Channel: {criticalRemediationInfo.video.channel} • Curated for rapid mastery
-                            </div>
+                          <div className="quiz-cal-sub-line">
+                            <span>🗓️ {criticalRemediationInfo.dayName}</span>
+                            <span>•</span>
+                            <span>⏰ {criticalRemediationInfo.timeSlot} (60 mins)</span>
+                            <span>•</span>
+                            <span>🔔 Study Alarm Armed</span>
                           </div>
                         </div>
-
-                        <a
-                          href={criticalRemediationInfo.video.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-pill"
-                          style={{
-                            background: '#EF4444',
-                            color: '#FFFFFF',
-                            fontWeight: 700,
-                            fontSize: '12px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '8px 16px',
-                            textDecoration: 'none',
-                            borderRadius: '8px',
-                            boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)',
-                          }}
-                        >
-                          <span>📺 Watch on YouTube ↗</span>
-                        </a>
                       </div>
-                    )}
 
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <button
                         type="button"
                         className="btn-pill"
                         style={{
-                          background: '#EF4444',
-                          color: '#FFFFFF',
+                          background: 'rgba(239, 68, 68, 0.18)',
+                          color: '#f87171',
+                          border: '1px solid rgba(239, 68, 68, 0.45)',
                           fontWeight: 700,
                           fontSize: '12px',
+                          padding: '8px 14px',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          padding: '8px 16px',
-                          border: 'none',
                           cursor: 'pointer',
                         }}
                         onClick={() => {
@@ -3550,35 +3567,123 @@ export default function App() {
                           setCalendarModalOpen(true)
                         }}
                       >
-                        <span>📅 View on Study Calendar</span>
+                        <span>📅 View on Calendar</span>
                       </button>
-                      <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        🔔 Active Reminder Alarm Set
-                      </span>
                     </div>
+
+                    {/* YouTube Masterclass Video Card */}
+                    {criticalRemediationInfo.video && (
+                      <div className="quiz-yt-masterclass-card">
+                        <div className="quiz-yt-left">
+                          <div className="quiz-yt-play-badge">
+                            ▶
+                          </div>
+                          <div className="quiz-yt-info">
+                            <span className="quiz-yt-tag">Recommended Masterclass Video</span>
+                            <div className="quiz-yt-title" title={criticalRemediationInfo.video.title}>
+                              {criticalRemediationInfo.video.title}
+                            </div>
+                            <span className="quiz-yt-channel">
+                              Channel: <strong>{criticalRemediationInfo.video.channel}</strong> • Verified top-rated lesson
+                            </span>
+                          </div>
+                        </div>
+
+                        <a
+                          href={criticalRemediationInfo.video.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="quiz-yt-btn"
+                        >
+                          <span>📺 Watch on YouTube ↗</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Question-by-Question Review Breakdown */}
-                <div className="quiz-review-list">
-                  {quizUserAnswers.map((ans, idx) => (
-                    <div key={idx} className="quiz-review-item">
-                      <span style={{ fontSize: '15px' }}>{ans.isCorrect ? '✅' : '❌'}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ fontWeight: 700 }}>
-                            Question {idx + 1} {idx >= 3 ? `(Stage 2: ${adaptiveDifficulty?.toUpperCase()})` : '(Stage 1: Baseline)'}
-                          </div>
-                          <span style={{ fontSize: '11px', color: ans.isCorrect ? 'var(--color-math)' : 'var(--color-python)' }}>
-                            {ans.isCorrect ? 'Correct' : 'Needs Review'}
-                          </span>
-                        </div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
-                          Selected: {ans.selected_answer}
-                        </div>
-                      </div>
+                {/* 4. Detailed Question-by-Question Review Breakdown with Filter Tabs */}
+                <div className="quiz-review-section">
+                  <div className="quiz-review-header">
+                    <div className="quiz-review-title">Question-By-Question Breakdown</div>
+                    <div className="quiz-filter-pills">
+                      <button
+                        type="button"
+                        className={`quiz-filter-btn ${quizReviewFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => setQuizReviewFilter('all')}
+                      >
+                        All ({quizUserAnswers.length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`quiz-filter-btn ${quizReviewFilter === 'wrong' ? 'active' : ''}`}
+                        onClick={() => setQuizReviewFilter('wrong')}
+                      >
+                        ❌ Needs Review ({quizUserAnswers.filter((a) => !a.isCorrect).length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`quiz-filter-btn ${quizReviewFilter === 'correct' ? 'active' : ''}`}
+                        onClick={() => setQuizReviewFilter('correct')}
+                      >
+                        ✅ Correct ({quizUserAnswers.filter((a) => a.isCorrect).length})
+                      </button>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="quiz-review-list">
+                    {quizUserAnswers
+                      .map((ans, idx) => ({ ans, idx, q: quizQuestions[idx] }))
+                      .filter(({ ans }) => {
+                        if (quizReviewFilter === 'wrong') return !ans.isCorrect
+                        if (quizReviewFilter === 'correct') return ans.isCorrect
+                        return true
+                      })
+                      .map(({ ans, idx, q }) => (
+                        <div key={idx} className={`quiz-review-card ${ans.isCorrect ? 'correct' : 'wrong'}`}>
+                          <div className="quiz-review-card-top">
+                            <div className="quiz-q-num-pill">
+                              <span>{ans.isCorrect ? '✅' : '❌'}</span>
+                              <span>Question {idx + 1}</span>
+                              <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                                ({idx < 3 ? 'Stage 1: Baseline' : `Stage 2: ${adaptiveDifficulty?.toUpperCase() || 'ADAPTIVE'}`})
+                              </span>
+                            </div>
+                            {q?.difficulty && (
+                              <span className={`quiz-difficulty-tag ${q.difficulty}`}>
+                                {q.difficulty}
+                              </span>
+                            )}
+                          </div>
+
+                          {q?.question && (
+                            <div className="quiz-q-text">
+                              {q.question}
+                            </div>
+                          )}
+
+                          <div className="quiz-answers-comparison">
+                            <div className={`quiz-ans-row ${ans.isCorrect ? 'user-correct' : 'user-wrong'}`}>
+                              <span>{ans.isCorrect ? '✓' : '✗'} Your Answer:</span>
+                              <strong>{ans.selected_answer || '(No answer provided)'}</strong>
+                            </div>
+
+                            {!ans.isCorrect && q?.correct_answer && (
+                              <div className="quiz-ans-row correct-ans">
+                                <span>★ Correct Answer:</span>
+                                <strong>{q.correct_answer}</strong>
+                              </div>
+                            )}
+                          </div>
+
+                          {q?.explanation && (
+                            <div className="quiz-explanation-box">
+                              💡 <strong>Key Takeaway:</strong> {q.explanation}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
                 </div>
               </div>
             ) : quizQuestions.length > 0 ? (
@@ -3687,14 +3792,42 @@ export default function App() {
             </button>
 
             {isQuizFinished ? (
-              <button
-                type="button"
-                className="quiz-next-btn"
-                onClick={() => launchQuiz(currentQuizSubject)}
-              >
-                <span>Take Another Adaptive Drill</span>
-                <span>🔄</span>
-              </button>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {criticalRemediationInfo && (
+                  <button
+                    type="button"
+                    className="btn-pill"
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239, 68, 68, 0.45)',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                    onClick={() => {
+                      setSelectedCalDay(criticalRemediationInfo.dayNumber)
+                      setCalYear(2026)
+                      setCalMonth(8)
+                      setGcalView('day')
+                      setQuizModalOpen(false)
+                      setCalendarModalOpen(true)
+                    }}
+                  >
+                    <span>📅 Open in Calendar</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="quiz-next-btn"
+                  onClick={() => launchQuiz(currentQuizSubject)}
+                >
+                  <span>Take Another Adaptive Drill</span>
+                  <span>🔄</span>
+                </button>
+              </div>
             ) : selectedQuizOpt !== null ? (
               quizStage === 1 && currentQuestionIdx === 2 ? (
                 /* Question 3 answered: Branch to Stage 2 */
