@@ -577,6 +577,19 @@ export default function App() {
   const [gcalActiveEvent, setGcalActiveEvent] = useState<(CalTaskItem & { dateKey?: string }) | null>(null)
   const [gcalQuickCreateOpen, setGcalQuickCreateOpen] = useState<boolean>(false)
 
+  // Calendar Drag and Drop State
+  const [draggedCalEvent, setDraggedCalEvent] = useState<{
+    task: CalTaskItem
+    sourceDateKey: string
+    durationMinutes: number
+  } | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<{
+    dateKey: string
+    snappedMinutes: number
+    timeSlotPreview: string
+  } | null>(null)
+  const [dragOverMonthDay, setDragOverMonthDay] = useState<number | null>(null)
+
   // New Calendar Task Form State
   const [newCalTaskTitle, setNewCalTaskTitle] = useState<string>('')
   const [newCalTaskTime, setNewCalTaskTime] = useState<string>('5:00–6:00 PM')
@@ -758,6 +771,28 @@ export default function App() {
     return { startMinutes, durationMinutes }
   }
 
+  const formatMinutesToTimeSlot = (startMinutes: number, durationMinutes: number): string => {
+    const safeDuration = Math.max(15, durationMinutes || 60)
+    const startH = Math.floor(startMinutes / 60)
+    const startM = startMinutes % 60
+    const startH12 = startH % 12 === 0 ? 12 : startH % 12
+    const startAmPm = startH >= 12 && startH < 24 ? 'PM' : 'AM'
+    const startMStr = startM === 0 ? ':00' : `:${String(startM).padStart(2, '0')}`
+
+    const endMinutes = startMinutes + safeDuration
+    const endH = Math.floor(endMinutes / 60)
+    const endM = endMinutes % 60
+    const endH12 = endH % 12 === 0 ? 12 : endH % 12
+    const endAmPm = endH >= 12 && endH < 24 ? 'PM' : 'AM'
+    const endMStr = endM === 0 ? ':00' : `:${String(endM).padStart(2, '0')}`
+
+    if (startAmPm === endAmPm) {
+      return `${startH12}${startMStr}–${endH12}${endMStr} ${endAmPm}`
+    } else {
+      return `${startH12}${startMStr} ${startAmPm}–${endH12}${endMStr} ${endAmPm}`
+    }
+  }
+
   const GCAL_HOURS = [
     { hour: 7, label: '7 AM' },
     { hour: 8, label: '8 AM' },
@@ -925,6 +960,193 @@ export default function App() {
       })
       .catch((err) => console.error('Failed to fetch tasks from backend:', err))
   }, [])
+
+  // Move / Reschedule Calendar Task Block (Drag-and-Drop or Quick Move)
+  const moveCalTask = (
+    task: CalTaskItem,
+    sourceDateKey: string,
+    targetDateKey: string,
+    newTimeSlot: string,
+    newDurationMinutes?: number
+  ) => {
+    const duration = newDurationMinutes || task.duration_minutes || 60
+    const updatedTask: CalTaskItem = {
+      ...task,
+      timeSlot: newTimeSlot,
+      duration_minutes: duration,
+    }
+
+    setCalTasksByDate((prev) => {
+      const nextState = { ...prev }
+      // Remove from source date
+      const sourceList = (nextState[sourceDateKey] || []).filter((t) => t.id !== task.id)
+      nextState[sourceDateKey] = sourceList
+
+      // Add to target date
+      const targetList = (nextState[targetDateKey] || []).filter((t) => t.id !== task.id)
+      nextState[targetDateKey] = [...targetList, updatedTask]
+
+      return nextState
+    })
+
+    if (sourceDateKey === '2026-09-12' || targetDateKey === '2026-09-12') {
+      setTasks((prev) => {
+        if (targetDateKey === '2026-09-12') {
+          const existing = prev.find((t) => String(t.id) === String(task.id))
+          if (existing) {
+            return prev.map((t) => (String(t.id) === String(task.id) ? { ...t, timeSlot: newTimeSlot } : t))
+          } else {
+            return [
+              ...prev,
+              {
+                id: String(task.id),
+                title: task.title,
+                subject: task.subject,
+                tagClass: task.tagClass,
+                tagIcon: task.tagClass.includes('math') ? '📐' : task.tagClass.includes('chem') ? '⚗️' : '💻',
+                timeSlot: newTimeSlot,
+                completed: task.completed,
+                alarmActive: true,
+                status: task.completed ? 'Done' : 'Upcoming',
+              },
+            ]
+          }
+        } else {
+          return prev.filter((t) => String(t.id) !== String(task.id))
+        }
+      })
+    }
+
+    soundSynth.playSuccessBeep()
+    const targetDateObj = new Date(targetDateKey + 'T00:00:00')
+    const formattedTargetDay = targetDateObj.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    })
+    showToast(`Moved "${task.title}" to ${formattedTargetDay} at ${newTimeSlot}`, '📅')
+  }
+
+  // Drag and Drop Handlers for Calendar Event Blocks
+  const handleEventDragStart = (
+    e: React.DragEvent,
+    task: CalTaskItem,
+    sourceDateKey: string
+  ) => {
+    e.stopPropagation()
+    const { durationMinutes } = parseTimeSlot(task.timeSlot)
+    setDraggedCalEvent({
+      task,
+      sourceDateKey,
+      durationMinutes: durationMinutes || 60,
+    })
+    e.dataTransfer.setData('text/plain', task.id)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleGridDayColDragOver = (e: React.DragEvent, dateKey: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (!draggedCalEvent) return
+
+    const colElem = e.currentTarget as HTMLElement
+    const rect = colElem.getBoundingClientRect()
+    const offsetY = e.clientY - rect.top
+
+    // 7 AM = 420 min. 1px = 1 min. Snap to 15 min.
+    const duration = draggedCalEvent.durationMinutes || 60
+    const rawMin = 420 + offsetY
+    const snapped = Math.max(420, Math.min(1320 - duration, Math.round(rawMin / 15) * 15))
+    const timePreview = formatMinutesToTimeSlot(snapped, duration)
+
+    setDragOverCol({
+      dateKey,
+      snappedMinutes: snapped,
+      timeSlotPreview: timePreview,
+    })
+  }
+
+  const handleGridDayColDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setDragOverCol(null)
+  }
+
+  const handleGridDayColDrop = (e: React.DragEvent, targetDateKey: string) => {
+    e.preventDefault()
+    if (!draggedCalEvent) return
+
+    const colElem = e.currentTarget as HTMLElement
+    const rect = colElem.getBoundingClientRect()
+    const offsetY = e.clientY - rect.top
+    const duration = draggedCalEvent.durationMinutes || 60
+    const rawMin = 420 + offsetY
+    const snapped = Math.max(420, Math.min(1320 - duration, Math.round(rawMin / 15) * 15))
+    const newTimeSlot = formatMinutesToTimeSlot(snapped, duration)
+
+    moveCalTask(
+      draggedCalEvent.task,
+      draggedCalEvent.sourceDateKey,
+      targetDateKey,
+      newTimeSlot,
+      duration
+    )
+
+    setDraggedCalEvent(null)
+    setDragOverCol(null)
+  }
+
+  const handleMonthCellDragOver = (e: React.DragEvent, dayNum: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverMonthDay(dayNum)
+  }
+
+  const handleMonthCellDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setDragOverMonthDay(null)
+  }
+
+  const handleMonthCellDrop = (e: React.DragEvent, dayNum: number) => {
+    e.preventDefault()
+    setDragOverMonthDay(null)
+    if (!draggedCalEvent) return
+
+    const targetDateKey = formatCalDateKey(calYear, calMonth, dayNum)
+    moveCalTask(
+      draggedCalEvent.task,
+      draggedCalEvent.sourceDateKey,
+      targetDateKey,
+      draggedCalEvent.task.timeSlot,
+      draggedCalEvent.durationMinutes
+    )
+    setDraggedCalEvent(null)
+  }
+
+  const handleShiftEventTime = (deltaMinutes: number) => {
+    if (!gcalActiveEvent) return
+    const { startMinutes, durationMinutes } = parseTimeSlot(gcalActiveEvent.timeSlot)
+    const duration = durationMinutes || gcalActiveEvent.duration_minutes || 45
+    const newStart = Math.max(420, Math.min(1320 - duration, startMinutes + deltaMinutes))
+    const newSlot = formatMinutesToTimeSlot(newStart, duration)
+    const dateKey = gcalActiveEvent.dateKey || formatCalDateKey(calYear, calMonth, selectedCalDay)
+
+    moveCalTask(gcalActiveEvent, dateKey, dateKey, newSlot, duration)
+    setGcalActiveEvent((prev) => (prev ? { ...prev, timeSlot: newSlot } : null))
+  }
+
+  const handleShiftEventDay = (deltaDays: number) => {
+    if (!gcalActiveEvent) return
+    const dateKey = gcalActiveEvent.dateKey || formatCalDateKey(calYear, calMonth, selectedCalDay)
+    const [y, m, d] = dateKey.split('-').map(Number)
+    const dateObj = new Date(y, m - 1, d)
+    dateObj.setDate(dateObj.getDate() + deltaDays)
+    const targetDateKey = formatCalDateKey(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate())
+    const { durationMinutes } = parseTimeSlot(gcalActiveEvent.timeSlot)
+    const duration = durationMinutes || gcalActiveEvent.duration_minutes || 45
+
+    moveCalTask(gcalActiveEvent, dateKey, targetDateKey, gcalActiveEvent.timeSlot, duration)
+    setGcalActiveEvent((prev) => (prev ? { ...prev, dateKey: targetDateKey } : null))
+  }
 
   // Dynamic Free Time / Brain Break Blocks
   const [emptyBlocks, setEmptyBlocks] = useState({
@@ -3691,9 +3913,16 @@ export default function App() {
                       {/* 7 Day Columns */}
                       {weekDays.map((wDay) => {
                         const dayTasks = getTasksForDate(wDay.year, wDay.month, wDay.day).filter(filterTask)
+                        const isDragOverThisCol = dragOverCol?.dateKey === wDay.dateKey
 
                         return (
-                          <div key={wDay.dateKey} className="gcal-grid-day-col">
+                          <div
+                            key={wDay.dateKey}
+                            className={`gcal-grid-day-col ${isDragOverThisCol ? 'drag-over' : ''}`}
+                            onDragOver={(e) => handleGridDayColDragOver(e, wDay.dateKey)}
+                            onDragLeave={handleGridDayColDragLeave}
+                            onDrop={(e) => handleGridDayColDrop(e, wDay.dateKey)}
+                          >
                             {/* Horizontal Hour Guidelines */}
                             {GCAL_HOURS.map((h) => (
                               <div
@@ -3720,6 +3949,24 @@ export default function App() {
                               </div>
                             )}
 
+                            {/* Live Drag & Drop Ghost Slot Preview */}
+                            {isDragOverThisCol && draggedCalEvent && dragOverCol && (
+                              <div
+                                className="gcal-drag-ghost-preview"
+                                style={{
+                                  top: `${Math.max(0, dragOverCol.snappedMinutes - 420)}px`,
+                                  height: `${Math.max(34, draggedCalEvent.durationMinutes)}px`,
+                                }}
+                              >
+                                <div className="gcal-ghost-title">
+                                  {draggedCalEvent.task.title}
+                                </div>
+                                <div className="gcal-ghost-time">
+                                  ⏱️ {dragOverCol.timeSlotPreview}
+                                </div>
+                              </div>
+                            )}
+
                             {/* Positioned Event Blocks */}
                             {dayTasks.map((t) => {
                               const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
@@ -3736,19 +3983,28 @@ export default function App() {
                               else if (subLower.includes('python')) cardClass = 'python'
                               else if (subLower.includes('ai')) cardClass = 'ai'
 
+                              const isBeingDragged = draggedCalEvent?.task.id === t.id
+
                               return (
                                 <div
                                   key={t.id}
-                                  className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''}`}
+                                  className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''} ${isBeingDragged ? 'dragging' : ''}`}
                                   style={{
                                     top: `${topPx}px`,
                                     height: `${heightPx}px`,
+                                  }}
+                                  draggable={true}
+                                  onDragStart={(e) => handleEventDragStart(e, t, wDay.dateKey)}
+                                  onDragEnd={() => {
+                                    setDraggedCalEvent(null)
+                                    setDragOverCol(null)
                                   }}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setGcalActiveEvent({ ...t, dateKey: wDay.dateKey })
                                     soundSynth.playHarmonicChime()
                                   }}
+                                  title="Drag to change time or day • Click to view"
                                 >
                                   <div className="gcal-event-title">
                                     {t.completed ? '✓ ' : ''}{t.title}
@@ -3794,15 +4050,21 @@ export default function App() {
                     const hasExam = rawTasks.some(
                       (t) => t.title.toLowerCase().includes('exam') || t.title.toLowerCase().includes('midterm')
                     )
+                    const isDragOver = dragOverMonthDay === d
+                    const dateKey = formatCalDateKey(calYear, calMonth, d)
 
                     let cellClass = 'gcal-month-cell'
                     if (isToday) cellClass += ' today'
                     if (isSelected) cellClass += ' selected'
+                    if (isDragOver) cellClass += ' drag-over'
 
                     return (
                       <div
                         key={d}
                         className={cellClass}
+                        onDragOver={(e) => handleMonthCellDragOver(e, d)}
+                        onDragLeave={handleMonthCellDragLeave}
+                        onDrop={(e) => handleMonthCellDrop(e, d)}
                         onClick={() => {
                           setSelectedCalDay(d)
                           soundSynth.playHarmonicChime()
@@ -3838,16 +4100,24 @@ export default function App() {
                             col = '#e9d5ff'
                           }
 
+                          const isBeingDragged = draggedCalEvent?.task.id === t.id
+
                           return (
                             <div
                               key={t.id}
-                              className="gcal-month-pill"
+                              className={`gcal-month-pill ${isBeingDragged ? 'dragging' : ''}`}
                               style={{ background: bg, color: col }}
+                              draggable={true}
+                              onDragStart={(e) => handleEventDragStart(e, t, dateKey)}
+                              onDragEnd={() => {
+                                setDraggedCalEvent(null)
+                                setDragOverMonthDay(null)
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setGcalActiveEvent({ ...t, dateKey: formatCalDateKey(calYear, calMonth, d) })
+                                setGcalActiveEvent({ ...t, dateKey })
                               }}
-                              title={`${t.subject}: ${t.title}`}
+                              title={`Drag to move date • ${t.subject}: ${t.title}`}
                             >
                               {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
                             </div>
@@ -3900,71 +4170,113 @@ export default function App() {
                       </div>
 
                       {/* Full-Width Day Column */}
-                      <div className="gcal-grid-day-col" style={{ borderRight: 'none' }}>
-                        {GCAL_HOURS.map((h) => (
+                      {(() => {
+                        const dayDateKey = formatCalDateKey(calYear, calMonth, selectedCalDay)
+                        const isDragOverThisCol = dragOverCol?.dateKey === dayDateKey
+
+                        return (
                           <div
-                            key={h.hour}
-                            className="gcal-hour-row-guide"
-                            onClick={() => {
-                              const startHour12 = h.hour > 12 ? h.hour - 12 : h.hour
-                              const endHour12 = (h.hour + 1) > 12 ? (h.hour + 1) - 12 : h.hour + 1
-                              const ampm = h.hour >= 12 ? 'PM' : 'AM'
-                              setNewCalTaskTime(`${startHour12}:00–${endHour12}:00 ${ampm}`)
-                              setGcalQuickCreateOpen(true)
-                            }}
-                          />
-                        ))}
+                            className={`gcal-grid-day-col ${isDragOverThisCol ? 'drag-over' : ''}`}
+                            style={{ borderRight: 'none' }}
+                            onDragOver={(e) => handleGridDayColDragOver(e, dayDateKey)}
+                            onDragLeave={handleGridDayColDragLeave}
+                            onDrop={(e) => handleGridDayColDrop(e, dayDateKey)}
+                          >
+                            {GCAL_HOURS.map((h) => (
+                              <div
+                                key={h.hour}
+                                className="gcal-hour-row-guide"
+                                onClick={() => {
+                                  const startHour12 = h.hour > 12 ? h.hour - 12 : h.hour
+                                  const endHour12 = (h.hour + 1) > 12 ? (h.hour + 1) - 12 : h.hour + 1
+                                  const ampm = h.hour >= 12 ? 'PM' : 'AM'
+                                  setNewCalTaskTime(`${startHour12}:00–${endHour12}:00 ${ampm}`)
+                                  setGcalQuickCreateOpen(true)
+                                }}
+                              />
+                            ))}
 
-                        {/* Current Time Indicator */}
-                        {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
-                          <div className="gcal-current-time-line" style={{ top: `${curTop}px` }}>
-                            <div className="gcal-current-time-dot" />
-                          </div>
-                        )}
-
-                        {/* Event blocks */}
-                        {dayTasks.map((t) => {
-                          const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
-                          const topPx = Math.max(0, startMinutes - 420)
-                          const heightPx = Math.max(40, durationMinutes)
-
-                          const subLower = (t.subject || '').toLowerCase()
-                          const isExam =
-                            t.title.toLowerCase().includes('exam') ||
-                            t.title.toLowerCase().includes('midterm')
-                          let cardClass = 'math'
-                          if (isExam) cardClass = 'exam'
-                          else if (subLower.includes('chem')) cardClass = 'chem'
-                          else if (subLower.includes('python')) cardClass = 'python'
-                          else if (subLower.includes('ai')) cardClass = 'ai'
-
-                          return (
-                            <div
-                              key={t.id}
-                              className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''}`}
-                              style={{
-                                top: `${topPx}px`,
-                                height: `${heightPx}px`,
-                                left: '12px',
-                                right: '12px',
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setGcalActiveEvent({ ...t, dateKey: formatCalDateKey(calYear, calMonth, selectedCalDay) })
-                                soundSynth.playHarmonicChime()
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span className="gcal-event-title" style={{ fontSize: '13px' }}>
-                                  {t.completed ? '✓ ' : ''}{t.title}
-                                </span>
-                                <span style={{ fontSize: '10.5px', opacity: 0.8 }}>{t.subject}</span>
+                            {/* Current Time Indicator */}
+                            {calYear === 2026 && calMonth === 8 && selectedCalDay === 12 && (
+                              <div className="gcal-current-time-line" style={{ top: `${curTop}px` }}>
+                                <div className="gcal-current-time-dot" />
                               </div>
-                              <div className="gcal-event-time">{t.timeSlot} • {t.duration_minutes || 45} mins</div>
-                            </div>
-                          )
-                        })}
-                      </div>
+                            )}
+
+                            {/* Drag Ghost Preview */}
+                            {isDragOverThisCol && draggedCalEvent && dragOverCol && (
+                              <div
+                                className="gcal-drag-ghost-preview"
+                                style={{
+                                  top: `${Math.max(0, dragOverCol.snappedMinutes - 420)}px`,
+                                  height: `${Math.max(40, draggedCalEvent.durationMinutes)}px`,
+                                  left: '12px',
+                                  right: '12px',
+                                }}
+                              >
+                                <div className="gcal-ghost-title">
+                                  {draggedCalEvent.task.title}
+                                </div>
+                                <div className="gcal-ghost-time">
+                                  ⏱️ {dragOverCol.timeSlotPreview}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Event blocks */}
+                            {dayTasks.map((t) => {
+                              const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
+                              const topPx = Math.max(0, startMinutes - 420)
+                              const heightPx = Math.max(40, durationMinutes)
+
+                              const subLower = (t.subject || '').toLowerCase()
+                              const isExam =
+                                t.title.toLowerCase().includes('exam') ||
+                                t.title.toLowerCase().includes('midterm')
+                              let cardClass = 'math'
+                              if (isExam) cardClass = 'exam'
+                              else if (subLower.includes('chem')) cardClass = 'chem'
+                              else if (subLower.includes('python')) cardClass = 'python'
+                              else if (subLower.includes('ai')) cardClass = 'ai'
+
+                              const isBeingDragged = draggedCalEvent?.task.id === t.id
+
+                              return (
+                                <div
+                                  key={t.id}
+                                  className={`gcal-event-block ${cardClass} ${t.completed ? 'completed' : ''} ${isBeingDragged ? 'dragging' : ''}`}
+                                  style={{
+                                    top: `${topPx}px`,
+                                    height: `${heightPx}px`,
+                                    left: '12px',
+                                    right: '12px',
+                                  }}
+                                  draggable={true}
+                                  onDragStart={(e) => handleEventDragStart(e, t, dayDateKey)}
+                                  onDragEnd={() => {
+                                    setDraggedCalEvent(null)
+                                    setDragOverCol(null)
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setGcalActiveEvent({ ...t, dateKey: dayDateKey })
+                                    soundSynth.playHarmonicChime()
+                                  }}
+                                  title="Drag to reschedule time slot • Click to view"
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span className="gcal-event-title" style={{ fontSize: '13px' }}>
+                                      {t.completed ? '✓ ' : ''}{t.title}
+                                    </span>
+                                    <span style={{ fontSize: '10.5px', opacity: 0.8 }}>{t.subject}</span>
+                                  </div>
+                                  <div className="gcal-event-time">{t.timeSlot} • {t.duration_minutes || 45} mins</div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -4081,6 +4393,43 @@ export default function App() {
                       • {gcalActiveEvent.priority || 'medium'} priority
                     </span>
                   </div>
+                </div>
+
+                {/* Quick Reschedule / Move Controls */}
+                <div className="gcal-quick-move-row">
+                  <span style={{ fontSize: '11px', color: '#8b949e', fontWeight: 600, marginRight: '4px' }}>Move:</span>
+                  <button
+                    type="button"
+                    className="gcal-shift-btn"
+                    onClick={() => handleShiftEventTime(-30)}
+                    title="Move 30 minutes earlier"
+                  >
+                    ⬅️ 30m Earlier
+                  </button>
+                  <button
+                    type="button"
+                    className="gcal-shift-btn"
+                    onClick={() => handleShiftEventTime(30)}
+                    title="Move 30 minutes later"
+                  >
+                    30m Later ➡️
+                  </button>
+                  <button
+                    type="button"
+                    className="gcal-shift-btn"
+                    onClick={() => handleShiftEventDay(-1)}
+                    title="Move to Previous Day"
+                  >
+                    📅 -1 Day
+                  </button>
+                  <button
+                    type="button"
+                    className="gcal-shift-btn"
+                    onClick={() => handleShiftEventDay(1)}
+                    title="Move to Next Day"
+                  >
+                    📅 +1 Day
+                  </button>
                 </div>
 
                 <div className="gcal-popover-actions">
