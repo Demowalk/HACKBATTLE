@@ -16,11 +16,11 @@
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
   --transition-speed: 0.2s;
 
-  /* Vibrant & Soft Forest Charcoal Gradients */
-  --grad-primary: linear-gradient(135deg, #2C3A31 0%, #44594c 100%);
+  /* Vibrant & Soft Deep Teal Gradients */
+  --grad-primary: linear-gradient(135deg, #004D40 0%, #00796b 100%);
   --grad-math: linear-gradient(135deg, #10b981 0%, #059669 100%);
   --grad-chem: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-  --grad-python: linear-gradient(135deg, #2C3A31 0%, #44594c 100%);
+  --grad-python: linear-gradient(135deg, #004D40 0%, #00796b 100%);
   --grad-ai: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
   --grad-dark-card: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
 
@@ -37,17 +37,17 @@
   --text-secondary: #94a3b8;
   --text-tertiary: #64748b;
 
-  --accent-primary: #2C3A31;
-  --accent-primary-hover: #3c4f43;
-  --accent-primary-subtle: rgba(44, 58, 49, 0.25);
+  --accent-primary: #004D40;
+  --accent-primary-hover: #00695c;
+  --accent-primary-subtle: rgba(0, 77, 64, 0.25);
 
   /* Subject Accents */
   --color-math: #34d399; /* Soft Emerald */
   --color-math-subtle: rgba(16, 185, 129, 0.15);
   --color-chem: #38bdf8; /* Sky Blue */
   --color-chem-subtle: rgba(56, 189, 248, 0.15);
-  --color-python: #2C3A31; /* Forest Charcoal / Deep Spruce */
-  --color-python-subtle: rgba(44, 58, 49, 0.25);
+  --color-python: #004D40; /* Deep Teal */
+  --color-python-subtle: rgba(0, 77, 64, 0.25);
   --color-ai: #a78bfa;
   --color-ai-subtle: rgba(139, 92, 246, 0.16);
 
@@ -215,19 +215,19 @@ header.navbar {
 }
 
 .btn-pill.btn-primary {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
-  box-shadow: 0 4px 14px rgba(44, 58, 49, 0.35);
+  border: 1px solid #00695c;
+  box-shadow: 0 4px 14px rgba(0, 77, 64, 0.35);
   font-weight: 700;
 }
 
 .btn-pill.btn-primary:hover {
-  background: #3c4f43;
-  border-color: #4f6657;
+  background: #00695c;
+  border-color: #00796b;
   color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(44, 58, 49, 0.45);
+  box-shadow: 0 6px 18px rgba(0, 77, 64, 0.45);
 }
 
 .btn-icon {
@@ -449,8 +449,8 @@ header.navbar {
 
 /* DAILY MOTIVATION & PROGRESS BANNER */
 .daily-progress-banner {
-  background: linear-gradient(135deg, rgba(44, 58, 49, 0.25) 0%, rgba(16, 185, 129, 0.08) 100%);
-  border: 1.5px solid rgba(60, 79, 67, 0.4);
+  background: linear-gradient(135deg, rgba(0, 77, 64, 0.25) 0%, rgba(16, 185, 129, 0.08) 100%);
+  border: 1.5px solid rgba(0, 105, 92, 0.4);
   border-radius: 16px;
   padding: 16px 20px;
   display: flex;
@@ -474,9 +474,9 @@ header.navbar {
 }
 
 .streak-pill {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
   font-size: 11px;
   font-weight: 800;
   padding: 4px 10px;
@@ -484,7 +484,7 @@ header.navbar {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  box-shadow: 0 2px 8px rgba(44, 58, 49, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 77, 64, 0.2);
 }
 
 .daily-progress-text {
@@ -507,7 +507,7 @@ header.navbar {
 
 .daily-progress-fill {
   height: 100%;
-  background: #2C3A31;
+  background: #004D40;
   border-radius: 9999px;
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -540,8 +540,8 @@ header.navbar {
 
 /* DIAGNOSTIC SYNC CARD (Encouraging, Student-Friendly Tone) */
 .sync-card {
-  background: linear-gradient(135deg, rgba(44, 58, 49, 0.3) 0%, rgba(68, 89, 76, 0.1) 100%);
-  border: 1.5px solid #3c4f43;
+  background: linear-gradient(135deg, rgba(0, 77, 64, 0.3) 0%, rgba(0, 121, 107, 0.1) 100%);
+  border: 1.5px solid #00695c;
   border-radius: 14px;
   padding: 12px 18px;
   display: flex;
@@ -554,15 +554,15 @@ header.navbar {
 
 .sync-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(44, 58, 49, 0.25);
+  box-shadow: 0 8px 20px rgba(0, 77, 64, 0.25);
 }
 
 .sync-badge {
   width: 42px;
   height: 42px;
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -584,7 +584,7 @@ header.navbar {
 .sync-score {
   font-size: 11px;
   font-weight: 700;
-  color: #2C3A31;
+  color: #004D40;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -596,9 +596,9 @@ header.navbar {
 }
 
 .sync-btn-auto {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
   padding: 7px 14px;
   border-radius: 8px;
   font-size: 11.5px;
@@ -606,22 +606,22 @@ header.navbar {
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 3px 10px rgba(44, 58, 49, 0.35);
+  box-shadow: 0 3px 10px rgba(0, 77, 64, 0.35);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .sync-btn-auto:hover {
-  background: #3c4f43;
-  border-color: #4f6657;
+  background: #00695c;
+  border-color: #00796b;
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(44, 58, 49, 0.45);
+  box-shadow: 0 5px 14px rgba(0, 77, 64, 0.45);
 }
 
 .sync-btn-auto.scheduled {
-  background: rgba(44, 58, 49, 0.3);
+  background: rgba(0, 77, 64, 0.3);
   color: #f8fafc;
-  border-color: #3c4f43;
+  border-color: #00695c;
   box-shadow: none;
 }
 
@@ -756,9 +756,9 @@ header.navbar {
 }
 
 .task-tag-python {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
 }
 
 .task-card-right {
@@ -783,11 +783,11 @@ header.navbar {
 }
 
 .btn-timer:hover {
-  background: #2C3A31;
-  border-color: #3c4f43;
+  background: #004D40;
+  border-color: #00695c;
   color: #f8fafc;
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(44, 58, 49, 0.35);
+  box-shadow: 0 3px 10px rgba(0, 77, 64, 0.35);
 }
 
 /* Basic White Alarm Bell */
@@ -858,9 +858,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .badge-upcoming {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
 }
 
 .badge-done {
@@ -870,9 +870,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .badge-critical {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
 }
 
 /* FREE TIME & BRAIN BREAK BLOCKS */
@@ -892,7 +892,7 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .empty-block:hover {
-  border-color: #3c4f43;
+  border-color: #00695c;
   background-color: var(--bg-surface-elevated);
 }
 
@@ -903,9 +903,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .empty-tag {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
   padding: 3px 9px;
   border-radius: 9999px;
   font-size: 11px;
@@ -943,8 +943,8 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .btn-quick-fill {
-  background: #2C3A31;
-  border: 1.5px solid #3c4f43;
+  background: #004D40;
+  border: 1.5px solid #00695c;
   color: #f8fafc;
   padding: 5px 12px;
   border-radius: 8px;
@@ -958,10 +958,10 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .btn-quick-fill:hover {
-  background: #3c4f43;
+  background: #00695c;
   color: #ffffff;
-  border-color: #4f6657;
-  box-shadow: 0 2px 8px rgba(44, 58, 49, 0.35);
+  border-color: #00796b;
+  box-shadow: 0 2px 8px rgba(0, 77, 64, 0.35);
 }
 
 /* CONCEPT MASTERY & RETENTION (DKT SECTION) */
@@ -1055,9 +1055,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .btn-concept-quiz:hover {
-  border-color: #3c4f43;
+  border-color: #00695c;
   color: #f8fafc;
-  background: #2C3A31;
+  background: #004D40;
 }
 
 /* FOCUS AREAS & BOOSTERS PANEL */
@@ -1090,9 +1090,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .btn-schedule-critical {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
   padding: 7px 14px;
   border-radius: 8px;
   font-size: 11.5px;
@@ -1103,14 +1103,14 @@ html[data-theme="light"] .btn-alarm-bell.active {
   gap: 5px;
   white-space: nowrap;
   transition: all 0.2s;
-  box-shadow: 0 2px 10px rgba(44, 58, 49, 0.35);
+  box-shadow: 0 2px 10px rgba(0, 77, 64, 0.35);
 }
 
 .btn-schedule-critical:hover {
-  background: #3c4f43;
-  border-color: #4f6657;
+  background: #00695c;
+  border-color: #00796b;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(44, 58, 49, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 77, 64, 0.45);
 }
 
 .btn-schedule-critical.scheduled {
@@ -1207,12 +1207,12 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .chat-bubble.user {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
   align-self: flex-end;
   border-top-right-radius: 4px;
-  border: 1px solid #3c4f43;
-  box-shadow: 0 2px 10px rgba(44, 58, 49, 0.35);
+  border: 1px solid #00695c;
+  box-shadow: 0 2px 10px rgba(0, 77, 64, 0.35);
   font-weight: 500;
 }
 
@@ -1274,7 +1274,7 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .quick-btn .arrow {
-  color: #2C3A31;
+  color: #004D40;
   font-weight: 800;
 }
 
@@ -1301,13 +1301,13 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .chat-input-field:focus {
-  border-color: #2C3A31;
+  border-color: #004D40;
 }
 
 .chat-send-btn {
-  background: #2C3A31;
+  background: #004D40;
   color: #f8fafc;
-  border: 1px solid #3c4f43;
+  border: 1px solid #00695c;
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -1318,14 +1318,14 @@ html[data-theme="light"] .btn-alarm-bell.active {
   font-size: 16px;
   font-weight: 800;
   transition: all 0.2s;
-  box-shadow: 0 2px 10px rgba(44, 58, 49, 0.35);
+  box-shadow: 0 2px 10px rgba(0, 77, 64, 0.35);
 }
 
 .chat-send-btn:hover {
-  background: #3c4f43;
-  border-color: #4f6657;
+  background: #00695c;
+  border-color: #00796b;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(44, 58, 49, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 77, 64, 0.45);
 }
 
 /* ==========================================================================

@@ -20,9 +20,9 @@
   --color-green-glow: rgba(34, 197, 94, 0.15);
   --color-green-border: rgba(34, 197, 94, 0.35);
 
-  --color-orange: #2C3A31;
-  --color-orange-glow: rgba(44, 58, 49, 0.25);
-  --color-orange-border: rgba(44, 58, 49, 0.45);
+  --color-orange: #004D40;
+  --color-orange-glow: rgba(0, 77, 64, 0.25);
+  --color-orange-border: rgba(0, 77, 64, 0.45);
 
   --color-red: #ef4444;
   --color-red-glow: rgba(239, 68, 68, 0.12);
