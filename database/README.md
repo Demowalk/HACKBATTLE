@@ -101,29 +101,31 @@ erDiagram
 pip install -r database/requirements.txt
 ```
 
-### 2. Initialize Database & Seed Demo Data
-To create tables and seed default tasks matching the frontend state:
-```bash
-python database/init_db.py
+### 2. Connect to Supabase
+1. Create a free project at **[supabase.com](https://supabase.com)**.
+2. Open your project's **SQL Editor** in the Supabase dashboard.
+3. Paste the contents of **[`database/schema.sql`](file:///Users/lakshhs/HACKBATTLE/database/schema.sql)** and click **Run**. This will create all tables, indexes, RLS policies, and seed data.
+4. Copy your credentials from **Project Settings ➔ Database / API** into your `.env` file:
+```env
+# Supabase PostgreSQL Connection URL (Transaction Pooler port 6543 or direct port 5432):
+DATABASE_URL=postgresql://postgres.your-project-ref:your-password@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
+
+# Supabase REST / Auth / Realtime API:
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_KEY=your-anon-or-service-role-key
 ```
 
-### 3. Environment Variables
-In your `.env` file:
-```env
-# Optional: Defaults to SQLite if not provided
-# Local SQLite:
-DATABASE_URL=sqlite:///./database/reviso.db
-
-# Production PostgreSQL (Neon, Supabase, Render, Railway):
-# DATABASE_URL=postgresql://user:password@ep-cool-fog.us-east-2.aws.neon.tech/neondb?sslmode=require
+### 3. Local SQLite Mode (Offline Fallback)
+If `DATABASE_URL` is omitted, Reviso automatically defaults to local SQLite (`sqlite:///./database/reviso.db`). You can initialize and seed local SQLite with:
+```bash
+python database/init_db.py
 ```
 
 ---
 
 ## 🔌 Connecting to FastAPI Backend
 
-To use the database in `backend/main.py`:
-
+### Approach A: Using SQLAlchemy ORM (Recommended)
 ```python
 from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
@@ -144,4 +146,16 @@ def add_task(task_in: TaskCreate, db: Session = Depends(get_db)):
 @app.patch("/tasks/{task_id}/toggle", response_model=TaskOut)
 def toggle_task(task_id: int, db: Session = Depends(get_db)):
     return toggle_task_completion(db, task_id)
+```
+
+### Approach B: Using Supabase Python Client Directly
+```python
+from database.supabase_client import get_supabase, supabase_fetch_tasks
+
+@app.get("/supabase/tasks")
+def get_supabase_tasks():
+    sb = get_supabase()
+    if not sb:
+        return {"error": "Supabase credentials not configured"}
+    return supabase_fetch_tasks()
 ```

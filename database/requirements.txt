@@ -1,3 +1,4 @@
+
 # Database Dependencies for Reviso
 sqlalchemy>=2.0.25
 pydantic>=2.6.0

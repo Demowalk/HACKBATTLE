@@ -1,6 +1,7 @@
 """Database package for reviso study planner engine."""
 from .connection import Base, engine, SessionLocal, get_db
 from .models import User, Task, Quiz, QuizQuestion, ConceptMastery
+from .supabase_client import get_supabase
 
 __all__ = [
     "Base",
@@ -12,4 +13,6 @@ __all__ = [
     "Quiz",
     "QuizQuestion",
     "ConceptMastery",
+    "get_supabase",
 ]
+
