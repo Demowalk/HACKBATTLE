@@ -2104,6 +2104,39 @@ export default function App() {
     )
   }
 
+  // Dynamic next upcoming task with active alarm
+  const nextAlarmTask = tasks.find((t) => !t.completed && t.alarmActive) || tasks.find((t) => !t.completed)
+  const nextAlarmLabel = nextAlarmTask
+    ? `${nextAlarmTask.subject} (${nextAlarmTask.timeSlot.split('–')[0].trim()})`
+    : 'All Caught Up'
+
+  // Click outside to close alarm popover
+  useEffect(() => {
+    function handleAlarmOutside(e: MouseEvent) {
+      if (alarmPopoverRef.current && !alarmPopoverRef.current.contains(e.target as Node)) {
+        setAlarmPopoverOpen(false)
+      }
+    }
+    if (alarmPopoverOpen) {
+      document.addEventListener('mousedown', handleAlarmOutside)
+      return () => document.removeEventListener('mousedown', handleAlarmOutside)
+    }
+  }, [alarmPopoverOpen])
+
+  // Smooth scroll and highlight task in schedule
+  const scrollToTask = (taskId: string) => {
+    setAlarmPopoverOpen(false)
+    const el = document.getElementById(taskId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('task-card-highlight')
+      setTimeout(() => el.classList.remove('task-card-highlight'), 2100)
+      showToast('Found upcoming session in schedule', 'calendar')
+    } else {
+      showToast('Upcoming session active in schedule', 'calendar')
+    }
+  }
+
   // Toggle Task Completion
   const toggleTask = (taskId: string) => {
     setTasks((prev) =>
@@ -3438,7 +3471,7 @@ export default function App() {
             {/* Schedule List with De-cluttered Task Cards & Smart Free Time Chips */}
             <div className="timeline-list">
               {tasks.map((task) => (
-                <div key={task.id} className={`task-card ${task.completed ? 'completed' : ''}`}>
+                <div key={task.id} id={task.id} className={`task-card ${task.completed ? 'completed' : ''}`}>
                   <div className="task-card-left">
                     <div className="task-check-circle" onClick={() => toggleTask(task.id)}>
                       <Check size={12} strokeWidth={2.5} />
@@ -3862,15 +3895,7 @@ export default function App() {
           <div className="chat-messages">
             {chatList.map((entry) => {
               if (entry.type === 'trace') {
-                if (entry.toolName === 'memory_retention_check') return null
-                return (
-                  <div key={entry.id} className="tool-call-trace">
-                    <div className="tool-header">
-                      <Zap size={12} className="inline mr-1 text-amber-400" /> <span>copilot_action:</span> <strong>{entry.toolName}()</strong>
-                    </div>
-                    <div>{JSON.stringify(entry.toolArgs, null, 2)}</div>
-                  </div>
-                )
+                return null
               }
               return (
                 <div
