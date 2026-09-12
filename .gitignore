@@ -55,6 +55,11 @@ cover/
 *.mo
 *.pot
 
+# Node / JavaScript
+node_modules/
+.npm
+npm-debug.log*
+
 # Django stuff:
 *.log
 local_settings.py
