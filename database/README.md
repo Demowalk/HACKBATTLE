@@ -1,10 +1,10 @@
-# 🗄️ Reviso Database Architecture
+# Reviso Database Architecture
 
 This directory houses the database infrastructure, ORM models, migration readiness, and CRUD operations for **reviso** — an autonomous adaptive study and self-learning engine.
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 The database utilizes **SQLAlchemy 2.0** with **dual-environment support**:
 - **Local Development**: Auto-configures **SQLite** (`sqlite:///./database/reviso.db`) with zero setup or external server dependencies.
@@ -25,7 +25,7 @@ database/
 
 ---
 
-## 📊 Entity Relationship Diagram
+## Entity Relationship Diagram
 
 ```mermaid
 erDiagram
@@ -94,7 +94,7 @@ erDiagram
 
 ---
 
-## ⚡ Quickstart
+## Quickstart
 
 ### 1. Install Dependencies
 ```bash
@@ -105,7 +105,7 @@ pip install -r database/requirements.txt
 1. Create a free project at **[supabase.com](https://supabase.com)**.
 2. Open your project's **SQL Editor** in the Supabase dashboard.
 3. Paste the contents of **[`database/schema.sql`](file:///Users/lakshhs/HACKBATTLE/database/schema.sql)** and click **Run**. This will create all tables, indexes, RLS policies, and seed data.
-4. Copy your credentials from **Project Settings ➔ Database / API** into your `.env` file:
+4. Copy your credentials from **Project Settings -> Database / API** into your `.env` file:
 ```env
 # Supabase PostgreSQL Connection URL (Transaction Pooler port 6543 or direct port 5432):
 DATABASE_URL=postgresql://postgres.your-project-ref:your-password@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
@@ -123,7 +123,7 @@ python database/init_db.py
 
 ---
 
-## 🔌 Connecting to FastAPI Backend
+## Connecting to FastAPI Backend
 
 ### Approach A: Using SQLAlchemy ORM (Recommended)
 ```python
