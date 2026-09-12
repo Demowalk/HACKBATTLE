@@ -493,6 +493,7 @@ interface ChatEntry {
   text?: string
   toolName?: string
   toolArgs?: Record<string, unknown>
+  timestamp?: string
 }
 
 // ============================================================================
@@ -524,6 +525,10 @@ export default function App() {
   const [editGrade, setEditGrade] = useState<string>('Grade 12 • Engineering Prep')
   const [editTargetExam, setEditTargetExam] = useState<string>('JEE / Advanced STEM')
   const [editDailyGoal, setEditDailyGoal] = useState<number>(120)
+  const [profileTab, setProfileTab] = useState<'profile' | 'history'>('profile')
+  const [historySearchQuery, setHistorySearchQuery] = useState<string>('')
+  const [isChatHistoryModalOpen, setIsChatHistoryModalOpen] = useState<boolean>(false)
+  const [isRefreshingHistory, setIsRefreshingHistory] = useState<boolean>(false)
   const profileRef = useRef<HTMLDivElement>(null)
 
   type TimelineTask = {
@@ -1063,11 +1068,47 @@ export default function App() {
             type: 'msg' as const,
             sender: (m.sender === 'user' ? 'user' : 'bot') as 'user' | 'bot',
             text: m.text,
+            timestamp: m.timestamp,
           }))
         )
       }
     })
   }, [])
+
+  // Refresh chat history on demand
+  const refreshChatHistory = async () => {
+    setIsRefreshingHistory(true)
+    try {
+      const history = await fetchChatHistory()
+      if (history && history.length > 0) {
+        setChatList(
+          history.map((m) => ({
+            id: `msg-${m.id}`,
+            type: 'msg' as const,
+            sender: (m.sender === 'user' ? 'user' : 'bot') as 'user' | 'bot',
+            text: m.text,
+            timestamp: m.timestamp,
+          }))
+        )
+        showToast('Chat history synced with database!', '🕒')
+      }
+    } catch {
+      showToast('Could not reload chat history', '⚠️')
+    } finally {
+      setIsRefreshingHistory(false)
+    }
+  }
+
+  // Filtered chat messages for history viewer
+  const filteredChatList = chatList.filter((entry) => {
+    if (entry.type !== 'msg') return false
+    if (!historySearchQuery.trim()) return true
+    const q = historySearchQuery.toLowerCase()
+    return (
+      (entry.text && entry.text.toLowerCase().includes(q)) ||
+      (entry.sender && entry.sender.toLowerCase().includes(q))
+    )
+  })
 
   // Click outside to close profile
   useEffect(() => {
@@ -1075,6 +1116,7 @@ export default function App() {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setIsProfileOpen(false)
         setIsEditingName(false)
+        setProfileTab('profile')
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -1089,6 +1131,8 @@ export default function App() {
         setQuizModalOpen(false)
         setPomoModalOpen(false)
         setAlarmModalOpen(false)
+        setIsChatHistoryModalOpen(false)
+        setIsProfileOpen(false)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -1403,6 +1447,7 @@ export default function App() {
 
   // Add chat message
   const addChatMessage = (text: string, sender: 'bot' | 'user' = 'bot') => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     setChatList((prev) => [
       ...prev,
       {
@@ -1410,6 +1455,7 @@ export default function App() {
         type: 'msg',
         sender,
         text,
+        timestamp: timeStr,
       },
     ])
     sendChatMessage(sender, text)
@@ -1941,190 +1987,367 @@ export default function App() {
             </button>
 
             {isProfileOpen && (
-              <div className="profile-dropdown-menu">
-                <div className="dropdown-user-info">
-                  <div className="dropdown-avatar-large">
-                    {userName.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="dropdown-meta">
-                    <span className="dropdown-full-name">{userName}</span>
-                    <span className="dropdown-email">laksh.hs@adaptive.ai</span>
-                    <span className="dropdown-badge">{userRole} • {userGrade}</span>
-                    <span style={{ fontSize: '11px', color: 'var(--brand-mint)', marginTop: '3px', fontWeight: 600 }}>
-                      🎯 {userTargetExam} • ⏱️ {userDailyGoal}m/day
-                    </span>
-                  </div>
-                </div>
-                <div className="dropdown-divider" />
-                {isEditingName ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
-                    <div>
-                      <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                        Your Name
-                      </label>
-                      <input
-                        type="text"
-                        value={editNameValue}
-                        onChange={(e) => setEditNameValue(e.target.value)}
-                        placeholder="Enter full name"
-                        style={{
-                          width: '100%',
-                          background: 'var(--bg-canvas)',
-                          border: '1px solid var(--border-strong)',
-                          color: 'var(--text-primary)',
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          marginTop: '2px',
-                        }}
-                        autoFocus
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                        Target Exam / Focus
-                      </label>
-                      <input
-                        type="text"
-                        value={editTargetExam}
-                        onChange={(e) => setEditTargetExam(e.target.value)}
-                        placeholder="e.g. JEE Advanced, NEET, SAT"
-                        style={{
-                          width: '100%',
-                          background: 'var(--bg-canvas)',
-                          border: '1px solid var(--border-strong)',
-                          color: 'var(--text-primary)',
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          marginTop: '2px',
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                          Grade
-                        </label>
-                        <input
-                          type="text"
-                          value={editGrade}
-                          onChange={(e) => setEditGrade(e.target.value)}
-                          placeholder="e.g. Grade 12"
-                          style={{
-                            width: '100%',
-                            background: 'var(--bg-canvas)',
-                            border: '1px solid var(--border-strong)',
-                            color: 'var(--text-primary)',
-                            padding: '5px 8px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            marginTop: '2px',
-                          }}
-                        />
-                      </div>
-                      <div style={{ width: '80px' }}>
-                        <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                          Goal (min)
-                        </label>
-                        <input
-                          type="number"
-                          value={editDailyGoal}
-                          onChange={(e) => setEditDailyGoal(Math.max(15, parseInt(e.target.value, 10) || 60))}
-                          style={{
-                            width: '100%',
-                            background: 'var(--bg-canvas)',
-                            border: '1px solid var(--border-strong)',
-                            color: 'var(--text-primary)',
-                            padding: '5px 8px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            marginTop: '2px',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (editNameValue.trim()) {
-                            const trimmed = editNameValue.trim()
-                            const trimmedGrade = editGrade.trim() || 'Grade 12 • Engineering Prep'
-                            const trimmedExam = editTargetExam.trim() || 'JEE / Advanced STEM'
-                            setUserName(trimmed)
-                            setUserGrade(trimmedGrade)
-                            setUserTargetExam(trimmedExam)
-                            setUserDailyGoal(editDailyGoal)
-                            setStoredUserName(trimmed)
-                            updateUserProfile(1, {
-                              fullName: trimmed,
-                              grade: trimmedGrade,
-                              targetExam: trimmedExam,
-                              dailyGoalMinutes: editDailyGoal,
-                            })
-                            setIsEditingName(false)
-                            showToast(`Saved to database: ${trimmed} (${trimmedExam})`)
-                          }
-                        }}
-                        style={{
-                          flex: 1,
-                          background: 'var(--grad-primary)',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '5px',
-                          padding: '6px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Save Profile
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditNameValue(userName)
-                          setEditGrade(userGrade)
-                          setEditTargetExam(userTargetExam)
-                          setEditDailyGoal(userDailyGoal)
-                          setIsEditingName(false)
-                        }}
-                        style={{
-                          background: 'var(--bg-surface-elevated)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid var(--border-subtle)',
-                          borderRadius: '5px',
-                          padding: '6px 10px',
-                          fontSize: '11px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
+              <div className={`profile-dropdown-menu ${profileTab === 'history' ? 'history-mode' : ''}`}>
+                {/* Profile Top Segmented Tabs with History Icon */}
+                <div className="profile-tabs-header">
                   <button
                     type="button"
-                    className="dropdown-action-btn"
-                    onClick={() => setIsEditingName(true)}
+                    className={`profile-tab-btn ${profileTab === 'profile' ? 'active' : ''}`}
+                    onClick={() => setProfileTab('profile')}
                   >
-                    <span>⚙️</span>
-                    <span>Edit Profile & Goals</span>
+                    <span>👤 Profile</span>
                   </button>
+                  <button
+                    type="button"
+                    className={`profile-tab-btn ${profileTab === 'history' ? 'active' : ''}`}
+                    onClick={() => setProfileTab('history')}
+                  >
+                    <span className="tab-history-icon">🕒</span>
+                    <span>Chat History</span>
+                    <span className="profile-tab-badge">
+                      {chatList.filter((c) => c.type === 'msg').length}
+                    </span>
+                  </button>
+                </div>
+
+                {profileTab === 'profile' ? (
+                  <div>
+                    <div className="dropdown-user-info">
+                      <div className="dropdown-avatar-large">
+                        {userName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="dropdown-meta">
+                        <span className="dropdown-full-name">{userName}</span>
+                        <span className="dropdown-email">laksh.hs@adaptive.ai</span>
+                        <span className="dropdown-badge">{userRole} • {userGrade}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--brand-mint)', marginTop: '3px', fontWeight: 600 }}>
+                          🎯 {userTargetExam} • ⏱️ {userDailyGoal}m/day
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="dropdown-divider" />
+
+                    {/* Dedicated Chat History Card Button with prominent clock icon */}
+                    <button
+                      type="button"
+                      className="dropdown-action-btn history-action-card-btn"
+                      onClick={() => setProfileTab('history')}
+                      style={{
+                        padding: '10px 12px',
+                        background: 'var(--bg-surface-elevated)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '8px',
+                        marginBottom: '8px',
+                        width: '100%',
+                      }}
+                    >
+                      <span style={{ fontSize: '18px' }}>🕒</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
+                        <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-primary)' }}>
+                          Chat History
+                        </span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
+                          {chatList.filter((c) => c.type === 'msg').length} messages recorded
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--brand-mint)', fontWeight: 700 }}>
+                        View ›
+                      </span>
+                    </button>
+
+                    {isEditingName ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
+                        <div>
+                          <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                            Your Name
+                          </label>
+                          <input
+                            type="text"
+                            value={editNameValue}
+                            onChange={(e) => setEditNameValue(e.target.value)}
+                            placeholder="Enter full name"
+                            style={{
+                              width: '100%',
+                              background: 'var(--bg-canvas)',
+                              border: '1px solid var(--border-strong)',
+                              color: 'var(--text-primary)',
+                              padding: '5px 8px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              marginTop: '2px',
+                            }}
+                            autoFocus
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                            Target Exam / Focus
+                          </label>
+                          <input
+                            type="text"
+                            value={editTargetExam}
+                            onChange={(e) => setEditTargetExam(e.target.value)}
+                            placeholder="e.g. JEE Advanced, NEET, SAT"
+                            style={{
+                              width: '100%',
+                              background: 'var(--bg-canvas)',
+                              border: '1px solid var(--border-strong)',
+                              color: 'var(--text-primary)',
+                              padding: '5px 8px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              marginTop: '2px',
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                              Grade
+                            </label>
+                            <input
+                              type="text"
+                              value={editGrade}
+                              onChange={(e) => setEditGrade(e.target.value)}
+                              placeholder="e.g. Grade 12"
+                              style={{
+                                width: '100%',
+                                background: 'var(--bg-canvas)',
+                                border: '1px solid var(--border-strong)',
+                                color: 'var(--text-primary)',
+                                padding: '5px 8px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                marginTop: '2px',
+                              }}
+                            />
+                          </div>
+                          <div style={{ width: '80px' }}>
+                            <label style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                              Goal (min)
+                            </label>
+                            <input
+                              type="number"
+                              value={editDailyGoal}
+                              onChange={(e) => setEditDailyGoal(Math.max(15, parseInt(e.target.value, 10) || 60))}
+                              style={{
+                                width: '100%',
+                                background: 'var(--bg-canvas)',
+                                border: '1px solid var(--border-strong)',
+                                color: 'var(--text-primary)',
+                                padding: '5px 8px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                marginTop: '2px',
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (editNameValue.trim()) {
+                                const trimmed = editNameValue.trim()
+                                const trimmedGrade = editGrade.trim() || 'Grade 12 • Engineering Prep'
+                                const trimmedExam = editTargetExam.trim() || 'JEE / Advanced STEM'
+                                setUserName(trimmed)
+                                setUserGrade(trimmedGrade)
+                                setUserTargetExam(trimmedExam)
+                                setUserDailyGoal(editDailyGoal)
+                                setStoredUserName(trimmed)
+                                updateUserProfile(1, {
+                                  fullName: trimmed,
+                                  grade: trimmedGrade,
+                                  targetExam: trimmedExam,
+                                  dailyGoalMinutes: editDailyGoal,
+                                })
+                                setIsEditingName(false)
+                                showToast(`Saved to database: ${trimmed} (${trimmedExam})`)
+                              }
+                            }}
+                            style={{
+                              flex: 1,
+                              background: 'var(--grad-primary)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '5px',
+                              padding: '6px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Save Profile
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditNameValue(userName)
+                              setEditGrade(userGrade)
+                              setEditTargetExam(userTargetExam)
+                              setEditDailyGoal(userDailyGoal)
+                              setIsEditingName(false)
+                            }}
+                            style={{
+                              background: 'var(--bg-surface-elevated)',
+                              color: 'var(--text-secondary)',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '5px',
+                              padding: '6px 10px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="dropdown-action-btn"
+                        onClick={() => setIsEditingName(true)}
+                      >
+                        <span>⚙️</span>
+                        <span>Edit Profile & Goals</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="dropdown-action-btn logout-btn"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <span>🚪</span>
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                ) : (
+                  /* ================= CHAT HISTORY VIEW ================= */
+                  <div className="profile-history-panel">
+                    <div className="profile-history-header">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="history-back-btn"
+                          onClick={() => setProfileTab('profile')}
+                          title="Back to Profile"
+                        >
+                          ‹
+                        </button>
+                        <span style={{ fontSize: '16px' }}>🕒</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>
+                            Chat History
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
+                            {chatList.filter((c) => c.type === 'msg').length} messages logged
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <button
+                          type="button"
+                          className="history-header-icon-btn"
+                          onClick={refreshChatHistory}
+                          title="Refresh from Database"
+                          disabled={isRefreshingHistory}
+                        >
+                          <span style={{ display: 'inline-block', transform: isRefreshingHistory ? 'rotate(180deg)' : 'none', transition: 'transform 0.5s ease' }}>
+                            🔄
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="history-header-icon-btn"
+                          onClick={() => {
+                            setIsProfileOpen(false)
+                            setIsChatHistoryModalOpen(true)
+                          }}
+                          title="Expand Full Transcript Modal"
+                        >
+                          ⤢
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search Input */}
+                    <div className="history-search-bar">
+                      <span style={{ fontSize: '12px', opacity: 0.6 }}>🔍</span>
+                      <input
+                        type="text"
+                        placeholder="Search conversation history..."
+                        value={historySearchQuery}
+                        onChange={(e) => setHistorySearchQuery(e.target.value)}
+                        className="history-search-input"
+                      />
+                      {historySearchQuery && (
+                        <button
+                          type="button"
+                          className="history-clear-search-btn"
+                          onClick={() => setHistorySearchQuery('')}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Scrollable Conversation History Stream */}
+                    <div className="profile-history-list">
+                      {filteredChatList.length === 0 ? (
+                        <div className="history-empty-state">
+                          <span style={{ fontSize: '24px' }}>💬</span>
+                          <div style={{ fontWeight: 600, fontSize: '12px', marginTop: '6px' }}>
+                            {historySearchQuery ? 'No matching messages found' : 'No chat history recorded yet'}
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                            {historySearchQuery ? 'Try another search term' : 'Ask Reviso a question in the tutor panel'}
+                          </div>
+                        </div>
+                      ) : (
+                        filteredChatList.map((entry, idx) => (
+                          <div key={entry.id || idx} className={`history-item ${entry.sender || 'bot'}`}>
+                            <div className="history-item-meta">
+                              <span className="history-sender-badge">
+                                {entry.sender === 'user' ? '👤 You' : '🤖 Reviso AI Tutor'}
+                              </span>
+                              {entry.timestamp && (
+                                <span className="history-timestamp">{entry.timestamp}</span>
+                              )}
+                            </div>
+                            <div
+                              className="history-item-bubble"
+                              dangerouslySetInnerHTML={{ __html: entry.text || '' }}
+                            />
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Bottom Action Footer */}
+                    <div className="profile-history-footer">
+                      <button
+                        type="button"
+                        className="history-jump-chat-btn"
+                        onClick={() => {
+                          setIsProfileOpen(false)
+                          const chatInputElem = document.querySelector('.chat-input-field') as HTMLInputElement
+                          if (chatInputElem) {
+                            chatInputElem.focus()
+                          }
+                          showToast('Jumped to active tutor chat! 💬')
+                        }}
+                      >
+                        <span>💬 Continue in Tutor Chat</span>
+                      </button>
+                    </div>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  className="dropdown-action-btn logout-btn"
-                  onClick={() => setIsProfileOpen(false)}
-                >
-                  <span>🚪</span>
-                  <span>Sign Out</span>
-                </button>
               </div>
             )}
           </div>
@@ -4031,6 +4254,185 @@ export default function App() {
           </div>
         )}
       </div>
+
+
+      {/* ==========================================================================
+           MODAL: FULL CHAT HISTORY TRANSCRIPT
+           ========================================================================== */}
+      {isChatHistoryModalOpen && (
+        <div
+          className="chat-history-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsChatHistoryModalOpen(false)
+          }}
+        >
+          <div className="chat-history-modal-card">
+            <div
+              className="modal-header"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'rgba(0, 77, 64, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                  }}
+                >
+                  🕒
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
+                    Full Chat History &amp; Conversation Log
+                  </h3>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {chatList.filter((c) => c.type === 'msg').length} total messages with Reviso AI Tutor
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={refreshChatHistory}
+                  title="Reload from Database"
+                  disabled={isRefreshingHistory}
+                >
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      transform: isRefreshingHistory ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.5s ease',
+                    }}
+                  >
+                    🔄
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={() => setIsChatHistoryModalOpen(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: '12px 20px',
+                borderBottom: '1px solid var(--border-subtle)',
+                background: 'var(--bg-canvas)',
+              }}
+            >
+              <div className="history-search-bar" style={{ margin: 0 }}>
+                <span style={{ fontSize: '13px', opacity: 0.6 }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search across all messages and tutor recommendations..."
+                  value={historySearchQuery}
+                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                  className="history-search-input"
+                />
+                {historySearchQuery && (
+                  <button
+                    type="button"
+                    className="history-clear-search-btn"
+                    onClick={() => setHistorySearchQuery('')}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="chat-history-modal-body">
+              {filteredChatList.length === 0 ? (
+                <div className="history-empty-state" style={{ padding: '60px 20px' }}>
+                  <span style={{ fontSize: '36px' }}>💬</span>
+                  <div style={{ fontWeight: 700, fontSize: '14px', marginTop: '10px' }}>
+                    {historySearchQuery ? 'No matching messages found' : 'No conversation history logged yet'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    {historySearchQuery ? 'Try another query keyword' : 'Ask Reviso for help or start a quiz drill'}
+                  </div>
+                </div>
+              ) : (
+                filteredChatList.map((entry, idx) => (
+                  <div
+                    key={entry.id || idx}
+                    className={`history-item ${entry.sender || 'bot'}`}
+                    style={{ padding: '12px 14px' }}
+                  >
+                    <div className="history-item-meta" style={{ marginBottom: '4px' }}>
+                      <span className="history-sender-badge" style={{ fontSize: '11px' }}>
+                        {entry.sender === 'user' ? '👤 Laksh (You)' : '🤖 Reviso Autonomous Copilot'}
+                      </span>
+                      {entry.timestamp && (
+                        <span className="history-timestamp" style={{ fontSize: '11px' }}>
+                          {entry.timestamp}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className="history-item-bubble"
+                      style={{ fontSize: '13px', lineHeight: 1.55 }}
+                      dangerouslySetInnerHTML={{ __html: entry.text || '' }}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div
+              className="modal-footer"
+              style={{
+                padding: '14px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                Showing {filteredChatList.length} of {chatList.filter((c) => c.type === 'msg').length} messages
+              </span>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-pill"
+                  onClick={() => setIsChatHistoryModalOpen(false)}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="btn-pill"
+                  style={{ background: 'var(--grad-primary)', color: '#fff', border: 'none' }}
+                  onClick={() => {
+                    setIsChatHistoryModalOpen(false)
+                    const chatInputElem = document.querySelector('.chat-input-field') as HTMLInputElement
+                    if (chatInputElem) chatInputElem.focus()
+                    showToast('Focused tutor chat! 💬')
+                  }}
+                >
+                  💬 Open Live Chat
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Interactive Toast */}
       <div className={`toast ${toast.visible ? 'active' : ''}`}>
