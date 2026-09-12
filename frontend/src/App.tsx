@@ -1243,7 +1243,7 @@ export default function App() {
       title: 'Algebra basics & quadratic formulas',
       subject: 'Maths',
       tagClass: 'task-tag-math',
-      tagIcon: '📐 Maths',
+      tagIcon: 'Maths',
       timeSlot: '9:00–10:30 AM',
       completed: true,
       alarmActive: true,
@@ -1254,7 +1254,7 @@ export default function App() {
       title: 'Organic chemistry reaction mechanisms',
       subject: 'Chemistry',
       tagClass: 'task-tag-chem',
-      tagIcon: '🧪 Chemistry',
+      tagIcon: 'Chemistry',
       timeSlot: '11:00 AM–12:00 PM',
       completed: false,
       alarmActive: true,
@@ -1265,7 +1265,7 @@ export default function App() {
       title: 'Loop structures & list comprehension lab',
       subject: 'Python',
       tagClass: 'task-tag-python',
-      tagIcon: '🐍 Python',
+      tagIcon: 'Python',
       timeSlot: '1:30–2:15 PM',
       completed: false,
       alarmActive: true,
@@ -1276,7 +1276,7 @@ export default function App() {
       title: 'Quadratic equations problem set',
       subject: 'Maths',
       tagClass: 'task-tag-math',
-      tagIcon: '📐 Maths',
+      tagIcon: 'Maths',
       timeSlot: '3:00–4:00 PM',
       completed: true,
       alarmActive: false,
@@ -1292,16 +1292,16 @@ export default function App() {
           const formattedTasks: TimelineTask[] = data.map((t) => {
             const sub = t.subject || 'Study'
             let tagClass = 'task-tag-chem'
-            let tagIcon = `🧪 ${sub}`
+            let tagIcon = sub
             if (sub.toLowerCase().includes('math')) {
               tagClass = 'task-tag-math'
-              tagIcon = `📐 ${sub}`
+              tagIcon = sub
             } else if (sub.toLowerCase().includes('python') || sub.toLowerCase().includes('code')) {
               tagClass = 'task-tag-python'
-              tagIcon = `🐍 ${sub}`
+              tagIcon = sub
             } else if (sub.toLowerCase().includes('ai')) {
               tagClass = 'task-tag-ai'
-              tagIcon = `🧠 ${sub}`
+              tagIcon = sub
             }
             return {
               id: `task-${t.id}`,
@@ -1394,7 +1394,7 @@ export default function App() {
                 title: task.title,
                 subject: task.subject,
                 tagClass: task.tagClass,
-                tagIcon: task.tagClass.includes('math') ? '📐' : task.tagClass.includes('chem') ? '⚗️' : '💻',
+                tagIcon: task.subject || 'Study',
                 timeSlot: newTimeSlot,
                 completed: task.completed,
                 alarmActive: true,
@@ -1415,7 +1415,7 @@ export default function App() {
       month: 'short',
       day: 'numeric',
     })
-    showToast(`Moved "${task.title}" to ${formattedTargetDay} at ${newTimeSlot}`, '📅')
+    showToast(`Moved "${task.title}" to ${formattedTargetDay} at ${newTimeSlot}`)
   }
 
   // Drag and Drop Handlers for Calendar Event Blocks
@@ -1545,13 +1545,13 @@ export default function App() {
       filled: false,
       title: '',
       time: '10:30–11:00 AM',
-      label: 'Brain Break ☕ (30 min recovery buffer)',
+      label: 'Break (30 min recovery buffer)',
     },
     'empty-3': {
       filled: false,
       title: '',
       time: '2:15–3:00 PM',
-      label: 'Brain Break ☕ (45 min open buffer)',
+      label: 'Break (45 min open buffer)',
     },
   })
 
@@ -1566,7 +1566,7 @@ export default function App() {
   const [dktScores, setDktScores] = useState({
     math: { pct: 84, retention: 'Safe (12d decay)', safe: true },
     chem: { pct: 65, retention: 'Moderate (4d decay)', safe: true },
-    python: { pct: 35, retention: 'Refresher Recommended 🔄', safe: false },
+    python: { pct: 35, retention: 'Refresher Recommended', safe: false },
   })
 
   // Chat & Stream (Soft, Encouraging Persona)
@@ -1575,7 +1575,7 @@ export default function App() {
       id: 'init-1',
       type: 'msg',
       sender: 'bot',
-      text: `Hey Laksh! 👋 Noticed nested loops were a bit tricky on today's quiz. No stress at all — loops take practice! Want to squeeze in a quick 20-minute recap before lunch? I found a nice open slot right after chemistry!`,
+      text: `Hey Laksh! Noticed nested loops were a bit tricky on today's quiz. No stress at all — loops take practice! Want to squeeze in a quick 20-minute recap before lunch? I found a nice open slot right after chemistry!`,
     },
   ])
   const [chatInput, setChatInput] = useState<string>('')
@@ -1584,7 +1584,7 @@ export default function App() {
   // Toast
   const [toast, setToast] = useState<{ message: string; icon: string; visible: boolean }>({
     message: '',
-    icon: '✨',
+    icon: '',
     visible: false,
   })
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1711,10 +1711,10 @@ export default function App() {
             timestamp: m.timestamp,
           }))
         )
-        showToast('Chat history synced with database!', '🕒')
+        showToast('Chat history synced with database!')
       }
     } catch {
-      showToast('Could not reload chat history', '⚠️')
+      showToast('Could not reload chat history')
     } finally {
       setIsRefreshingHistory(false)
     }
@@ -1786,7 +1786,7 @@ export default function App() {
           if (prev <= 1) {
             setPomoRunning(false)
             soundSynth.playHarmonicChime()
-            showToast('Pomodoro session completed! Great job, Laksh!', '🎉')
+            showToast('Pomodoro session completed! Great job, Laksh!')
             recordStudySession('General Focus', pomoDurationMinutes, pomoSessionName).then((res) => {
               if (res?.userStreak != null) setUserStreak(res.userStreak)
             })
@@ -1802,7 +1802,7 @@ export default function App() {
   }, [pomoRunning, pomoSessionName, pomoDurationMinutes])
 
   // Toast helper
-  const showToast = (message: string, icon = '✨') => {
+  const showToast = (message: string, icon = '') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     setToast({ message, icon, visible: true })
     toastTimerRef.current = setTimeout(() => {
@@ -1814,12 +1814,12 @@ export default function App() {
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
-    showToast(`Theme switched to ${next === 'dark' ? 'Dark' : 'Light'} Mode`, '🎨')
+    showToast(`Theme switched to ${next === 'dark' ? 'Dark' : 'Light'} Mode`)
   }
 
   // Export / Share PDF
   const exportSharePdf = () => {
-    showToast('Opening Print / Save to PDF with full colors enabled!', '📄')
+    showToast('Opening Print / Save to PDF with full colors enabled!')
     setTimeout(() => {
       window.print()
     }, 400)
@@ -1840,7 +1840,7 @@ export default function App() {
 
   const snoozeAlarm = () => {
     setAlarmModalOpen(false)
-    showToast(`Alarm snoozed for 5 minutes`, '⏰')
+    showToast(`Alarm snoozed for 5 minutes`)
     setNextAlarmLabel(`${activeAlarmTitle} (in 5 min)`)
   }
 
@@ -1869,7 +1869,7 @@ export default function App() {
         if (t.id === taskId) {
           const next = !t.completed
           if (next) {
-            showToast('Awesome! Session marked complete.', '🎉')
+            showToast('Awesome! Session marked complete.')
             soundSynth.playSuccessBeep()
           }
           return {
@@ -1910,7 +1910,7 @@ export default function App() {
     } else {
       if (isNowCompleted) {
         soundSynth.playSuccessBeep()
-        showToast('Task marked complete!', '🎉')
+        showToast('Task marked complete!')
       }
       const numId = parseInt(taskId.replace('task-', ''), 10)
       if (!isNaN(numId)) {
@@ -1936,12 +1936,12 @@ export default function App() {
 
     const tagIcon =
       newCalTaskSubject === 'Chemistry'
-        ? '🧪 Chemistry'
+        ? 'Chemistry'
         : newCalTaskSubject === 'Python'
-        ? '🐍 Python'
+        ? 'Python'
         : newCalTaskSubject === 'AI Systems'
-        ? '🤖 AI Systems'
-        : '📐 Maths'
+        ? 'AI Systems'
+        : 'Maths'
 
     const timeSlotStr = newCalTaskTime.trim() || '5:00–6:00 PM'
     const newTaskId = `task-${Date.now()}`
@@ -2003,7 +2003,7 @@ export default function App() {
     })
 
     soundSynth.playHarmonicChime()
-    showToast(`Added "${newCalTaskTitle.trim()}" to ${MONTH_NAMES[calMonth]} ${selectedCalDay}!`, '📅')
+    showToast(`Added "${newCalTaskTitle.trim()}" to ${MONTH_NAMES[calMonth]} ${selectedCalDay}!`)
     setNewCalTaskTitle('')
   }
 
@@ -2023,7 +2023,7 @@ export default function App() {
     if (!isNaN(numId)) {
       deleteBackendTask(numId)
     }
-    showToast('Task removed from schedule', '🗑')
+    showToast('Task removed from schedule')
   }
 
   // Real Calendar Sync & iCal Export
@@ -2031,7 +2031,7 @@ export default function App() {
     setCalendarSyncActive(true)
     soundSynth.playSuccessBeep()
     downloadCalendarIcs()
-    showToast('📅 Exported reviso_study_schedule.ics! Ready to import into Google or Apple Calendar.', '✨')
+    showToast('Exported reviso_study_schedule.ics! Ready to import into Google or Apple Calendar.')
     setTimeout(() => setCalendarSyncActive(false), 1200)
   }
 
@@ -2056,7 +2056,7 @@ export default function App() {
   const adjustPomoDuration = (deltaMins: number) => {
     const next = Math.max(1, Math.min(180, pomoDurationMinutes + deltaMins))
     changePomoDuration(next)
-    showToast(`Focus duration: ${next} min`, '⏱️')
+    showToast(`Focus duration: ${next} min`)
   }
 
   const formatTimerDigits = (totalSecs: number) => {
@@ -2093,7 +2093,7 @@ export default function App() {
     setPomoRunning(false)
     setPomoSeconds(mins * 60)
     soundSynth.playSuccessBeep()
-    showToast(`Preset: ${label} (${mins} min)`, '⏱️')
+    showToast(`Preset: ${label} (${mins} min)`)
   }
 
   // Add tool trace to chat
@@ -2128,7 +2128,7 @@ export default function App() {
   // Auto Schedule Practice Session into Free Time
   const triggerAutoSchedule = (taskTitle = 'Python Loop Quick Recap') => {
     if (isRemediationScheduled) {
-      showToast('Practice session already slotted into your schedule!', 'ℹ️')
+      showToast('Practice session already slotted into your schedule!')
       return
     }
 
@@ -2144,7 +2144,7 @@ export default function App() {
       setTimeout(() => {
         setIsRemediationScheduled(true)
         setPythonCritScheduled(true)
-        setQuizScoreText('Score: 35% · Practice Slotted ✨')
+        setQuizScoreText('Score: 35% · Practice Slotted')
         setQuizCardBorderColor('var(--color-math)')
 
         // Update retention score
@@ -2158,10 +2158,10 @@ export default function App() {
         }))
 
         soundSynth.playHarmonicChime()
-        showToast('Added 30-min recap to your schedule — lunch break preserved!', '⚡')
+        showToast('Added 30-min recap to your schedule — lunch break preserved!')
 
         addChatMessage(
-          `All set, Laksh! I added <strong>${taskTitle}</strong> for 12:00–12:30 PM. You still have a full hour of relaxing lunch time before lab at 1:30 PM. You've got this! 💪`,
+          `All set, Laksh! I added <strong>${taskTitle}</strong> for 12:00–12:30 PM. You still have a full hour of relaxing lunch time before lab at 1:30 PM. You've got this!`,
           'bot'
         )
       }, 600)
@@ -2173,7 +2173,7 @@ export default function App() {
     activityName: string,
     timeSlot: string,
     blockId: 'empty-1' | 'empty-3',
-    icon = '🌿'
+    icon = ''
   ) => {
     setEmptyBlocks((prev) => ({
       ...prev,
@@ -2285,7 +2285,7 @@ export default function App() {
         notice = `Reinforcement Round: Scored 2/3 — Generating 2 Medium practice questions to lock in proficiency.`
       } else {
         nextDiff = 'hard'
-        notice = `Mastery Challenge: Perfect 3/3! 🚀 — Generating 2 Hard challenge questions to test advanced skills.`
+        notice = `Mastery Challenge: Perfect 3/3 — Generating 2 Hard challenge questions to test advanced skills.`
       }
       setAdaptiveDifficulty(nextDiff)
       setAdaptiveNotice(notice)
@@ -2449,7 +2449,7 @@ export default function App() {
         ...prev,
         [currentQuizSubject]: {
           pct: lowPct,
-          retention: 'Critical Decay Risk 🚨',
+          retention: 'Critical Decay Risk',
           safe: false,
         },
       }))
@@ -2460,7 +2460,7 @@ export default function App() {
       const remediationTaskId = `remediation-${Date.now()}`
       const remediationTask: CalTaskItem = {
         id: remediationTaskId,
-        title: `🚨 Critical 1hr Study: ${subjectDisplayName} - ${topicDisplayName}`,
+        title: `1-Hour Dedicated Study: ${subjectDisplayName} - ${topicDisplayName}`,
         subject: subjectDisplayName,
         tagClass: subjectTagClass,
         timeSlot: chosenTimeSlot,
@@ -2486,10 +2486,10 @@ export default function App() {
           ...prev.filter((t) => !t.title.includes('Critical 1hr Study')),
           {
             id: remediationTaskId,
-            title: `🚨 Critical 1hr Study: ${subjectDisplayName} - ${topicDisplayName}`,
+            title: `1-Hour Dedicated Study: ${subjectDisplayName} - ${topicDisplayName}`,
             subject: subjectDisplayName,
             tagClass: subjectTagClass,
-            tagIcon: currentQuizSubject === 'math' ? '📐' : currentQuizSubject === 'chem' ? '⚗️' : '💻',
+            tagIcon: currentQuizSubject === 'math' ? 'Maths' : currentQuizSubject === 'chem' ? 'Chemistry' : 'Python',
             timeSlot: chosenTimeSlot,
             completed: false,
             alarmActive: true,
@@ -2536,15 +2536,15 @@ export default function App() {
 
       // 5. User Feedback: Warning toast + Audio + Tutor Chat reminder message
       soundSynth.playSuccessBeep()
-      showToast(`🚨 Scored ${totalCorrect}/${total} (< 2)! Added 1-hr study slot & YT video tutorial!`, '📅')
+      showToast(`Scored ${totalCorrect}/${total} (< 2)! Added 1-hr study slot & Video tutorial added to schedule.`)
 
       addChatMessage(
-        `🚨 <strong>Critical Diagnostic Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
+        `<strong>Critical Diagnostic Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
           `Because you scored less than 2 right, I have automatically added a <strong>1-hour study time slot (60 mins)</strong> to your calendar on <strong>${chosenDayFormatted} from ${chosenTimeSlot}</strong> with an active study alarm to guarantee recovery.<br><br>` +
-          `📺 <strong>Mastery Video Tutorial:</strong><br>` +
+          `<strong>Mastery Video Tutorial:</strong><br>` +
           `<em>${topicVideo.title}</em> (${topicVideo.channel})<br>` +
-          `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">▶️ Watch Video on YouTube ↗</a><br><br>` +
-          `👉 Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
+          `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">Watch Video on YouTube ↗</a><br><br>` +
+          `Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
         'bot'
       )
     } else {
@@ -2570,7 +2570,7 @@ export default function App() {
         }))
       }
 
-      showToast('Knowledge graph updated with your adaptive quiz results!', '📈')
+      showToast('Knowledge graph updated with your adaptive quiz results!')
     }
 
     try {
@@ -2595,7 +2595,7 @@ export default function App() {
         launchQuiz('python')
       } else if (actionText.includes('retention')) {
         addChatMessage(
-          `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
+          `<strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
           'bot'
         )
       } else if (actionText.includes('Pomodoro')) {
@@ -2630,7 +2630,7 @@ export default function App() {
         addChatMessage('Switched theme mode as requested.', 'bot')
       } else if (lower.includes('retention') || lower.includes('memory')) {
         addChatMessage(
-          `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
+          `<strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
           'bot'
         )
       } else {
@@ -3055,7 +3055,7 @@ export default function App() {
                     <div className="profile-history-list">
                       {filteredChatList.length === 0 ? (
                         <div className="history-empty-state">
-                          <span style={{ fontSize: '24px' }}>💬</span>
+                          <ClockIcon size={24} />
                           <div style={{ fontWeight: 600, fontSize: '12px', marginTop: '6px' }}>
                             {historySearchQuery ? 'No matching messages found' : 'No chat history recorded yet'}
                           </div>
@@ -3068,7 +3068,7 @@ export default function App() {
                           <div key={entry.id || idx} className={`history-item ${entry.sender || 'bot'}`}>
                             <div className="history-item-meta">
                               <span className="history-sender-badge">
-                                {entry.sender === 'user' ? '👤 You' : '🤖 Reviso AI Tutor'}
+                                {entry.sender === 'user' ? 'You' : 'Reviso AI Tutor'}
                               </span>
                               {entry.timestamp && (
                                 <span className="history-timestamp">{entry.timestamp}</span>
@@ -3118,7 +3118,7 @@ export default function App() {
           <div className="daily-progress-banner">
             <div className="daily-progress-header">
               <div className="daily-progress-title-wrap">
-                <span className="streak-pill">🔥 {userStreak}-Day Streak!</span>
+                <span className="streak-pill">{userStreak}-Day Streak</span>
                 <span className="daily-progress-text">
                   {completedCount} of {totalCount} study blocks completed <span className="daily-pct-highlight">({progressPct}%)</span>
                 </span>
@@ -3276,7 +3276,7 @@ export default function App() {
                   <div className="task-card-left">
                     <div
                       className="task-check-circle"
-                      onClick={() => showToast('Loop Practice session marked done!', '✓')}
+                      onClick={() => showToast('Loop Practice session marked done!')}
                     >
                       ✓
                     </div>
@@ -3556,7 +3556,7 @@ export default function App() {
                 className={`btn-schedule-critical ${mathMidtermScheduled ? 'scheduled' : ''}`}
                 onClick={() => {
                   setMathMidtermScheduled(true)
-                  handleFreeTimeActivity('Math Midterm Review', '2:15–3:00 PM', 'empty-3', '📐')
+                  handleFreeTimeActivity('Math Midterm Review', '2:15–3:00 PM', 'empty-3')
                 }}
               >
                 <span>{mathMidtermScheduled ? '✓ Slotted in 2:15 PM' : 'Slot 25m Review'}</span>
@@ -5721,9 +5721,9 @@ export default function App() {
       {/* Interactive Toast */}
       <div className={`toast ${toast.visible ? 'active' : ''}`}>
         <span>
-          {toast.icon === 'bell' || toast.icon === '🔔' ? (
+          {toast.icon === 'bell' || toast.icon === 'bell' ? (
             <BellIcon size={15} color="#f97316" />
-          ) : toast.icon === 'bell-off' || toast.icon === '🔕' ? (
+          ) : toast.icon === 'bell-off' || toast.icon === 'bell-off' ? (
             <BellOffIcon size={15} color="#ffffff" />
           ) : (
             toast.icon
