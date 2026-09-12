@@ -1,6 +1,41 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import {
+  Calendar,
+  Clock,
+  Sun,
+  Moon,
+  User,
+  History,
+  Target,
+  Settings,
+  LogOut,
+  Search,
+  X,
+  MessageSquare,
+  Flame,
+  Lightbulb,
+  Zap,
+  Check,
+  Brain,
+  FileText,
+  AlertCircle,
+  Video,
+  ExternalLink,
+  Trash2,
+  Plus,
+  Play,
+  Pause,
+  RotateCcw,
+  Sparkles,
+  Download,
+  Menu,
+  CheckCircle,
+  XCircle,
+  Bookmark,
+  TrendingDown
+} from 'lucide-react'
+import {
   fetchUserProfile,
   updateUserProfile,
   getStoredUserName,
@@ -1007,7 +1042,7 @@ export default function App() {
       title: 'Algebra basics & quadratic formulas',
       subject: 'Maths',
       tagClass: 'task-tag-math',
-      tagIcon: '📐 Maths',
+      tagIcon: 'Maths',
       timeSlot: '9:00–10:30 AM',
       completed: true,
       alarmActive: true,
@@ -1018,7 +1053,7 @@ export default function App() {
       title: 'Organic chemistry reaction mechanisms',
       subject: 'Chemistry',
       tagClass: 'task-tag-chem',
-      tagIcon: '🧪 Chemistry',
+      tagIcon: 'Chemistry',
       timeSlot: '11:00 AM–12:00 PM',
       completed: false,
       alarmActive: true,
@@ -1029,7 +1064,7 @@ export default function App() {
       title: 'Loop structures & list comprehension lab',
       subject: 'Python',
       tagClass: 'task-tag-python',
-      tagIcon: '🐍 Python',
+      tagIcon: 'Python',
       timeSlot: '1:30–2:15 PM',
       completed: false,
       alarmActive: true,
@@ -1040,7 +1075,7 @@ export default function App() {
       title: 'Quadratic equations problem set',
       subject: 'Maths',
       tagClass: 'task-tag-math',
-      tagIcon: '📐 Maths',
+      tagIcon: 'Maths',
       timeSlot: '3:00–4:00 PM',
       completed: true,
       alarmActive: false,
@@ -1056,16 +1091,16 @@ export default function App() {
           const formattedTasks: TimelineTask[] = data.map((t) => {
             const sub = t.subject || 'Study'
             let tagClass = 'task-tag-chem'
-            let tagIcon = `🧪 ${sub}`
+            let tagIcon = sub
             if (sub.toLowerCase().includes('math')) {
               tagClass = 'task-tag-math'
-              tagIcon = `📐 ${sub}`
+              tagIcon = sub
             } else if (sub.toLowerCase().includes('python') || sub.toLowerCase().includes('code')) {
               tagClass = 'task-tag-python'
-              tagIcon = `🐍 ${sub}`
+              tagIcon = sub
             } else if (sub.toLowerCase().includes('ai')) {
               tagClass = 'task-tag-ai'
-              tagIcon = `🧠 ${sub}`
+              tagIcon = sub
             }
             return {
               id: `task-${t.id}`,
@@ -1158,7 +1193,7 @@ export default function App() {
                 title: task.title,
                 subject: task.subject,
                 tagClass: task.tagClass,
-                tagIcon: task.tagClass.includes('math') ? '📐' : task.tagClass.includes('chem') ? '⚗️' : '💻',
+                tagIcon: task.subject || 'Task',
                 timeSlot: newTimeSlot,
                 completed: task.completed,
                 alarmActive: true,
@@ -1179,7 +1214,7 @@ export default function App() {
       month: 'short',
       day: 'numeric',
     })
-    showToast(`Moved "${task.title}" to ${formattedTargetDay} at ${newTimeSlot}`, '📅')
+    showToast(`Moved "${task.title}" to ${formattedTargetDay} at ${newTimeSlot}`, 'calendar')
   }
 
   // Drag and Drop Handlers for Calendar Event Blocks
@@ -1309,13 +1344,13 @@ export default function App() {
       filled: false,
       title: '',
       time: '10:30–11:00 AM',
-      label: 'Brain Break ☕ (30 min recovery buffer)',
+      label: 'Recovery Buffer (30 min)',
     },
     'empty-3': {
       filled: false,
       title: '',
       time: '2:15–3:00 PM',
-      label: 'Brain Break ☕ (45 min open buffer)',
+      label: 'Open Buffer (45 min)',
     },
   })
 
@@ -1330,7 +1365,7 @@ export default function App() {
   const [dktScores, setDktScores] = useState({
     math: { pct: 84, retention: 'Safe (12d decay)', safe: true },
     chem: { pct: 65, retention: 'Moderate (4d decay)', safe: true },
-    python: { pct: 35, retention: 'Refresher Recommended 🔄', safe: false },
+    python: { pct: 35, retention: 'Refresher Recommended', safe: false },
   })
 
   // Chat & Stream (Soft, Encouraging Persona)
@@ -1339,7 +1374,7 @@ export default function App() {
       id: 'init-1',
       type: 'msg',
       sender: 'bot',
-      text: `Hey Laksh! 👋 Noticed nested loops were a bit tricky on today's quiz. No stress at all — loops take practice! Want to squeeze in a quick 20-minute recap before lunch? I found a nice open slot right after chemistry!`,
+      text: `Hey Laksh, noticed nested loops were a bit tricky on today's quiz. No stress at all — loops take practice! Want to squeeze in a quick 20-minute recap before lunch? I found a nice open slot right after chemistry!`,
     },
   ])
   const [chatInput, setChatInput] = useState<string>('')
@@ -1348,7 +1383,7 @@ export default function App() {
   // Toast
   const [toast, setToast] = useState<{ message: string; icon: string; visible: boolean }>({
     message: '',
-    icon: '✨',
+    icon: 'sparkles',
     visible: false,
   })
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1475,10 +1510,10 @@ export default function App() {
             timestamp: m.timestamp,
           }))
         )
-        showToast('Chat history synced with database!', '🕒')
+        showToast('Chat history synced with database', 'clock')
       }
     } catch {
-      showToast('Could not reload chat history', '⚠️')
+      showToast('Could not reload chat history', 'alert')
     } finally {
       setIsRefreshingHistory(false)
     }
@@ -1550,7 +1585,7 @@ export default function App() {
           if (prev <= 1) {
             setPomoRunning(false)
             soundSynth.playHarmonicChime()
-            showToast('Pomodoro session completed! Great job, Laksh!', '🎉')
+            showToast('Pomodoro session completed. Great job!', 'check')
             recordStudySession('General Focus', pomoDurationMinutes, pomoSessionName).then((res) => {
               if (res?.userStreak != null) setUserStreak(res.userStreak)
             })
@@ -1566,7 +1601,7 @@ export default function App() {
   }, [pomoRunning, pomoSessionName, pomoDurationMinutes])
 
   // Toast helper
-  const showToast = (message: string, icon = '✨') => {
+  const showToast = (message: string, icon = 'info') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     setToast({ message, icon, visible: true })
     toastTimerRef.current = setTimeout(() => {
@@ -1578,12 +1613,12 @@ export default function App() {
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
-    showToast(`Theme switched to ${next === 'dark' ? 'Dark' : 'Light'} Mode`, '🎨')
+    showToast(`Theme switched to ${next === 'dark' ? 'Dark' : 'Light'} Mode`, 'theme')
   }
 
   // Export / Share PDF
   const exportSharePdf = () => {
-    showToast('Opening Print / Save to PDF with full colors enabled!', '📄')
+    showToast('Opening Print / Save to PDF', 'file')
     setTimeout(() => {
       window.print()
     }, 400)
@@ -1604,7 +1639,7 @@ export default function App() {
 
   const snoozeAlarm = () => {
     setAlarmModalOpen(false)
-    showToast(`Alarm snoozed for 5 minutes`, '⏰')
+    showToast(`Alarm snoozed for 5 minutes`, 'clock')
     setNextAlarmLabel(`${activeAlarmTitle} (in 5 min)`)
   }
 
@@ -1633,7 +1668,7 @@ export default function App() {
         if (t.id === taskId) {
           const next = !t.completed
           if (next) {
-            showToast('Awesome! Session marked complete.', '🎉')
+            showToast('Session marked complete', 'check')
             soundSynth.playSuccessBeep()
           }
           return {
@@ -1674,7 +1709,7 @@ export default function App() {
     } else {
       if (isNowCompleted) {
         soundSynth.playSuccessBeep()
-        showToast('Task marked complete!', '🎉')
+        showToast('Task marked complete', 'check')
       }
       const numId = parseInt(taskId.replace('task-', ''), 10)
       if (!isNaN(numId)) {
@@ -1700,12 +1735,12 @@ export default function App() {
 
     const tagIcon =
       newCalTaskSubject === 'Chemistry'
-        ? '🧪 Chemistry'
+        ? 'Chemistry'
         : newCalTaskSubject === 'Python'
-        ? '🐍 Python'
+        ? 'Python'
         : newCalTaskSubject === 'AI Systems'
-        ? '🤖 AI Systems'
-        : '📐 Maths'
+        ? 'AI Systems'
+        : 'Maths'
 
     const timeSlotStr = newCalTaskTime.trim() || '5:00–6:00 PM'
     const newTaskId = `task-${Date.now()}`
@@ -1767,7 +1802,7 @@ export default function App() {
     })
 
     soundSynth.playHarmonicChime()
-    showToast(`Added "${newCalTaskTitle.trim()}" to ${MONTH_NAMES[calMonth]} ${selectedCalDay}!`, '📅')
+    showToast(`Added "${newCalTaskTitle.trim()}" to ${MONTH_NAMES[calMonth]} ${selectedCalDay}`, 'calendar')
     setNewCalTaskTitle('')
   }
 
@@ -1787,7 +1822,7 @@ export default function App() {
     if (!isNaN(numId)) {
       deleteBackendTask(numId)
     }
-    showToast('Task removed from schedule', '🗑')
+    showToast('Task removed from schedule', 'trash')
   }
 
   // Real Calendar Sync & iCal Export
@@ -1795,7 +1830,7 @@ export default function App() {
     setCalendarSyncActive(true)
     soundSynth.playSuccessBeep()
     downloadCalendarIcs()
-    showToast('📅 Exported reviso_study_schedule.ics! Ready to import into Google or Apple Calendar.', '✨')
+    showToast('Exported reviso_study_schedule.ics', 'calendar')
     setTimeout(() => setCalendarSyncActive(false), 1200)
   }
 
@@ -1820,7 +1855,7 @@ export default function App() {
   const adjustPomoDuration = (deltaMins: number) => {
     const next = Math.max(1, Math.min(180, pomoDurationMinutes + deltaMins))
     changePomoDuration(next)
-    showToast(`Focus duration: ${next} min`, '⏱️')
+    showToast(`Focus duration: ${next} min`, 'clock')
   }
 
   const formatTimerDigits = (totalSecs: number) => {
@@ -1857,7 +1892,7 @@ export default function App() {
     setPomoRunning(false)
     setPomoSeconds(mins * 60)
     soundSynth.playSuccessBeep()
-    showToast(`Preset: ${label} (${mins} min)`, '⏱️')
+    showToast(`Preset: ${label} (${mins} min)`, 'clock')
   }
 
   // Add tool trace to chat
@@ -1908,7 +1943,7 @@ export default function App() {
       setTimeout(() => {
         setIsRemediationScheduled(true)
         setPythonCritScheduled(true)
-        setQuizScoreText('Score: 35% · Practice Slotted ✨')
+        setQuizScoreText('Score: 35% · Practice Slotted')
         setQuizCardBorderColor('var(--color-math)')
 
         // Update retention score
@@ -1922,10 +1957,10 @@ export default function App() {
         }))
 
         soundSynth.playHarmonicChime()
-        showToast('Added 30-min recap to your schedule — lunch break preserved!', '⚡')
+        showToast('Added 30-min recap to your schedule', 'zap')
 
         addChatMessage(
-          `All set, Laksh! I added <strong>${taskTitle}</strong> for 12:00–12:30 PM. You still have a full hour of relaxing lunch time before lab at 1:30 PM. You've got this! 💪`,
+          `All set, Laksh. I have added <strong>${taskTitle}</strong> for 12:00–12:30 PM. You still have a full hour of lunch time before your 1:30 PM session.`,
           'bot'
         )
       }, 600)
@@ -1937,7 +1972,7 @@ export default function App() {
     activityName: string,
     timeSlot: string,
     blockId: 'empty-1' | 'empty-3',
-    icon = '🌿'
+    icon = 'info'
   ) => {
     setEmptyBlocks((prev) => ({
       ...prev,
@@ -2017,12 +2052,12 @@ export default function App() {
       soundSynth.playSuccessBeep()
       setQuizFeedback({
         isCorrect: true,
-        text: `✓ Spot on! ${currentQ.explanation || 'Great job identifying the right answer!'}`,
+        text: `Spot on! ${currentQ.explanation || 'Great job identifying the right answer!'}`,
       })
     } else {
       setQuizFeedback({
         isCorrect: false,
-        text: `✕ Not quite. Correct answer: ${currentQ.correct_answer || 'the indicated option'}. ${currentQ.explanation || ''}`,
+        text: `Not quite. Correct answer: ${currentQ.correct_answer || 'the indicated option'}. ${currentQ.explanation || ''}`,
       })
     }
 
@@ -2049,7 +2084,7 @@ export default function App() {
         notice = `Reinforcement Round: Scored 2/3 — Generating 2 Medium practice questions to lock in proficiency.`
       } else {
         nextDiff = 'hard'
-        notice = `Mastery Challenge: Perfect 3/3! 🚀 — Generating 2 Hard challenge questions to test advanced skills.`
+        notice = `Mastery Challenge: Perfect 3/3 — Generating 2 Hard challenge questions to test advanced skills.`
       }
       setAdaptiveDifficulty(nextDiff)
       setAdaptiveNotice(notice)
@@ -2213,7 +2248,7 @@ export default function App() {
         ...prev,
         [currentQuizSubject]: {
           pct: lowPct,
-          retention: 'Critical Decay Risk 🚨',
+          retention: 'Critical Decay Risk',
           safe: false,
         },
       }))
@@ -2224,7 +2259,7 @@ export default function App() {
       const remediationTaskId = `remediation-${Date.now()}`
       const remediationTask: CalTaskItem = {
         id: remediationTaskId,
-        title: `🚨 Critical 1hr Study: ${subjectDisplayName} - ${topicDisplayName}`,
+        title: `Focused Review: ${subjectDisplayName} - ${topicDisplayName}`,
         subject: subjectDisplayName,
         tagClass: subjectTagClass,
         timeSlot: chosenTimeSlot,
@@ -2250,10 +2285,10 @@ export default function App() {
           ...prev.filter((t) => !t.title.includes('Critical 1hr Study')),
           {
             id: remediationTaskId,
-            title: `🚨 Critical 1hr Study: ${subjectDisplayName} - ${topicDisplayName}`,
+            title: `Focused Review: ${subjectDisplayName} - ${topicDisplayName}`,
             subject: subjectDisplayName,
             tagClass: subjectTagClass,
-            tagIcon: currentQuizSubject === 'math' ? '📐' : currentQuizSubject === 'chem' ? '⚗️' : '💻',
+            tagIcon: currentQuizSubject.toUpperCase(),
             timeSlot: chosenTimeSlot,
             completed: false,
             alarmActive: true,
@@ -2300,15 +2335,15 @@ export default function App() {
 
       // 5. User Feedback: Warning toast + Audio + Tutor Chat reminder message
       soundSynth.playSuccessBeep()
-      showToast(`🚨 Scored ${totalCorrect}/${total} (< 2)! Added 1-hr study slot & YT video tutorial!`, '📅')
+      showToast(`Scored ${totalCorrect}/${total} — 1-hour study slot added to calendar`, 'calendar')
 
       addChatMessage(
-        `🚨 <strong>Critical Diagnostic Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
+        `<strong>Diagnostic Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
           `Because you scored less than 2 right, I have automatically added a <strong>1-hour study time slot (60 mins)</strong> to your calendar on <strong>${chosenDayFormatted} from ${chosenTimeSlot}</strong> with an active study alarm to guarantee recovery.<br><br>` +
-          `📺 <strong>Mastery Video Tutorial:</strong><br>` +
+          `<strong>Mastery Video Tutorial:</strong><br>` +
           `<em>${topicVideo.title}</em> (${topicVideo.channel})<br>` +
-          `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">▶️ Watch Video on YouTube ↗</a><br><br>` +
-          `👉 Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
+          `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">Watch Video on YouTube</a><br><br>` +
+          `Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
         'bot'
       )
     } else {
@@ -2334,7 +2369,7 @@ export default function App() {
         }))
       }
 
-      showToast('Knowledge graph updated with your adaptive quiz results!', '📈')
+      showToast('Knowledge graph updated with adaptive results', 'check')
     }
 
     try {
@@ -2359,7 +2394,7 @@ export default function App() {
         launchQuiz('python')
       } else if (actionText.includes('retention')) {
         addChatMessage(
-          `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
+          `<strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
           'bot'
         )
       } else if (actionText.includes('Pomodoro')) {
@@ -2394,7 +2429,7 @@ export default function App() {
         addChatMessage('Switched theme mode as requested.', 'bot')
       } else if (lower.includes('retention') || lower.includes('memory')) {
         addChatMessage(
-          `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
+          `<strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
           'bot'
         )
       } else {
@@ -2448,7 +2483,7 @@ export default function App() {
             onClick={() => setCalendarModalOpen(true)}
             title="Open Interactive Study Calendar & Sync"
           >
-            <span>📅</span>
+            <Calendar size={14} />
             <span>Calendar</span>
           </button>
 
@@ -2459,7 +2494,7 @@ export default function App() {
             onClick={() => openPomodoroModal('Organic Chemistry (11:00 AM)')}
             title="Launch 25-minute Pomodoro Study Timer"
           >
-            <span>⏱️</span>
+            <Clock size={14} />
             <span>Focus Timer</span>
           </button>
 
@@ -2481,7 +2516,7 @@ export default function App() {
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
 
           {/* User Profile */}
@@ -2512,14 +2547,14 @@ export default function App() {
                     className={`profile-tab-btn ${profileTab === 'profile' ? 'active' : ''}`}
                     onClick={() => setProfileTab('profile')}
                   >
-                    <span>👤 Profile</span>
+                    <User size={14} /> <span>Profile</span>
                   </button>
                   <button
                     type="button"
                     className={`profile-tab-btn ${profileTab === 'history' ? 'active' : ''}`}
                     onClick={() => setProfileTab('history')}
                   >
-                    <span className="tab-history-icon">🕒</span>
+                    <History size={13} className="inline mr-1" />
                     <span>Chat History</span>
                     <span className="profile-tab-badge">
                       {chatList.filter((c) => c.type === 'msg').length}
@@ -2538,7 +2573,7 @@ export default function App() {
                         <span className="dropdown-email">laksh.hs@adaptive.ai</span>
                         <span className="dropdown-badge">{userRole} • {userGrade}</span>
                         <span style={{ fontSize: '11px', color: 'var(--brand-mint)', marginTop: '3px', fontWeight: 600 }}>
-                          🎯 {userTargetExam} • ⏱️ {userDailyGoal}m/day
+                          {userTargetExam} • {userDailyGoal} min/day
                         </span>
                       </div>
                     </div>
@@ -2559,7 +2594,7 @@ export default function App() {
                         width: '100%',
                       }}
                     >
-                      <span style={{ fontSize: '18px' }}>🕒</span>
+                      <History size={18} className="text-emerald-500" />
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
                         <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-primary)' }}>
                           Chat History
@@ -2730,7 +2765,7 @@ export default function App() {
                         className="dropdown-action-btn"
                         onClick={() => setIsEditingName(true)}
                       >
-                        <span>⚙️</span>
+                        <Settings size={14} />
                         <span>Edit Profile & Goals</span>
                       </button>
                     )}
@@ -2739,7 +2774,7 @@ export default function App() {
                       className="dropdown-action-btn logout-btn"
                       onClick={() => setIsProfileOpen(false)}
                     >
-                      <span>🚪</span>
+                      <LogOut size={14} />
                       <span>Sign Out</span>
                     </button>
                   </div>
@@ -2756,7 +2791,7 @@ export default function App() {
                         >
                           ‹
                         </button>
-                        <span style={{ fontSize: '16px' }}>🕒</span>
+                        <History size={16} />
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>
                             Chat History
@@ -2776,7 +2811,7 @@ export default function App() {
                           disabled={isRefreshingHistory}
                         >
                           <span style={{ display: 'inline-block', transform: isRefreshingHistory ? 'rotate(180deg)' : 'none', transition: 'transform 0.5s ease' }}>
-                            🔄
+                            <RotateCcw size={14} />
                           </span>
                         </button>
                         <button
@@ -2795,7 +2830,7 @@ export default function App() {
 
                     {/* Search Input */}
                     <div className="history-search-bar">
-                      <span style={{ fontSize: '12px', opacity: 0.6 }}>🔍</span>
+                      <Search size={14} className="opacity-60" />
                       <input
                         type="text"
                         placeholder="Search conversation history..."
@@ -2809,7 +2844,7 @@ export default function App() {
                           className="history-clear-search-btn"
                           onClick={() => setHistorySearchQuery('')}
                         >
-                          ✕
+                          <X size={15} />
                         </button>
                       )}
                     </div>
@@ -2818,7 +2853,7 @@ export default function App() {
                     <div className="profile-history-list">
                       {filteredChatList.length === 0 ? (
                         <div className="history-empty-state">
-                          <span style={{ fontSize: '24px' }}>💬</span>
+                          <MessageSquare size={24} className="text-slate-400" />
                           <div style={{ fontWeight: 600, fontSize: '12px', marginTop: '6px' }}>
                             {historySearchQuery ? 'No matching messages found' : 'No chat history recorded yet'}
                           </div>
@@ -2831,7 +2866,7 @@ export default function App() {
                           <div key={entry.id || idx} className={`history-item ${entry.sender || 'bot'}`}>
                             <div className="history-item-meta">
                               <span className="history-sender-badge">
-                                {entry.sender === 'user' ? '👤 You' : '🤖 Reviso AI Tutor'}
+                                {entry.sender === 'user' ? 'You' : 'Reviso Tutor'}
                               </span>
                               {entry.timestamp && (
                                 <span className="history-timestamp">{entry.timestamp}</span>
@@ -2857,10 +2892,10 @@ export default function App() {
                           if (chatInputElem) {
                             chatInputElem.focus()
                           }
-                          showToast('Jumped to active tutor chat! 💬')
+                          showToast('Switched to tutor chat', 'chat')
                         }}
                       >
-                        <span>💬 Continue in Tutor Chat</span>
+                        <MessageSquare size={13} className="inline mr-1" /> <span>Continue in Tutor Chat</span>
                       </button>
                     </div>
                   </div>
@@ -2881,7 +2916,7 @@ export default function App() {
           <div className="daily-progress-banner">
             <div className="daily-progress-header">
               <div className="daily-progress-title-wrap">
-                <span className="streak-pill">🔥 {userStreak}-Day Streak!</span>
+                <span className="streak-pill"><Flame size={12} className="inline mr-1 text-amber-400" /> {userStreak}-Day Streak</span>
                 <span className="daily-progress-text">
                   {completedCount} of {totalCount} study blocks completed <span className="daily-pct-highlight">({progressPct}%)</span>
                 </span>
@@ -2899,7 +2934,7 @@ export default function App() {
           <div className="panel" id="schedule-panel">
             <div className="panel-header-row">
               <h2 className="panel-title">
-                <span>📅</span>
+                <Calendar size={16} className="inline mr-1.5 text-emerald-400" />
                 <span>Today's Adaptive Schedule</span>
               </h2>
 
@@ -2911,15 +2946,14 @@ export default function App() {
                 style={{ borderColor: quizCardBorderColor || undefined }}
               >
                 <div className="sync-badge">
-                  <span>💡</span>
-                  <span>QUIZ</span>
+                  <span>DIAGNOSTIC</span>
                 </div>
                 <div className="sync-meta">
                   <div className="sync-score">{quizScoreText}</div>
                   <div className="sync-name">Python Nested Loops &amp; Comprehensions</div>
                 </div>
                 <div className="sync-btn-auto">
-                  <span>⚡</span>
+                  <Zap size={12} className="inline mr-1 text-amber-400" />
                   <span>
                     {isRemediationScheduled ? 'Recap Slotted (12:00 PM)' : 'Add 20m Practice'}
                   </span>
@@ -2933,7 +2967,7 @@ export default function App() {
                 <div key={task.id} className={`task-card ${task.completed ? 'completed' : ''}`}>
                   <div className="task-card-left">
                     <div className="task-check-circle" onClick={() => toggleTask(task.id)}>
-                      ✓
+                      <Check size={12} strokeWidth={2.5} />
                     </div>
                     <div className="task-info">
                       <div className="task-title">{task.title}</div>
@@ -2963,7 +2997,7 @@ export default function App() {
                         }}
                         title={`Watch ${task.videoTitle || 'Tutorial'} on YouTube`}
                       >
-                        📺 Video
+                        Video
                       </a>
                     )}
                     <button
@@ -2971,7 +3005,7 @@ export default function App() {
                       className="btn-timer"
                       onClick={() => openPomodoroModal(task.title)}
                     >
-                      ⏱️ Focus
+                      Focus
                     </button>
                     <button
                       type="button"
@@ -2991,7 +3025,7 @@ export default function App() {
               <div className="empty-block">
                 <div className="empty-block-left">
                   <span className="empty-tag">
-                    {emptyBlocks['empty-1'].filled ? 'Scheduled' : 'Brain Break ☕'}
+                    {emptyBlocks['empty-1'].filled ? 'Scheduled' : 'Recovery Buffer'}
                   </span>
                   <span>
                     {emptyBlocks['empty-1'].filled
@@ -3004,23 +3038,21 @@ export default function App() {
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => handleFreeTimeActivity('Take a walk', '10:30–11:00 AM', 'empty-1', '🚶')}
+                      onClick={() => handleFreeTimeActivity('Walk', '10:30–11:00 AM', 'empty-1', 'walk')}
                     >
-                      <span>🚶</span>
-                      <span>Take a walk</span>
+                      <span>Walk</span>
                     </button>
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => handleFreeTimeActivity('Power nap', '10:30–11:00 AM', 'empty-1', '😴')}
+                      onClick={() => handleFreeTimeActivity('Rest', '10:30–11:00 AM', 'empty-1', 'rest')}
                     >
-                      <span>😴</span>
-                      <span>Power nap</span>
+                      <span>Rest</span>
                     </button>
                     <button
                       type="button"
                       className="btn-quick-fill"
-                      onClick={() => handleFreeTimeActivity('Quick Revision', '10:30–11:00 AM', 'empty-1', '⚡')}
+                      onClick={() => handleFreeTimeActivity('Quick Revision', '10:30–11:00 AM', 'empty-1', 'revision')}
                     >
                       <span>+</span>
                       <span>Add drill</span>
@@ -3043,14 +3075,14 @@ export default function App() {
                   <div className="task-card-left">
                     <div
                       className="task-check-circle"
-                      onClick={() => showToast('Loop Practice session marked done!', '✓')}
+                      onClick={() => showToast('Practice session marked done', 'check')}
                     >
-                      ✓
+                      <Check size={12} strokeWidth={2.5} />
                     </div>
                     <div className="task-info">
-                      <div className="task-title">⚡ Quick Practice: Python Nested Loops</div>
+                      <div className="task-title">Focused Review: Python Nested Loops</div>
                       <div className="task-meta-row">
-                        <span className="task-tag task-tag-python">🐍 Python</span>
+                        <span className="task-tag task-tag-python">Python</span>
                         <span>·</span>
                         <span>12:00–12:30 PM (Quick Booster in Free Time)</span>
                       </div>
@@ -3062,7 +3094,7 @@ export default function App() {
                       className="btn-timer"
                       onClick={() => openPomodoroModal('Python Loop Recap')}
                     >
-                      ⏱️ Focus
+                      Focus
                     </button>
                     <button
                       type="button"
@@ -3080,7 +3112,7 @@ export default function App() {
               <div className="empty-block">
                 <div className="empty-block-left">
                   <span className="empty-tag">
-                    {isRemediationScheduled ? 'Lunch Break 🥪' : 'Free Time 🌿'}
+                    {isRemediationScheduled ? 'Lunch Break' : 'Open Buffer'}
                   </span>
                   <span>
                     {isRemediationScheduled
@@ -3095,16 +3127,15 @@ export default function App() {
                       className="chip-suggestion"
                       onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
                     >
-                      <span>⚡</span>
-                      <span>Fit 20m practice</span>
+                      <Zap size={12} className="inline mr-1" />
+                      <span>20m Practice</span>
                     </button>
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => showToast('Enjoy your relaxing lunch window!', '🥪')}
+                      onClick={() => showToast('Scheduled lunch break', 'coffee')}
                     >
-                      <span>🥪</span>
-                      <span>Chill & Lunch</span>
+                      <span>Lunch Break</span>
                     </button>
                   </div>
                 ) : (
@@ -3125,7 +3156,7 @@ export default function App() {
                         : undefined
                     }
                   >
-                    {emptyBlocks['empty-3'].filled ? 'Scheduled' : 'Brain Break ☕'}
+                    {emptyBlocks['empty-3'].filled ? 'Scheduled' : 'Recovery Buffer'}
                   </span>
                   <span>
                     {emptyBlocks['empty-3'].filled
@@ -3138,23 +3169,21 @@ export default function App() {
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => handleFreeTimeActivity('Take a walk', '2:15–3:00 PM', 'empty-3', '🚶')}
+                      onClick={() => handleFreeTimeActivity('Walk', '2:15–3:00 PM', 'empty-3', 'walk')}
                     >
-                      <span>🚶</span>
                       <span>Walk</span>
                     </button>
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => handleFreeTimeActivity('Power nap', '2:15–3:00 PM', 'empty-3', '😴')}
+                      onClick={() => handleFreeTimeActivity('Rest', '2:15–3:00 PM', 'empty-3', 'rest')}
                     >
-                      <span>😴</span>
-                      <span>Power nap</span>
+                      <span>Rest</span>
                     </button>
                     <button
                       type="button"
                       className="btn-quick-fill"
-                      onClick={() => handleFreeTimeActivity('Quick Math Review', '2:15–3:00 PM', 'empty-3', '📐')}
+                      onClick={() => handleFreeTimeActivity('Math Review', '2:15–3:00 PM', 'empty-3', 'math')}
                     >
                       <span>+</span>
                       <span>Add drill</span>
@@ -3178,7 +3207,7 @@ export default function App() {
             <div className="panel-header-row">
               <div>
                 <h2 className="panel-title">
-                  <span>🧠</span>
+                  <Brain size={16} className="inline mr-1.5 text-emerald-400" />
                   <span>Concept Mastery &amp; Retention</span>
                 </h2>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -3188,7 +3217,7 @@ export default function App() {
               <span
                 className={`badge ${isRemediationScheduled ? 'badge-done' : 'badge-upcoming'}`}
               >
-                {isRemediationScheduled ? 'All Refreshed ✨' : '1 Refresher Recommended'}
+                {isRemediationScheduled ? 'All Concepts Stable' : '1 Review Recommended'}
               </span>
             </div>
 
@@ -3215,7 +3244,7 @@ export default function App() {
                   className="btn-concept-quiz"
                   onClick={() => launchQuiz('math')}
                 >
-                  <span>📝</span>
+                  <FileText size={12} className="inline mr-1 text-slate-400" />
                   <span>Take Math Drill</span>
                 </button>
               </div>
@@ -3242,7 +3271,7 @@ export default function App() {
                   className="btn-concept-quiz"
                   onClick={() => launchQuiz('chem')}
                 >
-                  <span>📝</span>
+                  <FileText size={12} className="inline mr-1 text-slate-400" />
                   <span>Take Chem Drill</span>
                 </button>
               </div>
@@ -3274,7 +3303,7 @@ export default function App() {
                   className="btn-concept-quiz"
                   onClick={() => launchQuiz('python')}
                 >
-                  <span>⚡</span>
+                  <Zap size={13} className="inline text-amber-400" />
                   <span>Take Booster Drill</span>
                 </button>
               </div>
@@ -3294,7 +3323,7 @@ export default function App() {
                   gap: '7px',
                 }}
               >
-                <span>🎯</span>
+                <Target size={14} className="inline text-emerald-400" />
                 <span>Focus Areas &amp; Boosters</span>
               </div>
               <span style={{ fontSize: '11.5px', color: '#004D40', fontWeight: 700 }}>
@@ -3305,7 +3334,7 @@ export default function App() {
             {/* Booster 1 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <span style={{ color: '#004D40', fontSize: '16px' }}>💡</span>
+                <Lightbulb size={16} className="text-amber-400" />
                 <div>
                   <strong>Quick recap suggested:</strong> A 20-min loop refresher will make your upcoming lab a breeze!
                 </div>
@@ -3315,7 +3344,7 @@ export default function App() {
                 className={`btn-schedule-critical ${pythonCritScheduled ? 'scheduled' : ''}`}
                 onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
               >
-                <span>{pythonCritScheduled ? '✓' : '⚡'}</span>
+                {pythonCritScheduled ? <Check size={12} className="inline mr-1" /> : <Zap size={12} className="inline mr-1" />}
                 <span>{pythonCritScheduled ? 'Slotted for 12:00 PM' : 'Squeeze in 20m Practice'}</span>
               </button>
             </div>
@@ -3323,7 +3352,7 @@ export default function App() {
             {/* Booster 2 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <span style={{ color: 'var(--color-chem)', fontSize: '16px' }}>📅</span>
+                <Calendar size={16} className="text-sky-400" />
                 <div>
                   <strong>Math Midterm in 5 days:</strong> Let's do a relaxed 25m brush-up on quadratic roots.
                 </div>
@@ -3333,10 +3362,10 @@ export default function App() {
                 className={`btn-schedule-critical ${mathMidtermScheduled ? 'scheduled' : ''}`}
                 onClick={() => {
                   setMathMidtermScheduled(true)
-                  handleFreeTimeActivity('Math Midterm Review', '2:15–3:00 PM', 'empty-3', '📐')
+                  handleFreeTimeActivity('Math Midterm Review', '2:15–3:00 PM', 'empty-3', 'math')
                 }}
               >
-                <span>{mathMidtermScheduled ? '✓' : '📅'}</span>
+                {mathMidtermScheduled ? <Check size={12} className="inline mr-1" /> : <Calendar size={12} className="inline mr-1" />}
                 <span>{mathMidtermScheduled ? 'Slotted in 2:15 PM' : 'Slot 25m Review'}</span>
               </button>
             </div>
@@ -3353,7 +3382,7 @@ export default function App() {
               <div>
                 <div className="agent-name">Reviso Copilot</div>
                 <div className="agent-status-label">
-                  <span>●</span> Ready to help you thrive ✨
+                  <span className="status-dot">●</span> Active &amp; Ready
                 </div>
               </div>
             </div>
@@ -3370,7 +3399,7 @@ export default function App() {
                 return (
                   <div key={entry.id} className="tool-call-trace">
                     <div className="tool-header">
-                      <span>⚡ study_copilot_action:</span> <strong>{entry.toolName}()</strong>
+                      <Zap size={12} className="inline mr-1 text-amber-400" /> <span>copilot_action:</span> <strong>{entry.toolName}()</strong>
                     </div>
                     <div>{JSON.stringify(entry.toolArgs, null, 2)}</div>
                   </div>
@@ -3392,33 +3421,33 @@ export default function App() {
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('⚡ Add 20m loop recap before lunch')}
+              onClick={() => triggerQuickAction('Schedule 20m review before lunch')}
             >
-              <span>⚡ Add 20m loop recap before lunch</span>
+              <Zap size={12} className="inline mr-1" /> <span>Schedule 20m review before lunch</span>
               <span className="arrow">→</span>
             </button>
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('📝 Try a friendly 3-question drill')}
+              onClick={() => triggerQuickAction('Start 3-question diagnostic drill')}
             >
-              <span>📝 Try a friendly 3-question drill</span>
+              <FileText size={12} className="inline mr-1" /> <span>Start 3-question diagnostic drill</span>
               <span className="arrow">→</span>
             </button>
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('📉 How does my memory retention look?')}
+              onClick={() => triggerQuickAction('Analyze memory retention')}
             >
-              <span>📉 How does my memory retention look?</span>
+              <TrendingDown size={12} className="inline mr-1" /> <span>Analyze memory retention</span>
               <span className="arrow">→</span>
             </button>
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('⏱️ Start a 25-minute Pomodoro timer')}
+              onClick={() => triggerQuickAction('Start 25-minute focus timer')}
             >
-              <span>⏱️ Start a 25-minute Pomodoro timer</span>
+              <Clock size={12} className="inline mr-1" /> <span>Start 25-minute focus timer</span>
               <span className="arrow">→</span>
             </button>
           </div>
@@ -3436,7 +3465,7 @@ export default function App() {
               }}
             />
             <button type="button" className="chat-send-btn" onClick={sendChat} title="Send">
-              ➤
+              Send
             </button>
           </div>
         </aside>
@@ -3455,7 +3484,7 @@ export default function App() {
           {/* Header */}
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>📝</span>
+              <FileText size={12} className="inline mr-1 text-slate-400" />
               <span>{currentQuizTitle}</span>
             </div>
             <button
@@ -3464,14 +3493,14 @@ export default function App() {
               style={{ width: '30px', height: '30px' }}
               onClick={() => setQuizModalOpen(false)}
             >
-              ✕
+              <X size={15} />
             </button>
           </div>
 
           <div className="modal-body" style={{ overflowY: 'auto', flex: 1, padding: '20px 24px' }}>
             {quizLoading ? (
               <div style={{ padding: '36px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', marginBottom: '12px', animation: 'spin 1.5s linear infinite' }}>⚡</div>
+                <RotateCcw size={32} className="animate-spin text-emerald-400 inline-block mb-3" />
                 <div style={{ fontWeight: 700, fontSize: '15px' }}>Generating Adaptive Baseline Drill...</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                   Loading 3 diagnostic questions to evaluate concept retention
@@ -3494,7 +3523,7 @@ export default function App() {
                       <div className="quiz-hero-glow" />
                       <div className="quiz-hero-left">
                         <div className={`quiz-hero-badge ${isCritical ? 'critical' : isMastered ? 'mastered' : 'steady'}`}>
-                          <span>{isCritical ? '🚨 Critical Decay Alert' : isMastered ? '🏆 Mastery Confirmed' : '⚡ Concept Reinforced'}</span>
+                          <span>{isCritical ? 'Critical Decay Alert' : isMastered ? 'Mastery Confirmed' : 'Concept Reinforced'}</span>
                         </div>
                         <h3 className="quiz-hero-title">
                           {quizFinalResult?.totalCorrect} <span className="score-total">/ {quizFinalResult?.total} Questions Correct</span>
@@ -3545,7 +3574,7 @@ export default function App() {
                     <div className="quiz-stage-head">
                       <span className="quiz-stage-pill">Stage 1 · Baseline</span>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        {quizFinalResult?.stage1Correct === 3 ? 'Perfect 3/3 ⭐' : quizFinalResult?.stage1Correct === 2 ? 'Proficient 2/3' : 'Foundational'}
+                        {quizFinalResult?.stage1Correct === 3 ? 'Score: 3/3 (100%)' : quizFinalResult?.stage1Correct === 2 ? 'Score: 2/3 (67%)' : 'Foundational'}
                       </span>
                     </div>
                     <div className="quiz-stage-score-val">
@@ -3597,7 +3626,7 @@ export default function App() {
                   <div className="quiz-critical-remediation-box">
                     <div className="quiz-critical-top">
                       <div className="quiz-critical-icon-wrap">
-                        🚨
+                        
                       </div>
                       <div className="quiz-critical-header-text">
                         <h4>Critical Intervention Scheduled ({quizFinalResult.totalCorrect}/5 Correct)</h4>
@@ -3616,14 +3645,14 @@ export default function App() {
                         </div>
                         <div className="quiz-cal-details">
                           <div className="quiz-cal-title-line">
-                            🚨 1-Hour Dedicated Study: {criticalRemediationInfo.subject} - {criticalRemediationInfo.topic}
+                            Dedicated Study Session: {criticalRemediationInfo.subject} - {criticalRemediationInfo.topic}
                           </div>
                           <div className="quiz-cal-sub-line">
-                            <span>🗓️ {criticalRemediationInfo.dayName}</span>
+                            <span><Calendar size={12} className="inline mr-1" /> {criticalRemediationInfo.dayName}</span>
                             <span>•</span>
-                            <span>⏰ {criticalRemediationInfo.timeSlot} (60 mins)</span>
+                            <span><Clock size={12} className="inline mr-1" /> {criticalRemediationInfo.timeSlot} (60 min)</span>
                             <span>•</span>
-                            <span>🔔 Study Alarm Armed</span>
+                            <span><BellIcon size={12} className="inline mr-1" /> Study Alarm Armed</span>
                           </div>
                         </div>
                       </div>
@@ -3652,7 +3681,7 @@ export default function App() {
                           setCalendarModalOpen(true)
                         }}
                       >
-                        <span>📅 View on Calendar</span>
+                        <Calendar size={14} className="inline mr-1" /> <span>View on Calendar</span>
                       </button>
                     </div>
 
@@ -3680,7 +3709,7 @@ export default function App() {
                           rel="noopener noreferrer"
                           className="quiz-yt-btn"
                         >
-                          <span>📺 Watch on YouTube ↗</span>
+                          <ExternalLink size={13} className="inline mr-1" /> <span>Watch Tutorial</span>
                         </a>
                       </div>
                     )}
@@ -3704,14 +3733,14 @@ export default function App() {
                         className={`quiz-filter-btn ${quizReviewFilter === 'wrong' ? 'active' : ''}`}
                         onClick={() => setQuizReviewFilter('wrong')}
                       >
-                        ❌ Needs Review ({quizUserAnswers.filter((a) => !a.isCorrect).length})
+                        Needs Review ({quizUserAnswers.filter((a) => !a.isCorrect).length})
                       </button>
                       <button
                         type="button"
                         className={`quiz-filter-btn ${quizReviewFilter === 'correct' ? 'active' : ''}`}
                         onClick={() => setQuizReviewFilter('correct')}
                       >
-                        ✅ Correct ({quizUserAnswers.filter((a) => a.isCorrect).length})
+                        Correct ({quizUserAnswers.filter((a) => a.isCorrect).length})
                       </button>
                     </div>
                   </div>
@@ -3728,7 +3757,7 @@ export default function App() {
                         <div key={idx} className={`quiz-review-card ${ans.isCorrect ? 'correct' : 'wrong'}`}>
                           <div className="quiz-review-card-top">
                             <div className="quiz-q-num-pill">
-                              <span>{ans.isCorrect ? '✅' : '❌'}</span>
+                              <span>{ans.isCorrect ? <CheckCircle size={14} className="text-emerald-400" /> : <XCircle size={14} className="text-rose-400" />}</span>
                               <span>Question {idx + 1}</span>
                               <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                                 ({idx < 3 ? 'Stage 1: Baseline' : `Stage 2: ${adaptiveDifficulty?.toUpperCase() || 'ADAPTIVE'}`})
@@ -3749,13 +3778,13 @@ export default function App() {
 
                           <div className="quiz-answers-comparison">
                             <div className={`quiz-ans-row ${ans.isCorrect ? 'user-correct' : 'user-wrong'}`}>
-                              <span>{ans.isCorrect ? '✓' : '✗'} Your Answer:</span>
+                              <span>{ans.isCorrect ? <Check size={12} className="inline text-emerald-400" /> : <X size={12} className="inline text-rose-400" />} Your Answer:</span>
                               <strong>{ans.selected_answer || '(No answer provided)'}</strong>
                             </div>
 
                             {!ans.isCorrect && q?.correct_answer && (
                               <div className="quiz-ans-row correct-ans">
-                                <span>★ Correct Answer:</span>
+                                <span><Check size={12} className="inline text-emerald-400" /> Correct Answer:</span>
                                 <strong>{q.correct_answer}</strong>
                               </div>
                             )}
@@ -3763,7 +3792,7 @@ export default function App() {
 
                           {q?.explanation && (
                             <div className="quiz-explanation-box">
-                              💡 <strong>Key Takeaway:</strong> {q.explanation}
+                              <strong>Key Takeaway:</strong> {q.explanation}
                             </div>
                           )}
                         </div>
@@ -3777,7 +3806,7 @@ export default function App() {
                 {/* Adaptive Stage 2 Notification Banner */}
                 {quizStage === 2 && adaptiveNotice && (
                   <div className={`quiz-adaptive-banner ${adaptiveDifficulty || 'medium'}`}>
-                    <span>{adaptiveDifficulty === 'hard' ? '🚀' : adaptiveDifficulty === 'easy' ? '🌱' : '⚡'}</span>
+                    <Zap size={14} className="text-amber-400" />
                     <span><strong>Stage 1: {stage1Score}/3 correct</strong> — {adaptiveNotice}</span>
                   </div>
                 )}
@@ -3901,7 +3930,7 @@ export default function App() {
                       setCalendarModalOpen(true)
                     }}
                   >
-                    <span>📅 Open in Calendar</span>
+                    <Calendar size={14} className="inline mr-1" /> <span>Open in Calendar</span>
                   </button>
                 )}
                 <button
@@ -3910,7 +3939,7 @@ export default function App() {
                   onClick={() => launchQuiz(currentQuizSubject)}
                 >
                   <span>Take Another Adaptive Drill</span>
-                  <span>🔄</span>
+                  <RotateCcw size={14} />
                 </button>
               </div>
             ) : selectedQuizOpt !== null ? (
@@ -3967,7 +3996,7 @@ export default function App() {
         <div className="modal-window" style={{ maxWidth: '420px', textAlign: 'center' }}>
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>⏱️</span>
+              <Clock size={14} />
               <span>Focus: {pomoSessionName}</span>
             </div>
             <button
@@ -3976,7 +4005,7 @@ export default function App() {
               style={{ width: '30px', height: '30px' }}
               onClick={() => setPomoModalOpen(false)}
             >
-              ✕
+              <X size={15} />
             </button>
           </div>
           <div className="modal-body">
@@ -3985,7 +4014,7 @@ export default function App() {
                 {formatTimerDigits(pomoSeconds)}
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                {pomoDurationMinutes <= 15 ? '☕ Break & Recovery Buffer' : '⚡ Deep Focus Block · Take it one step at a time'}
+                {pomoDurationMinutes <= 15 ? 'Break & Recovery Buffer' : 'Deep Focus Block · Work steadily'}
               </div>
 
               {/* Progress Track */}
@@ -4075,12 +4104,12 @@ export default function App() {
             {/* Quick Presets Row */}
             <div className="timer-presets-row">
               {[
-                { label: '15m Focus', mins: 15, icon: '⚡' },
-                { label: '25m Pomodoro', mins: 25, icon: '🎯' },
-                { label: '45m Deep', mins: 45, icon: '🧠' },
-                { label: '60m Block', mins: 60, icon: '📚' },
-                { label: '90m Exam Prep', mins: 90, icon: '🏆' },
-                { label: '5m Break', mins: 5, icon: '☕' },
+                { label: '15 min', mins: 15 },
+                { label: '25 min', mins: 25 },
+                { label: '45 min', mins: 45 },
+                { label: '60 min', mins: 60 },
+                { label: '90 min', mins: 90 },
+                { label: '5m Break', mins: 5 },
               ].map((preset) => (
                 <button
                   key={preset.mins}
@@ -4088,7 +4117,6 @@ export default function App() {
                   className={`timer-preset-chip ${pomoDurationMinutes === preset.mins ? 'active' : ''}`}
                   onClick={() => handleSelectPomoPreset(preset.mins, preset.label)}
                 >
-                  <span>{preset.icon}</span>
                   <span>{preset.label}</span>
                 </button>
               ))}
@@ -4101,7 +4129,7 @@ export default function App() {
                 style={{ padding: '10px 24px', fontSize: '14px', minWidth: '124px' }}
                 onClick={togglePomodoro}
               >
-                <span>{pomoRunning ? '⏸' : '▶'}</span>
+                {pomoRunning ? <Pause size={14} /> : <Play size={14} />}
                 <span>{pomoRunning ? 'Pause' : 'Start'}</span>
               </button>
 
@@ -4228,7 +4256,7 @@ export default function App() {
               onClick={() => setGcalSidebarOpen((prev) => !prev)}
               title="Main menu (Toggle Sidebar)"
             >
-              ☰
+              <Menu size={16} />
             </button>
 
             {/* Google Calendar Logo & Brand */}
@@ -4292,7 +4320,7 @@ export default function App() {
                 onChange={(e) => setGcalSearchQuery(e.target.value)}
               />
               <span style={{ position: 'absolute', left: '10px', fontSize: '12px', color: '#8b949e', pointerEvents: 'none' }}>
-                🔍
+                <Search size={14} />
               </span>
             </div>
 
@@ -4315,7 +4343,7 @@ export default function App() {
               onClick={handleSyncCalendar}
               title="Download standard RFC-5545 .ics for Google Calendar"
             >
-              <span>📥</span>
+              <Download size={14} />
               <span>{calendarSyncActive ? 'Exporting...' : 'Export .ics'}</span>
             </button>
 
@@ -4326,7 +4354,7 @@ export default function App() {
               onClick={() => setCalendarModalOpen(false)}
               title="Exit Calendar (Esc)"
             >
-              ✕
+              <X size={15} />
             </button>
           </div>
         </header>
@@ -4437,11 +4465,11 @@ export default function App() {
 
               <div className="gcal-calendar-list">
                 {[
-                  { name: 'Maths', color: '#10b981', icon: '📐' },
-                  { name: 'Chemistry', color: '#38bdf8', icon: '🧪' },
-                  { name: 'Python', color: '#2dd4bf', icon: '🐍' },
-                  { name: 'AI Systems', color: '#a855f7', icon: '🤖' },
-                  { name: 'Exams', color: '#f59e0b', icon: '🎯' },
+                  { name: 'Maths', color: '#10b981' },
+                  { name: 'Chemistry', color: '#38bdf8' },
+                  { name: 'Python', color: '#2dd4bf' },
+                  { name: 'AI Systems', color: '#a855f7' },
+                  { name: 'Exams', color: '#f59e0b' },
                 ].map((item) => {
                   const isChecked = selectedSubjects[item.name] !== false
                   return (
@@ -4463,9 +4491,9 @@ export default function App() {
                           border: `1.5px solid ${item.color}`,
                         }}
                       >
-                        {isChecked ? '✓' : ''}
+                        {isChecked ? <Check size={11} strokeWidth={2.5} /> : ''}
                       </div>
-                      <span>{item.icon} {item.name}</span>
+                      <span>{item.name}</span>
                     </div>
                   )
                 })}
@@ -4535,7 +4563,7 @@ export default function App() {
                               onClick={() => setGcalActiveEvent({ ...ex, dateKey: wDay.dateKey })}
                               title={ex.title}
                             >
-                              🎯 {ex.title}
+                              {ex.title}
                             </div>
                           ))}
                         </div>
@@ -4607,7 +4635,7 @@ export default function App() {
                                   {draggedCalEvent.task.title}
                                 </div>
                                 <div className="gcal-ghost-time">
-                                  ⏱️ {dragOverCol.timeSlotPreview}
+                                  {dragOverCol.timeSlotPreview}
                                 </div>
                               </div>
                             )}
@@ -4652,7 +4680,7 @@ export default function App() {
                                   title="Drag to change time or day • Click to view"
                                 >
                                   <div className="gcal-event-title">
-                                    {t.completed ? '✓ ' : ''}{t.title}
+                                    {t.completed ? 'Completed: ' : ''}{t.title}
                                   </div>
                                   <div className="gcal-event-time">
                                     {t.timeSlot}
@@ -4719,7 +4747,7 @@ export default function App() {
                           <span className="gcal-month-day-num">{d}</span>
                           {hasExam && (
                             <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 800 }}>
-                              🎯 Exam
+                              Exam
                             </span>
                           )}
                         </div>
@@ -4764,7 +4792,7 @@ export default function App() {
                               }}
                               title={`Drag to move date • ${t.subject}: ${t.title}`}
                             >
-                              {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
+                              {t.completed ? 'Completed: ' : ''}{t.subject}: {t.title}
                             </div>
                           )
                         })}
@@ -4863,7 +4891,7 @@ export default function App() {
                                   {draggedCalEvent.task.title}
                                 </div>
                                 <div className="gcal-ghost-time">
-                                  ⏱️ {dragOverCol.timeSlotPreview}
+                                  {dragOverCol.timeSlotPreview}
                                 </div>
                               </div>
                             )}
@@ -4911,7 +4939,7 @@ export default function App() {
                                 >
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <span className="gcal-event-title" style={{ fontSize: '13px' }}>
-                                      {t.completed ? '✓ ' : ''}{t.title}
+                                      {t.completed ? 'Completed: ' : ''}{t.title}
                                     </span>
                                     <span style={{ fontSize: '10.5px', opacity: 0.8 }}>{t.subject}</span>
                                   </div>
@@ -4964,13 +4992,13 @@ export default function App() {
                                 handleToggleCalTask(d, t.id, calYear, calMonth)
                               }}
                             >
-                              {t.completed ? '✓' : ''}
+                              {t.completed ? <Check size={11} strokeWidth={2.5} /> : ''}
                             </button>
                             <div className="cal-task-info">
                               <div className="cal-task-name">{t.title}</div>
                               <div className="cal-task-sub">
                                 <span className={`task-tag ${t.tagClass}`}>{t.subject}</span>
-                                <span>⏰ {t.timeSlot}</span>
+                                <span><Clock size={11} className="inline mr-1" />{t.timeSlot}</span>
                                 {t.videoUrl && (
                                   <a
                                     href={t.videoUrl}
@@ -4988,13 +5016,13 @@ export default function App() {
                                       marginLeft: '6px',
                                     }}
                                   >
-                                    📺 Video Tutorial ↗
+                                    <Video size={11} style={{ marginRight: 3 }} /> Video Tutorial
                                   </a>
                                 )}
                               </div>
                             </div>
                             <span className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}>
-                              {t.completed ? 'Done ✓' : 'Scheduled'}
+                              {t.completed ? 'Completed' : 'Scheduled'}
                             </span>
                           </div>
                         ))}
@@ -5038,21 +5066,21 @@ export default function App() {
                     className="gcal-close-btn"
                     onClick={() => setGcalActiveEvent(null)}
                   >
-                    ✕
+                    <X size={15} />
                   </button>
                 </div>
 
                 <div className="gcal-popover-meta">
                   <div className="gcal-popover-meta-row">
-                    <span>🗓️</span>
+                    <Calendar size={14} />
                     <span>{gcalActiveEvent.dateKey || `${MONTH_NAMES[calMonth]} ${selectedCalDay}, ${calYear}`}</span>
                   </div>
                   <div className="gcal-popover-meta-row">
-                    <span>⏰</span>
+                    <Clock size={14} />
                     <span>{gcalActiveEvent.timeSlot} ({gcalActiveEvent.duration_minutes || 45} mins)</span>
                   </div>
                   <div className="gcal-popover-meta-row">
-                    <span>🏷️</span>
+                    <Bookmark size={14} />
                     <span className={`task-tag ${gcalActiveEvent.tagClass}`}>{gcalActiveEvent.subject}</span>
                     <span style={{ fontSize: '11px', color: '#8b949e', textTransform: 'capitalize' }}>
                       • {gcalActiveEvent.priority || 'medium'} priority
@@ -5077,7 +5105,7 @@ export default function App() {
                   >
                     <div>
                       <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                        📺 Recommended Masterclass Video
+                        <Video size={14} className="inline mr-1.5" /> Recommended Video
                       </div>
                       <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
                         {gcalActiveEvent.videoTitle || 'Curated Tutorial Lesson'}
@@ -5105,9 +5133,7 @@ export default function App() {
                         gap: '4px',
                         boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
                       }}
-                    >
-                      ▶️ Watch on YouTube ↗
-                    </a>
+                    ><Video size={13} style={{ marginRight: 4 }} /> Watch on YouTube</a>
                   </div>
                 )}
 
@@ -5128,7 +5154,7 @@ export default function App() {
                     onClick={() => handleShiftEventTime(30)}
                     title="Move 30 minutes later"
                   >
-                    30m Later ➡️
+                    +30m
                   </button>
                   <button
                     type="button"
@@ -5136,7 +5162,7 @@ export default function App() {
                     onClick={() => handleShiftEventDay(-1)}
                     title="Move to Previous Day"
                   >
-                    📅 -1 Day
+                    -1 Day
                   </button>
                   <button
                     type="button"
@@ -5144,7 +5170,7 @@ export default function App() {
                     onClick={() => handleShiftEventDay(1)}
                     title="Move to Next Day"
                   >
-                    📅 +1 Day
+                    +1 Day
                   </button>
                 </div>
 
@@ -5162,7 +5188,7 @@ export default function App() {
                       setGcalActiveEvent((prev) => (prev ? { ...prev, completed: !prev.completed } : null))
                     }}
                   >
-                    <span>{gcalActiveEvent.completed ? '✓ Completed' : 'Mark Complete'}</span>
+                    <span>{gcalActiveEvent.completed ? 'Completed' : 'Mark Complete'}</span>
                   </button>
 
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -5177,7 +5203,7 @@ export default function App() {
                       }}
                       title="Start deep work Pomodoro focus session"
                     >
-                      <span>⏱️ Focus</span>
+                      <span>Focus</span>
                     </button>
 
                     <button
@@ -5191,7 +5217,7 @@ export default function App() {
                       }}
                       title="Delete event"
                     >
-                      🗑️
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
@@ -5213,14 +5239,14 @@ export default function App() {
               <div className="gcal-popover-body">
                 <div className="gcal-popover-title-row">
                   <div className="gcal-popover-title">
-                    <span>➕ New Study Session</span>
+                    <Plus size={14} className="inline mr-1" /> New Study Session
                   </div>
                   <button
                     type="button"
                     className="gcal-close-btn"
                     onClick={() => setGcalQuickCreateOpen(false)}
                   >
-                    ✕
+                    <X size={15} />
                   </button>
                 </div>
 
@@ -5249,10 +5275,10 @@ export default function App() {
                       value={newCalTaskSubject}
                       onChange={(e) => setNewCalTaskSubject(e.target.value as any)}
                     >
-                      <option value="Maths">📐 Maths</option>
-                      <option value="Chemistry">🧪 Chemistry</option>
-                      <option value="Python">🐍 Python</option>
-                      <option value="AI Systems">🤖 AI Systems</option>
+                      <option value="Maths">Maths</option>
+                      <option value="Chemistry">Chemistry</option>
+                      <option value="Python">Python</option>
+                      <option value="AI Systems">AI Systems</option>
                     </select>
 
                     <input
@@ -5291,7 +5317,7 @@ export default function App() {
                       onChange={(e) => setNewCalTaskPriority(e.target.value as any)}
                     >
                       <option value="medium">Medium</option>
-                      <option value="high">High 🚨</option>
+                      <option value="high">High Priority</option>
                       <option value="low">Low</option>
                     </select>
                   </div>
@@ -5355,7 +5381,7 @@ export default function App() {
                     fontSize: '18px',
                   }}
                 >
-                  🕒
+                  <History size={16} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
@@ -5381,7 +5407,7 @@ export default function App() {
                       transition: 'transform 0.5s ease',
                     }}
                   >
-                    🔄
+                    <RotateCcw size={14} />
                   </span>
                 </button>
                 <button
@@ -5389,7 +5415,7 @@ export default function App() {
                   className="btn-icon"
                   onClick={() => setIsChatHistoryModalOpen(false)}
                 >
-                  ✕
+                  <X size={15} />
                 </button>
               </div>
             </div>
@@ -5402,7 +5428,7 @@ export default function App() {
               }}
             >
               <div className="history-search-bar" style={{ margin: 0 }}>
-                <span style={{ fontSize: '13px', opacity: 0.6 }}>🔍</span>
+                <Search size={14} className="opacity-60" />
                 <input
                   type="text"
                   placeholder="Search across all messages and tutor recommendations..."
@@ -5416,7 +5442,7 @@ export default function App() {
                     className="history-clear-search-btn"
                     onClick={() => setHistorySearchQuery('')}
                   >
-                    ✕
+                    <X size={15} />
                   </button>
                 )}
               </div>
@@ -5425,7 +5451,7 @@ export default function App() {
             <div className="chat-history-modal-body">
               {filteredChatList.length === 0 ? (
                 <div className="history-empty-state" style={{ padding: '60px 20px' }}>
-                  <span style={{ fontSize: '36px' }}>💬</span>
+                  <MessageSquare size={36} className="text-slate-500" />
                   <div style={{ fontWeight: 700, fontSize: '14px', marginTop: '10px' }}>
                     {historySearchQuery ? 'No matching messages found' : 'No conversation history logged yet'}
                   </div>
@@ -5442,7 +5468,7 @@ export default function App() {
                   >
                     <div className="history-item-meta" style={{ marginBottom: '4px' }}>
                       <span className="history-sender-badge" style={{ fontSize: '11px' }}>
-                        {entry.sender === 'user' ? '👤 Laksh (You)' : '🤖 Reviso Autonomous Copilot'}
+                        {entry.sender === 'user' ? 'Laksh (You)' : 'Reviso Copilot'}
                       </span>
                       {entry.timestamp && (
                         <span className="history-timestamp" style={{ fontSize: '11px' }}>
@@ -5488,10 +5514,10 @@ export default function App() {
                     setIsChatHistoryModalOpen(false)
                     const chatInputElem = document.querySelector('.chat-input-field') as HTMLInputElement
                     if (chatInputElem) chatInputElem.focus()
-                    showToast('Focused tutor chat! 💬')
+                    showToast('Focused tutor chat', 'chat')
                   }}
                 >
-                  💬 Open Live Chat
+                  <MessageSquare size={13} className="inline mr-1" /> Open Live Chat
                 </button>
               </div>
             </div>
@@ -5502,12 +5528,24 @@ export default function App() {
       {/* Interactive Toast */}
       <div className={`toast ${toast.visible ? 'active' : ''}`}>
         <span>
-          {toast.icon === 'bell' || toast.icon === '🔔' ? (
+          {toast.icon === 'bell' ? (
             <BellIcon size={15} color="#f97316" />
-          ) : toast.icon === 'bell-off' || toast.icon === '🔕' ? (
+          ) : toast.icon === 'bell-off' ? (
             <BellOffIcon size={15} color="#ffffff" />
+          ) : toast.icon === 'check' ? (
+            <CheckCircle size={15} className="text-emerald-400" />
+          ) : toast.icon === 'calendar' ? (
+            <Calendar size={15} className="text-sky-400" />
+          ) : toast.icon === 'clock' ? (
+            <Clock size={15} className="text-amber-400" />
+          ) : toast.icon === 'alert' ? (
+            <AlertCircle size={15} className="text-rose-400" />
+          ) : toast.icon === 'zap' ? (
+            <Zap size={15} className="text-amber-400" />
+          ) : toast.icon === 'trash' ? (
+            <Trash2 size={15} className="text-rose-400" />
           ) : (
-            toast.icon
+            <Sparkles size={15} className="text-emerald-400" />
           )}
         </span>
         <span>{toast.message}</span>
