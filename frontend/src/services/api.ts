@@ -277,6 +277,11 @@ export interface CriticalRemediationResponse {
     statusTag: string
     dayNumber: number
   }
+  video?: {
+    title: string
+    channel: string
+    url: string
+  }
 }
 
 export async function scheduleCriticalRemediation(payload: {

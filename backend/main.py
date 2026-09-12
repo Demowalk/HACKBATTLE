@@ -1248,6 +1248,70 @@ def check_quiz_answers(
 def debug_quiz_answers():
     return quiz_questions
 
+def get_curated_youtube_video(subject: str, topic: str) -> dict:
+    """Returns curated high-yield YouTube tutorial video metadata for a given topic."""
+    s_lower = (subject or "").lower()
+    t_lower = (topic or "").lower()
+
+    # Python topics
+    if "python" in s_lower or "loop" in t_lower or "comprehension" in t_lower or "async" in t_lower:
+        if "async" in t_lower:
+            return {
+                "title": "Python AsyncIO & Generators In-Depth Masterclass",
+                "channel": "mCoding",
+                "url": "https://www.youtube.com/watch?v=t5Bo1Je9EmE",
+            }
+        return {
+            "title": "Python Nested Loops & List Comprehensions Tutorial",
+            "channel": "Corey Schafer",
+            "url": "https://www.youtube.com/watch?v=3dt4xGsF9qM",
+        }
+    
+    # Maths topics
+    if "math" in s_lower or "algebra" in t_lower or "vector" in t_lower or "matrix" in t_lower:
+        return {
+            "title": "Essence of Linear Algebra: Visualizing Transformations & Matrices",
+            "channel": "3Blue1Brown",
+            "url": "https://www.youtube.com/watch?v=PFDu9oVAE-g",
+        }
+    if "calculus" in t_lower or "derivative" in t_lower or "integral" in t_lower:
+        return {
+            "title": "The Essence of Calculus: Chapter 1",
+            "channel": "3Blue1Brown",
+            "url": "https://www.youtube.com/watch?v=WUvTyaaNkzM",
+        }
+
+    # Chemistry topics
+    if "chem" in s_lower or "reaction" in t_lower or "organic" in t_lower or "nernst" in t_lower:
+        if "nernst" in t_lower or "electro" in t_lower:
+            return {
+                "title": "Nernst Equation & Electrochemical Cells Explained",
+                "channel": "The Organic Chemistry Tutor",
+                "url": "https://www.youtube.com/watch?v=lQ6F9RWBNE8",
+            }
+        return {
+            "title": "Organic Chemistry Reaction Mechanisms & Kinetics",
+            "channel": "The Organic Chemistry Tutor",
+            "url": "https://www.youtube.com/watch?v=0tZ_2hPq1tA",
+        }
+
+    # AI / Machine Learning
+    if "ai" in s_lower or "transformer" in t_lower or "attention" in t_lower:
+        return {
+            "title": "Attention in Transformers, Visually Explained",
+            "channel": "3Blue1Brown",
+            "url": "https://www.youtube.com/watch?v=wjZofJX0v4U",
+        }
+
+    # Generic fallback
+    import urllib.parse
+    query = urllib.parse.quote(f"{subject} {topic} tutorial masterclass")
+    return {
+        "title": f"Master {topic} Full Educational Walkthrough",
+        "channel": "Curated YouTube Tutorial",
+        "url": f"https://www.youtube.com/results?search_query={query}",
+    }
+
 @app.post("/tasks/schedule-critical-remediation")
 def schedule_critical_remediation(
     req: CriticalRemediationRequest,
@@ -1395,7 +1459,8 @@ def schedule_critical_remediation(
             "isCritical": True,
             "statusTag": "Critical Remediation",
             "dayNumber": int(chosen_date_str.split("-")[2]),
-        }
+        },
+        "video": get_curated_youtube_video(req.subject, req.topic),
     }
 
 

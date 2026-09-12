@@ -561,6 +561,9 @@ export default function App() {
     completed: boolean
     alarmActive: boolean
     status: string
+    videoUrl?: string
+    videoTitle?: string
+    videoChannel?: string
   }
 
   type CalTaskItem = {
@@ -572,6 +575,9 @@ export default function App() {
     completed: boolean
     priority?: string
     duration_minutes?: number
+    videoUrl?: string
+    videoTitle?: string
+    videoChannel?: string
   }
 
   // Full-Page Study Calendar State
@@ -810,6 +816,71 @@ export default function App() {
       return `${startH12}${startMStr}–${endH12}${endMStr} ${endAmPm}`
     } else {
       return `${startH12}${startMStr} ${startAmPm}–${endH12}${endMStr} ${endAmPm}`
+    }
+  }
+
+  const getTopicYoutubeVideo = (subject: string, topic: string) => {
+    const sLower = (subject || '').toLowerCase()
+    const tLower = (topic || '').toLowerCase()
+
+    if (sLower.includes('python') || tLower.includes('loop') || tLower.includes('comprehension') || tLower.includes('async')) {
+      if (tLower.includes('async')) {
+        return {
+          title: 'Python AsyncIO & Generators In-Depth Masterclass',
+          channel: 'mCoding',
+          url: 'https://www.youtube.com/watch?v=t5Bo1Je9EmE',
+        }
+      }
+      return {
+        title: 'Python Nested Loops & List Comprehensions Tutorial',
+        channel: 'Corey Schafer',
+        url: 'https://www.youtube.com/watch?v=3dt4xGsF9qM',
+      }
+    }
+
+    if (sLower.includes('math') || tLower.includes('algebra') || tLower.includes('vector') || tLower.includes('matrix')) {
+      return {
+        title: 'Essence of Linear Algebra: Visualizing Transformations & Matrices',
+        channel: '3Blue1Brown',
+        url: 'https://www.youtube.com/watch?v=PFDu9oVAE-g',
+      }
+    }
+    if (tLower.includes('calculus') || tLower.includes('derivative') || tLower.includes('integral')) {
+      return {
+        title: 'The Essence of Calculus: Chapter 1',
+        channel: '3Blue1Brown',
+        url: 'https://www.youtube.com/watch?v=WUvTyaaNkzM',
+      }
+    }
+
+    if (sLower.includes('chem') || tLower.includes('reaction') || tLower.includes('organic') || tLower.includes('nernst')) {
+      if (tLower.includes('nernst') || tLower.includes('electro')) {
+        return {
+          title: 'Nernst Equation & Electrochemical Cells Explained',
+          channel: 'The Organic Chemistry Tutor',
+          url: 'https://www.youtube.com/watch?v=lQ6F9RWBNE8',
+        }
+      }
+      return {
+        title: 'Organic Chemistry Reaction Mechanisms & Kinetics',
+        channel: 'The Organic Chemistry Tutor',
+        url: 'https://www.youtube.com/watch?v=0tZ_2hPq1tA',
+      }
+    }
+
+    if (sLower.includes('ai') || tLower.includes('transformer') || tLower.includes('attention')) {
+      return {
+        title: 'Attention in Transformers, Visually Explained',
+        channel: '3Blue1Brown',
+        url: 'https://www.youtube.com/watch?v=wjZofJX0v4U',
+      }
+    }
+
+    const query = encodeURIComponent(`${subject} ${topic} tutorial masterclass`)
+    return {
+      title: `Master ${topic} Full Educational Walkthrough`,
+      channel: 'Curated YouTube Tutorial',
+      url: `https://www.youtube.com/results?search_query=${query}`,
     }
   }
 
@@ -1266,6 +1337,11 @@ export default function App() {
     topic: string
     subject: string
     dayNumber: number
+    video?: {
+      title: string
+      channel: string
+      url: string
+    }
   } | null>(null)
 
 
@@ -2025,6 +2101,8 @@ export default function App() {
         if (foundSlot) break
       }
 
+      const topicVideo = getTopicYoutubeVideo(subjectDisplayName, topicDisplayName)
+
       setCriticalRemediationInfo({
         scheduledDate: chosenDateKey,
         dayName: chosenDayFormatted,
@@ -2032,6 +2110,7 @@ export default function App() {
         topic: topicDisplayName,
         subject: subjectDisplayName,
         dayNumber: chosenDayNumber,
+        video: topicVideo,
       })
 
       // 2. Set DKT proficiency to Critical decay risk
@@ -2058,6 +2137,9 @@ export default function App() {
         completed: false,
         priority: 'high',
         duration_minutes: 60,
+        videoUrl: topicVideo.url,
+        videoTitle: topicVideo.title,
+        videoChannel: topicVideo.channel,
       }
 
       setCalTasksByDate((prev) => {
@@ -2082,6 +2164,9 @@ export default function App() {
             completed: false,
             alarmActive: true,
             status: 'Critical Remediation',
+            videoUrl: topicVideo.url,
+            videoTitle: topicVideo.title,
+            videoChannel: topicVideo.channel,
           },
         ])
       }
@@ -2099,11 +2184,14 @@ export default function App() {
 
       // 5. User Feedback: Warning toast + Audio + Tutor Chat reminder message
       soundSynth.playSuccessBeep()
-      showToast(`🚨 Scored ${totalCorrect}/${total} (< 2)! Added 1-hour study slot to calendar: ${chosenTimeSlot}`, '📅')
+      showToast(`🚨 Scored ${totalCorrect}/${total} (< 2)! Added 1-hr study slot & YT video tutorial!`, '📅')
 
       addChatMessage(
         `🚨 <strong>Critical Diagnostic Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
           `Because you scored less than 2 right, I have automatically added a <strong>1-hour study time slot (60 mins)</strong> to your calendar on <strong>${chosenDayFormatted} from ${chosenTimeSlot}</strong> with an active study alarm to guarantee recovery.<br><br>` +
+          `📺 <strong>Mastery Video Tutorial:</strong><br>` +
+          `<em>${topicVideo.title}</em> (${topicVideo.channel})<br>` +
+          `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">▶️ Watch Video on YouTube ↗</a><br><br>` +
           `👉 Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
         'bot'
       )
@@ -2741,6 +2829,27 @@ export default function App() {
                     </div>
                   </div>
                   <div className="task-card-right">
+                    {task.videoUrl && (
+                      <a
+                        href={task.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-timer"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          color: '#EF4444',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontWeight: 700,
+                        }}
+                        title={`Watch ${task.videoTitle || 'Tutorial'} on YouTube`}
+                      >
+                        📺 Video
+                      </a>
+                    )}
                     <button
                       type="button"
                       className="btn-timer"
@@ -3316,6 +3425,77 @@ export default function App() {
                     <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', margin: '0 0 12px 0', lineHeight: 1.5 }}>
                       Proficiency fell below the safe retention boundary. The system inspected your schedule, bypassed upcoming exams (Sep 15), and automatically scheduled a <strong>1-hour study time slot (60 mins)</strong> on <strong>{criticalRemediationInfo.dayName}</strong> from <strong>{criticalRemediationInfo.timeSlot}</strong>.
                     </p>
+
+                    {/* YouTube Video Recommendation Card */}
+                    {criticalRemediationInfo.video && (
+                      <div
+                        style={{
+                          marginBottom: '14px',
+                          padding: '12px 14px',
+                          borderRadius: '10px',
+                          background: 'rgba(0, 0, 0, 0.28)',
+                          border: '1px solid rgba(239, 68, 68, 0.35)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '12px',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 240px' }}>
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '8px',
+                              background: '#EF4444',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '18px',
+                              flexShrink: 0,
+                              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
+                            }}
+                          >
+                            ▶️
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#EF4444', fontWeight: 800 }}>
+                              Recommended Mastery Video
+                            </div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                              {criticalRemediationInfo.video.title}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                              Channel: {criticalRemediationInfo.video.channel} • Curated for rapid mastery
+                            </div>
+                          </div>
+                        </div>
+
+                        <a
+                          href={criticalRemediationInfo.video.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-pill"
+                          style={{
+                            background: '#EF4444',
+                            color: '#FFFFFF',
+                            fontWeight: 700,
+                            fontSize: '12px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '8px 16px',
+                            textDecoration: 'none',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)',
+                          }}
+                        >
+                          <span>📺 Watch on YouTube ↗</span>
+                        </a>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <button
                         type="button"
@@ -4469,6 +4649,26 @@ export default function App() {
                               <div className="cal-task-sub">
                                 <span className={`task-tag ${t.tagClass}`}>{t.subject}</span>
                                 <span>⏰ {t.timeSlot}</span>
+                                {t.videoUrl && (
+                                  <a
+                                    href={t.videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      fontSize: '11px',
+                                      color: '#EF4444',
+                                      fontWeight: 700,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                      textDecoration: 'none',
+                                      marginLeft: '6px',
+                                    }}
+                                  >
+                                    📺 Video Tutorial ↗
+                                  </a>
+                                )}
                               </div>
                             </div>
                             <span className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}>
@@ -4537,6 +4737,57 @@ export default function App() {
                     </span>
                   </div>
                 </div>
+
+                {gcalActiveEvent.videoUrl && (
+                  <div
+                    style={{
+                      margin: '12px 0 6px 0',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        📺 Recommended Masterclass Video
+                      </div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+                        {gcalActiveEvent.videoTitle || 'Curated Tutorial Lesson'}
+                      </div>
+                      {gcalActiveEvent.videoChannel && (
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          Channel: {gcalActiveEvent.videoChannel}
+                        </div>
+                      )}
+                    </div>
+                    <a
+                      href={gcalActiveEvent.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#EF4444',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '11.5px',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
+                      }}
+                    >
+                      ▶️ Watch on YouTube ↗
+                    </a>
+                  </div>
+                )}
 
                 {/* Quick Reschedule / Move Controls */}
                 <div className="gcal-quick-move-row">
