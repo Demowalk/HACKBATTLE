@@ -407,6 +407,11 @@ export default function App() {
   const [selectedQuizOpt, setSelectedQuizOpt] = useState<number | null>(null)
   const [quizFeedback, setQuizFeedback] = useState<{ isCorrect: boolean; text: string } | null>(null)
 
+  // Calendar Modal
+  const [calendarModalOpen, setCalendarModalOpen] = useState<boolean>(false)
+  const [selectedCalDay, setSelectedCalDay] = useState<number>(12)
+  const [calendarSyncActive, setCalendarSyncActive] = useState<boolean>(false)
+
   // Apply Theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -783,15 +788,15 @@ export default function App() {
             </span>
           </div>
 
-          {/* Export / Share PDF */}
+          {/* Calendar Button (Replaces Share / Export) */}
           <button
             type="button"
             className="btn-pill btn-primary"
-            onClick={exportSharePdf}
-            title="Download & Share full-color PDF snapshot"
+            onClick={() => setCalendarModalOpen(true)}
+            title="Open Interactive Study Calendar & Sync"
           >
-            <span>📤</span>
-            <span>Share / Export PDF</span>
+            <span>📅</span>
+            <span>Calendar</span>
           </button>
 
           {/* Launch Pomodoro Focus Session */}
@@ -967,7 +972,7 @@ export default function App() {
           </div>
 
           {/* Panel 1: Today's Adaptive Schedule */}
-          <div className="panel">
+          <div className="panel" id="schedule-panel">
             <div className="panel-header-row">
               <h2 className="panel-title">
                 <span>📅</span>
@@ -1764,6 +1769,176 @@ export default function App() {
                 Snooze 5 Min
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ==========================================================================
+           MODAL 4: STUDY CALENDAR & SCHEDULE SYNC
+           ========================================================================== */}
+      <div className={`modal-backdrop ${calendarModalOpen ? 'active' : ''}`}>
+        <div className="modal-window calendar-modal-window">
+          <div className="modal-header">
+            <div style={{ fontWeight: 800, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>📅</span>
+              <span>Study Calendar &amp; Schedule Sync</span>
+            </div>
+            <button
+              type="button"
+              className="btn-icon"
+              style={{ width: '30px', height: '30px' }}
+              onClick={() => setCalendarModalOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="modal-body" style={{ gap: '14px' }}>
+            {/* Sync Badge */}
+            <div className="calendar-sync-badge">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#34d399', fontSize: '10px' }}>●</span>
+                <span>Google Calendar &amp; iCal Connected</span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                {calendarSyncActive ? 'Syncing...' : 'Real-time Auto-Adjustment Active'}
+              </span>
+            </div>
+
+            {/* Month Header */}
+            <div className="calendar-month-nav">
+              <div className="calendar-month-title">
+                <span>September 2026</span>
+                <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: 'rgba(0, 77, 64, 0.4)', color: '#80cbc4', border: '1px solid #00695c' }}>
+                  Fall Semester
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn-pill"
+                style={{ fontSize: '11px', padding: '4px 10px' }}
+                onClick={() => {
+                  setCalendarSyncActive(true)
+                  soundSynth.playSuccessBeep()
+                  showToast('Re-synced with Google Calendar & iCal!', '✨')
+                  setTimeout(() => setCalendarSyncActive(false), 800)
+                }}
+              >
+                <span>🔄</span>
+                <span>Sync Now</span>
+              </button>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="calendar-grid">
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                <div key={d} className="calendar-weekday">
+                  {d}
+                </div>
+              ))}
+              {/* Empty padding for Sun, Mon (Sep 1 2026 starts Tue) */}
+              <div className="calendar-cell empty" />
+              <div className="calendar-cell empty" />
+
+              {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
+                const isToday = day === 12
+                const isSelected = day === selectedCalDay
+                const hasStudy = [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 28, 29, 30].includes(day)
+                const hasExam = [15, 28].includes(day)
+
+                let cellClass = 'calendar-cell'
+                if (isToday) cellClass += ' today'
+                if (isSelected) cellClass += ' selected'
+
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    className={cellClass}
+                    onClick={() => {
+                      setSelectedCalDay(day)
+                      soundSynth.playHarmonicChime()
+                    }}
+                  >
+                    <span>{day}</span>
+                    {hasStudy && (
+                      <div className="calendar-dot-row">
+                        <span className="cal-dot study" />
+                        {hasExam && <span className="cal-dot exam" />}
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Selected Day Agenda Preview */}
+            <div className="calendar-day-preview">
+              <div className="calendar-day-preview-title">
+                <span>
+                  <strong>Sep {selectedCalDay}, 2026</strong> {selectedCalDay === 12 ? '· Today (Active)' : ''}
+                </span>
+                <span style={{ fontSize: '11px', color: '#80cbc4' }}>
+                  {selectedCalDay === 12 ? '4 Blocks Scheduled' : selectedCalDay === 15 ? '⚠️ Chemistry Midterm Exam' : '3 Blocks Scheduled'}
+                </span>
+              </div>
+
+              {selectedCalDay === 12 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {tasks.map((t) => (
+                    <div key={t.id} className="calendar-schedule-item">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{t.completed ? '✅' : '⏳'}</span>
+                        <span style={{ fontWeight: 600 }}>{t.title}</span>
+                      </div>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>{t.timeSlot}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : selectedCalDay === 15 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div className="calendar-schedule-item" style={{ borderLeft: '3px solid #f59e0b' }}>
+                    <div>
+                      <strong style={{ color: '#f59e0b' }}>Chemistry Midterm Exam</strong>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Hall B · Full Revision Due Sep 14</div>
+                    </div>
+                    <span style={{ color: '#f59e0b', fontWeight: 700 }}>11:00 AM</span>
+                  </div>
+                  <div className="calendar-schedule-item">
+                    <span>Python: Loop Optimization Workshop</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>2:00 PM</span>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div className="calendar-schedule-item">
+                    <span>Maths: Advanced Integration Review</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>10:00 AM</span>
+                  </div>
+                  <div className="calendar-schedule-item">
+                    <span>Chemistry: Organic Synthesis Practice</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>1:30 PM</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="modal-footer" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn-pill btn-primary"
+              onClick={() => {
+                setCalendarModalOpen(false)
+                setTimeout(() => {
+                  document.getElementById('schedule-panel')?.scrollIntoView({ behavior: 'smooth' })
+                }, 150)
+              }}
+            >
+              <span>📅</span>
+              <span>Jump to Today's Timeline</span>
+            </button>
+            <button type="button" className="btn-pill" onClick={() => setCalendarModalOpen(false)}>
+              Close
+            </button>
           </div>
         </div>
       </div>
