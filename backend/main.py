@@ -486,10 +486,15 @@ def generate_gpt_copilot_response(prompt: str, user_name: str = "Laksh", history
                     "role": "system",
                     "content": (
                         "You are Reviso AI, a world-class AI academic study copilot and mentor for students. "
-                        f"You are conversing with {user_name}. Answer questions clearly, accurately, and thoroughly, like ChatGPT. "
-                        "When explaining code or programming, provide clean markdown code blocks with clear comments. "
-                        "When explaining math, chemistry, or physics, provide step-by-step derivations and formulas. "
-                        "When giving study advice, provide structured, evidence-based methods (active recall, spaced repetition, DKT). "
+                        f"You are conversing with {user_name}. Answer questions clearly, accurately, and thoroughly, like ChatGPT.\n\n"
+                        "SPECIAL INSTRUCTION FOR STUDY PLANS & PREPARATION:\n"
+                        "When a student asks to help them plan their studies or prepare for any subject, exam, or topic (e.g., 'help me plan to study for chemistry', 'plan for python', 'how to study for calculus', 'how should I prepare for physics'):\n"
+                        "1. Structure the response into clear phases (Phase 1: Conceptual Foundation, Phase 2: Active Problem Solving & Derivations, Phase 3: Targeted Weak-Spot Remediation, Phase 4: Timed Mocks & Retention Consolidation).\n"
+                        "2. Provide EXACT Curated Resources to Use: Specific top textbooks/documentation, high-yield YouTube channels/courses (e.g. 3Blue1Brown, Khan Academy, FreeCodeCamp, Organic Chemistry Tutor, Professor Leonard, Corey Schafer, MIT OCW), interactive platforms (LeetCode, Brilliant, PhET Interactive Simulations, Desmos), and formula sheets/question banks.\n"
+                        "3. Detail EXACT Cognitive Methodologies on HOW to Study: Active Recall questioning, Spaced Repetition intervals (Days 1, 3, 7, 14), Feynman Technique checkpoints, Error Logbook analysis, and Pomodoro 25/5 study blocks.\n"
+                        "4. Outline a Daily/Weekly Time Distribution and suggest immediate actionable next steps in Reviso.\n\n"
+                        "When explaining code or programming, provide clean markdown code blocks with clear comments.\n"
+                        "When explaining math, chemistry, or physics, provide step-by-step derivations and formulas.\n"
                         "Use clean markdown with headers, bold highlights, and bullet points. Avoid emojis. Maintain an encouraging and authoritative tone."
                     ),
                 }
@@ -507,7 +512,7 @@ def generate_gpt_copilot_response(prompt: str, user_name: str = "Laksh", history
                 model=GROQ_MODEL,
                 messages=messages,
                 temperature=0.6,
-                max_tokens=1000,
+                max_tokens=1200,
             )
             reply = response.choices[0].message.content
             if reply and len(reply.strip()) > 0:
@@ -517,6 +522,146 @@ def generate_gpt_copilot_response(prompt: str, user_name: str = "Laksh", history
             print(f"[Chat AI] Groq API call note: {e}")
 
     # 2. Intelligent Multi-Domain Fallback Knowledge Engine
+    # Dedicated Study Plan & Preparation Generator
+    is_plan_request = any(k in lower_prompt for k in [
+        "plan", "study plan", "help me plan", "prepare for", "how to study",
+        "how should i study", "how do i study", "how to prepare", "study guide for",
+        "strategy for", "roadmap for", "schedule to study"
+    ])
+
+    if is_plan_request:
+        if any(k in lower_prompt for k in ["chem", "chemistry", "organic", "electrochemistry"]):
+            return (
+                f"### Comprehensive Chemistry Study Plan for {user_name}\n\n"
+                "Here is your structured preparation roadmap with curated resources and proven cognitive study techniques.\n\n"
+                "#### 1. Phase-by-Phase Preparation Roadmap\n"
+                "- **Phase 1: Conceptual Foundations (Days 1–3):** Atomic structure, periodic trends, chemical bonding, and fundamental laws of thermodynamics.\n"
+                "- **Phase 2: Numerical Derivations & Reaction Mechanisms (Days 4–7):** Nernst equation calculations, equilibrium constants ($K_{eq}$), reaction kinetics, and organic electron-pushing mechanisms.\n"
+                "- **Phase 3: Active Recall Drills & Weakness Remediation (Days 8–10):** Diagnostic drills on weak subtopics (e.g., redox balancing, $S_N1$ vs $S_N2$) using Reviso's DKT tracker.\n"
+                "- **Phase 4: Timed Past Papers & Formula Consolidation (Days 11–14):** Full-length timed mock exams under exam conditions with error analysis.\n\n"
+                "#### 2. Exact Resources to Use\n"
+                "- **Textbooks & Core References:** *Chemistry: The Central Science* (Brown/LeMay), *Organic Chemistry* (Morrison & Boyd / Wade), *OpenStax Chemistry* (Free online).\n"
+                "- **Video Lectures & Channels:** *The Organic Chemistry Tutor* (step-by-step problem sets), *Tyler DeWitt* (crystal-clear concept visualizations), *Khan Academy Chemistry*, *MIT OpenCourseWare 5.111*.\n"
+                "- **Interactive Simulators:** *PhET Interactive Simulations* (Atomic Interactions, Balancing Chemical Equations, Acid-Base Solutions), *MolView* (3D molecular modeling).\n"
+                "- **Practice & Question Banks:** *LibreTexts Chemistry Question Banks*, *ACS Chemistry Olympiad & Exam Past Papers*, *Reviso Chemistry Concept Quiz Bank*.\n\n"
+                "#### 3. Evidence-Based Methodologies: How to Study\n"
+                "- **Active Recall Over Re-reading:** Never read passive notes. Convert every textbook section into 3 retrieval questions and answer them from memory.\n"
+                "- **Spaced Repetition Schedule:** Revisit challenging reaction mechanisms on **Day 1, Day 3, Day 7, and Day 14** to prevent retention decay.\n"
+                "- **Feynman Explanation Technique:** Explain tricky concepts (e.g., Le Chatelier's Principle or Gibb's Free Energy) in simple, non-technical terms to verify full comprehension.\n"
+                "- **Mistake Notebook:** Maintain a dedicated log for every problem you miss, classifying errors into *Conceptual Gap*, *Formula Slip*, or *Calculation Error*.\n"
+                "- **Pomodoro Timeboxing:** Work in focused 25-minute sprints followed by a 5-minute break. Spend the first 5 minutes of each session recalling key formulas.\n\n"
+                "#### 4. Daily Study Schedule (Recommended 2–3 Hours)\n"
+                "- **Block 1 (45m):** High-focus concept learning via video + textbook notes.\n"
+                "- **Block 2 (45m):** Active numerical practice & mechanism drawing without looking at solutions.\n"
+                "- **Block 3 (30m):** Reviso adaptive diagnostic drill + updating your Mistake Notebook.\n\n"
+                "**Immediate Next Step:** Would you like me to slot a 30-minute Chemistry Review into your schedule or launch a 5-question baseline drill?"
+            )
+
+        if any(k in lower_prompt for k in ["python", "code", "coding", "programming", "dsa", "data structure", "algorithm"]):
+            return (
+                f"### Complete Python & Programming Mastery Plan for {user_name}\n\n"
+                "Here is your step-by-step technical roadmap, authoritative learning resources, and software engineering study methodology.\n\n"
+                "#### 1. Phase-by-Phase Preparation Roadmap\n"
+                "- **Phase 1: Syntax & Core Constructs (Days 1–3):** Variables, list comprehensions, dictionaries, nested loops, functions, lambda expressions, and file I/O.\n"
+                "- **Phase 2: Object-Oriented & Algorithmic Foundations (Days 4–7):** Classes, inheritance, recursion, Big-O time/space complexity analysis, and debugging techniques.\n"
+                "- **Phase 3: Core Data Structures & Pattern Drills (Days 8–12):** Two-pointer techniques, sliding window, binary search, stacks, queues, hash maps, and tree traversals.\n"
+                "- **Phase 4: Practical Projects & Mock Technical Interviews (Days 13–16):** Building modular CLI / API tools, writing unit tests, and solving timed algorithmic challenges.\n\n"
+                "#### 2. Exact Resources to Use\n"
+                "- **Documentation & Textbooks:** *Official Python Documentation (docs.python.org)*, *Automate the Boring Stuff with Python* by Al Sweigart, *Grokking Algorithms* by Aditya Bhargava.\n"
+                "- **Video Courses & Channels:** *Corey Schafer (Python OOP & Deep Dives)*, *NeetCode (Data Structures & Algorithm Patterns)*, *FreeCodeCamp (Python 4-Hour Course)*, *ArjanCodes (Clean Architecture)*.\n"
+                "- **Interactive Platforms:** *LeetCode (Blind 75 & NeetCode 150)*, *PythonTutor.com (Visual Code Execution & Call Stacks)*, *Exercism.org (Mentored Python Track)*.\n"
+                "- **Cheat Sheets:** *QuickRef Python 3 Cheatsheet*, *Big-O Cheat Sheet (bigocheatsheet.com)*.\n\n"
+                "#### 3. How to Study: Proven Engineering Practice\n"
+                "- **The 'Blank Editor' Rule:** Never copy-paste. Type every single algorithm from scratch in an empty editor without autocomplete assistance.\n"
+                "- **Dry-Run on Paper:** Trace recursive function calls, stack frames, and index pointers manually on paper before running code.\n"
+                "- **Build Small Modular Projects:** Reinforce theory by building working scripts (e.g., web scrapers, automated task schedulers, REST API endpoints).\n"
+                "- **Spaced Code Retrieval:** Re-solve algorithms you found difficult after 2 days and 7 days without looking at your previous solution.\n"
+                "- **Error Logbook:** Document edge cases you missed (e.g., off-by-one errors, empty input lists, integer division anomalies).\n\n"
+                "#### 4. Daily Time Allocation Strategy (2 Hours/Day)\n"
+                "- **30 mins:** Concept & Architecture Deep-Dive (Reading docs or tutorial).\n"
+                "- **60 mins:** Hands-on Implementation (Writing 2–3 algorithmic problems or building features).\n"
+                "- **30 mins:** Code Review, Edge Case Testing & Reviso concept quiz.\n\n"
+                "**Immediate Next Step:** Would you like to launch a quick 3-question Python diagnostic drill right now?"
+            )
+
+        if any(k in lower_prompt for k in ["math", "calculus", "algebra", "linear algebra", "geometry", "trigonometry", "statistics"]):
+            return (
+                f"### High-Performance Mathematics Study Plan for {user_name}\n\n"
+                "Here is your structured mathematical study roadmap, curated learning resources, and problem-solving methodology.\n\n"
+                "#### 1. Phase-by-Phase Preparation Roadmap\n"
+                "- **Phase 1: Intuitive Conceptual Visualization (Days 1–3):** Geometric interpretations of limits, derivatives, integrals, and vector spaces.\n"
+                "- **Phase 2: Fundamental Proofs & Formula Derivations (Days 4–7):** Deriving core rules from first principles (Power Rule, Chain Rule, Quadratic Formula, Eigenvalues).\n"
+                "- **Phase 3: Graduated Problem Solving (Days 8–11):** Tiered problem sets progressing from foundational mechanics to challenging multi-step boundary problems.\n"
+                "- **Phase 4: Speed & Timed Exam Drills (Days 12–15):** Solving past exam papers under timed, formula-sheet-free conditions with error categorization.\n\n"
+                "#### 2. Exact Resources to Use\n"
+                "- **Textbooks & Lecture Notes:** *Thomas' Calculus* / *Stewart Calculus*, *Introduction to Linear Algebra* by Gilbert Strang, *Paul's Online Math Notes (tutorial.math.lamar.edu)*.\n"
+                "- **Video Series & Channels:** *3Blue1Brown (Essence of Calculus / Essence of Linear Algebra)*, *Professor Leonard (Full College Calculus Playlists)*, *BlackPenRedPen*, *Khan Academy Math*.\n"
+                "- **Interactive Calculators:** *Desmos Graphing Calculator*, *GeoGebra 3D Geometry*, *Wolfram Alpha (for verifying step-by-step derivations)*.\n"
+                "- **Question Banks:** *MIT OpenCourseWare 18.01/18.02 Problem Sets*, *Art of Problem Solving (AoPS)*, *Reviso Adaptive Math Drills*.\n\n"
+                "#### 3. How to Study: Cognitive Math Protocols\n"
+                "- **70/30 Practice-to-Theory Ratio:** Spend 30% of your time understanding concepts and 70% actively solving problems with pencil and paper.\n"
+                "- **Derive, Don't Memorize:** If you forget a formula, practice re-deriving it. Derivation builds lasting synaptic connections.\n"
+                "- **Error Tagging:** Tag missed problems as: (1) Conceptual Gap, (2) Arithmetic/Sign Slip, or (3) Misread Question. Review the error notebook before each study block.\n"
+                "- **Spaced Recall Drills:** Re-attempt hard problems 3 days later to ensure procedural fluency.\n"
+                "- **Timeboxed Problem Sprints:** Train yourself to recognize problem patterns within 60 seconds by practicing flashcard problem setups.\n\n"
+                "#### 4. Daily Math Study Framework (90–120 mins)\n"
+                "- **20 mins:** Review theory, definitions, and derive 1 core formula.\n"
+                "- **60 mins:** Active problem solving (10–15 varied difficulty questions).\n"
+                "- **20 mins:** Self-grading, error log entry, and formula recap.\n\n"
+                "**Immediate Next Step:** Would you like to slot a 25-minute Math focus session into your schedule or review your current retention level?"
+            )
+
+        if any(k in lower_prompt for k in ["physics", "mechanics", "kinematics", "optics", "thermodynamics", "electromagnetism"]):
+            return (
+                f"### Strategic Physics Preparation Plan for {user_name}\n\n"
+                "Here is your complete physics roadmap, top textbooks and video resources, and problem-solving framework.\n\n"
+                "#### 1. Phase-by-Phase Preparation Roadmap\n"
+                "- **Phase 1: Physical Principles & Free Body Diagrams (Days 1–3):** Newton's laws, conservation of energy/momentum, and vector decomposition.\n"
+                "- **Phase 2: Multi-Body Systems & Field Equations (Days 4–7):** Rotational mechanics, electromagnetic induction, Snell's law, and thermodynamics.\n"
+                "- **Phase 3: Mixed Conceptual Drills (Days 8–11):** Non-standard multi-concept problems combining kinematics with work-energy and calculus.\n"
+                "- **Phase 4: Timed Past Exam Papers (Days 12–15):** Complete timed practice tests with strict adherence to dimensional analysis checks.\n\n"
+                "#### 2. Exact Resources to Use\n"
+                "- **Textbooks & References:** *Fundamentals of Physics* by Halliday, Resnick & Walker, *University Physics* by Young and Freedman, *The Feynman Lectures on Physics*.\n"
+                "- **Video Channels & Lectures:** *Walter Lewin Lectures (For the Love of Physics)*, *Flipping Physics*, *Michel van Biezen (iLectureOnline)*, *Khan Academy Physics*.\n"
+                "- **Interactive Simulators:** *PhET Physics Simulations* (Forces & Motion, Circuit Construction Kit, Wave Interference, Geometric Optics).\n"
+                "- **Problem Banks:** *AP Physics / JEE Advanced Past Papers*, *MIT 8.01 Problem Sets*, *HyperPhysics (Georgia State University)*.\n\n"
+                "#### 3. How to Study: The Physics Problem-Solving Framework\n"
+                "- **Always Draw a Free Body / System Diagram:** Never start writing equations without a clearly labeled diagram with coordinate axes.\n"
+                "- **Symbolic Solving First:** Solve the problem algebraically in terms of variables ($m, v, \theta, g$) before plugging in numbers.\n"
+                "- **Dimensional Analysis Check:** Verify that units on both sides of your final formula match before computing numeric answers.\n"
+                "- **Boundary / Limiting Case Analysis:** Test extreme values (e.g. $\theta = 0^\circ$ or $m \to \infty$) to check if your equation behaves physically as expected.\n"
+                "- **Error Logbook:** Track misapplied friction directions, sign conventions, or missed forces in your review log.\n\n"
+                "**Immediate Next Step:** Would you like me to schedule a 30-minute Physics focus session or test your upcoming physics deadlines?"
+            )
+
+        # General Study Plan Fallback
+        topic_title = clean_prompt.replace("help me plan to study for", "").replace("plan to study for", "").replace("how to study for", "").replace("help me plan for", "").strip() or "Your Target Subject"
+        return (
+            f"### Comprehensive Study Plan & Resource Guide: {topic_title.title()}\n\n"
+            f"Here is your personalized academic roadmap for **{topic_title.title()}**, including top curated resources and proven cognitive study techniques.\n\n"
+            "#### 1. Phase-by-Phase Preparation Roadmap\n"
+            "- **Phase 1: Conceptual Foundations (Days 1–3):** Build core mental models, key terminology, and fundamental principles.\n"
+            "- **Phase 2: Active Problem Solving & Derivations (Days 4–7):** Practice standard problems, write summary sheets, and connect underlying concepts.\n"
+            "- **Phase 3: Targeted Weakness Drills (Days 8–10):** Take diagnostic quizzes to pinpoint Lagging concepts and reinforce them via active retrieval.\n"
+            "- **Phase 4: Timed Mock Exams & Final Review (Days 11–14):** Simulate full exam conditions with strict timing and comprehensive mistake analysis.\n\n"
+            "#### 2. Exact Resources to Use\n"
+            "- **Authoritative Textbooks:** Standard university/school curriculum textbooks or OpenStax free open textbooks.\n"
+            "- **High-Yield Video Series:** *Khan Academy*, *MIT OpenCourseWare*, *CrashCourse*, and topic-specific masterclass YouTube playlists.\n"
+            "- **Interactive Platforms:** *Brilliant.org*, *PhET Interactive Simulations*, and subject flashcard decks (Anki).\n"
+            "- **Practice Problem Banks:** Previous year examination papers, textbook end-of-chapter problems, and Reviso adaptive drills.\n\n"
+            "#### 3. Evidence-Based Methodologies: How to Study\n"
+            "- **Active Recall:** Close your notes and write out everything you remember from memory before checking the answer.\n"
+            "- **Spaced Repetition:** Review each concept on Day 1, Day 3, Day 7, and Day 14 to flatten the forgetting curve.\n"
+            "- **Feynman Technique:** Teach the concept out loud in plain language to identify gaps in your understanding.\n"
+            "- **Mistake Notebook:** Record every error and write out why the correct answer is right and why your initial reasoning failed.\n"
+            "- **Pomodoro Timeboxing:** 25-minute high-focus work intervals with zero distractions, followed by a 5-minute cognitive reset.\n\n"
+            "#### 4. Daily Schedule Allocation\n"
+            "- **25m Focus Block:** Core theory & key insights.\n"
+            "- **50m Focus Block:** Active problem solving & application.\n"
+            "- **20m Review Block:** Flashcard recall, quiz drill, and error logging.\n\n"
+            "**Immediate Next Step:** Would you like to slot a 25-minute focus session into your schedule right now?"
+        )
+
     # A. Python & Programming
     if any(k in lower_prompt for k in ["recursion", "recursive"]):
         return (
