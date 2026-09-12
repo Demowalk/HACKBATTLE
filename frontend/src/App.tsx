@@ -3457,9 +3457,31 @@ export default function App() {
               : `Doing a quick 15-minute review today will reinforce your recall strength across all topics!`),
           'bot'
         )
-      } else {
+      } else if (lower.includes('loop') || lower.includes('comprehension')) {
         addChatMessage(
-          `Got it, Laksh! Noted: "<em>${text}</em>". I'm keeping your schedule smooth, balanced, and stress-free.`,
+          `<strong>Python Nested Loops & Comprehensions:</strong><br>` +
+            `In expressions like <code>[[j for j in range(2)] for i in range(2)]</code>, the inner loop runs to completion for every outer step, evaluating to <code>[[0, 1], [0, 1]]</code>.<br><br>` +
+            `Ready to practice? Click <strong>"Take Booster Drill"</strong> in Concept Mastery to test your recall!`,
+          'bot'
+        )
+      } else if (lower.includes('pomodoro') || lower.includes('timer') || lower.includes('focus')) {
+        openPomodoroModal('Autonomous Study Session')
+        addChatMessage('Started your 25-minute Pomodoro focus timer!', 'bot')
+      } else if (lower.includes('help') || lower.includes('what can you do') || lower.includes('capabilities')) {
+        addChatMessage(
+          `<strong>Reviso Study Copilot Capabilities:</strong><br>` +
+            `• <strong>"help with loops"</strong> — Concept summary & syntax breakdown<br>` +
+            `• <strong>"start quiz"</strong> — Launch interactive adaptive knowledge drill<br>` +
+            `• <strong>"schedule review"</strong> — Auto-slot review sessions into free calendar gaps<br>` +
+            `• <strong>"focus timer"</strong> — Start a 25-minute Pomodoro sprint<br>` +
+            `• <strong>"memory retention"</strong> — DKT spaced repetition snapshot<br>` +
+            `• <strong>"test alarm"</strong> — Auditory study test alert check`,
+          'bot'
+        )
+      } else {
+        const studentName = userName ? userName.split(' ')[0] : 'there'
+        addChatMessage(
+          `Got it, ${studentName}! Noted: "<em>${text}</em>". I'm keeping your schedule smooth, balanced, and stress-free.`,
           'bot'
         )
       }
@@ -4560,12 +4582,15 @@ export default function App() {
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') sendChat()
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  sendChat()
+                }
               }}
             />
             <button
               type="button"
-              className="chat-send-btn"
+              className={`chat-send-btn ${!chatInput.trim() ? 'disabled' : ''}`}
               disabled={!chatInput.trim()}
               onClick={sendChat}
               title="Send message (Enter)"

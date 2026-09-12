@@ -1983,13 +1983,15 @@ html[data-theme="light"] .btn-alarm-bell.active:hover svg {
   box-shadow: 0 1px 6px rgba(0, 77, 64, 0.3);
 }
 
-.chat-send-btn:disabled {
+.chat-send-btn:disabled,
+.chat-send-btn.disabled {
   opacity: 0.35;
   cursor: not-allowed;
   box-shadow: none;
   background: var(--bg-surface-elevated);
   border-color: var(--border-subtle);
   color: var(--text-tertiary);
+  transform: none;
 }
 
 .chat-send-icon {
