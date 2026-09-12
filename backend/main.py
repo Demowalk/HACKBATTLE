@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import random
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
@@ -652,6 +653,274 @@ def generate_plan(
 
     return {"tasks": tasks}
 
+# ---------------------------------------------------------------------------
+# Curated Question Bank (Zero-API Randomized Pool for Adaptive Testing)
+# ---------------------------------------------------------------------------
+CURATED_QUESTION_BANK = {
+    "python": [
+        {
+            "question": "What is the evaluated result of the following Python expression?<br><pre style='background:rgba(0,0,0,0.3); padding:8px; border-radius:6px; font-family:monospace;'>[x * 2 for x in range(4) if x % 2 == 1]</pre>",
+            "options": ["[0, 2, 4, 6]", "[2, 6]", "[1, 3]", "[4, 8]"],
+            "correct_answer": "[2, 6]",
+            "explanation": "range(4) produces [0, 1, 2, 3]. The condition `if x % 2 == 1` filters odd numbers: 1 and 3. Then `x * 2` yields [2, 6]."
+        },
+        {
+            "question": "What does <code>dict.get('key', 'default')</code> return if <code>'key'</code> is NOT present in the dictionary?",
+            "options": ["KeyError", "None", "'default'", "False"],
+            "correct_answer": "'default'",
+            "explanation": "The .get() method safely retrieves the value for a key, returning the provided fallback value ('default') rather than raising a KeyError."
+        },
+        {
+            "question": "What happens when using a mutable default argument like <code>def append_val(val, target=[])</code> in Python?",
+            "options": [
+                "A new empty list is created on every function call",
+                "The same list instance is shared across all function calls",
+                "Python raises a SyntaxError at function definition time",
+                "The list automatically clears itself after the function finishes"
+            ],
+            "correct_answer": "The same list instance is shared across all function calls",
+            "explanation": "Default parameter values are evaluated once when the function is defined, meaning mutable containers persist state across subsequent invocations."
+        },
+        {
+            "question": "What is the output of slicing string <code>s = 'REVISO'[::-1]</code>?",
+            "options": ["'OSIVER'", "'REVISO'", "'OSIVER' in lowercase", "'R'"],
+            "correct_answer": "'OSIVER'",
+            "explanation": "A step parameter of -1 reverses the sequence from end to beginning."
+        },
+        {
+            "question": "Which comprehension construct creates a lazy generator expression in memory?",
+            "options": [
+                "[x**2 for x in range(100)]",
+                "(x**2 for x in range(100))",
+                "{x**2 for x in range(100)}",
+                "{x: x**2 for x in range(100)}"
+            ],
+            "correct_answer": "(x**2 for x in range(100))",
+            "explanation": "Parentheses around a comprehension define a generator expression, yielding items one by one on demand rather than allocating the whole list."
+        },
+        {
+            "question": "What will <code>print(type(lambda x: x + 1))</code> display in Python 3?",
+            "options": ["<class 'function'>", "<class 'lambda'>", "<class 'method'>", "<class 'closure'>"],
+            "correct_answer": "<class 'function'>",
+            "explanation": "Lambda expressions create anonymous function objects, which are instances of the standard function type."
+        },
+        {
+            "question": "What is the key difference between <code>==</code> and <code>is</code> in Python?",
+            "options": [
+                "`==` compares values for equality, while `is` compares object identity in memory",
+                "`==` checks memory addresses, while `is` checks value equivalence",
+                "`is` is only for numerical primitives, `==` is for strings and lists",
+                "There is no difference; they are exact aliases"
+            ],
+            "correct_answer": "`==` compares values for equality, while `is` compares object identity in memory",
+            "explanation": "`==` checks if values are equal (invoking __eq__), while `is` checks whether two variables refer to the exact same object (`id(a) == id(b)`)."
+        },
+        {
+            "question": "What does the set operation <code>set_a ^ set_b</code> compute?",
+            "options": [
+                "Intersection of both sets",
+                "Union of both sets",
+                "Symmetric difference (elements in either set, but not both)",
+                "Cartesian product"
+            ],
+            "correct_answer": "Symmetric difference (elements in either set, but not both)",
+            "explanation": "The caret (^) computes symmetric difference—elements present in either set A or set B, but not in both."
+        },
+        {
+            "question": "In Python, what is the boolean evaluation of <code>bool([])</code> and <code>bool([0])</code>?",
+            "options": [
+                "False and False",
+                "False and True",
+                "True and False",
+                "True and True"
+            ],
+            "correct_answer": "False and True",
+            "explanation": "Empty collections evaluate to False in boolean contexts (`bool([]) == False`), while any non-empty list—even containing 0—evaluates to True."
+        }
+    ],
+    "maths": [
+        {
+            "question": "What are the roots of the quadratic equation: <br><strong style='font-size:16px; display:block; margin-top:6px;'>2x² - 7x + 3 = 0</strong>",
+            "options": ["x = 3 and x = 1/2", "x = -3 and x = -1/2", "x = 2 and x = 3", "x = 7 and x = 3"],
+            "correct_answer": "x = 3 and x = 1/2",
+            "explanation": "Factoring: (2x - 1)(x - 3) = 0. Roots are x = 1/2 and x = 3."
+        },
+        {
+            "question": "What is the first derivative of <code>f(x) = x³ · e^x</code>?",
+            "options": [
+                "3x² · e^x",
+                "x³ · e^x",
+                "e^x · (x³ + 3x²)",
+                "3x² · e^(x-1)"
+            ],
+            "correct_answer": "e^x · (x³ + 3x²)",
+            "explanation": "Applying product rule (u·v)' = u'v + uv': (3x²)(e^x) + (x³)(e^x) = e^x(x³ + 3x²)."
+        },
+        {
+            "question": "Evaluate the definite integral: <br><strong style='font-size:16px; display:block; margin-top:6px;'>∫₀² (3x² - 2x + 1) dx</strong>",
+            "options": ["6", "8", "4", "10"],
+            "correct_answer": "6",
+            "explanation": "Antiderivative is F(x) = x³ - x² + x. Evaluated at 2: 8 - 4 + 2 = 6. Evaluated at 0: 0. Difference is 6."
+        },
+        {
+            "question": "What is the determinant of the 2×2 matrix: <br><pre style='background:rgba(0,0,0,0.3); padding:8px; border-radius:6px; font-family:monospace;'>[ 4  2 ]\n[ 3  5 ]</pre>",
+            "options": ["14", "26", "20", "6"],
+            "correct_answer": "14",
+            "explanation": "det(A) = (4 · 5) - (2 · 3) = 20 - 6 = 14."
+        },
+        {
+            "question": "When rolling two fair six-sided dice, what is the probability of the sum being 7?",
+            "options": ["1/6", "1/12", "7/36", "5/36"],
+            "correct_answer": "1/6",
+            "explanation": "There are 36 total outcomes. The pairs summing to 7 are (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) — 6 outcomes. 6/36 = 1/6."
+        },
+        {
+            "question": "What is the value of the trigonometric limit: <br><strong style='font-size:16px; display:block; margin-top:6px;'>lim (x → 0) [ sin(3x) / x ]</strong>",
+            "options": ["3", "1", "0", "Undefined"],
+            "correct_answer": "3",
+            "explanation": "Using lim (u → 0) sin(u)/u = 1: lim [sin(3x)/x] = 3 · lim [sin(3x)/(3x)] = 3 · 1 = 3."
+        },
+        {
+            "question": "What is the Euclidean magnitude of vector <code>v = 3i - 4j + 12k</code>?",
+            "options": ["13", "19", "11", "√153"],
+            "correct_answer": "13",
+            "explanation": "|v| = √(3² + (-4)² + 12²) = √(9 + 16 + 144) = √169 = 13."
+        },
+        {
+            "question": "Solve for x in: <br><strong style='font-size:16px; display:block; margin-top:6px;'>log₂(x) + log₂(x - 2) = 3</strong>",
+            "options": ["x = 4", "x = -2", "x = 4 and x = -2", "x = 8"],
+            "correct_answer": "x = 4",
+            "explanation": "log₂(x(x - 2)) = 3 → x² - 2x = 8 → x² - 2x - 8 = 0 → (x - 4)(x + 2) = 0. Since log requires positive argument, x = 4."
+        }
+    ],
+    "chemistry": [
+        {
+            "question": "Which mechanism describes the addition of HBr to an asymmetrical alkene following Markovnikov's rule?",
+            "options": [
+                "Electrophilic Addition via carbocation intermediate",
+                "Nucleophilic Substitution (SN2)",
+                "Free Radical Halogenation",
+                "Elimination (E1)"
+            ],
+            "correct_answer": "Electrophilic Addition via carbocation intermediate",
+            "explanation": "Electrophiles (H+) attack the π-bond to form the more stable tertiary or secondary carbocation, followed by halide attack."
+        },
+        {
+            "question": "What is the hybridization state of the carbon atoms in ethyne (HC≡CH)?",
+            "options": ["sp", "sp²", "sp³", "sp³d"],
+            "correct_answer": "sp",
+            "explanation": "Each carbon forms two σ-bonds (one to H, one to C) and two π-bonds, yielding linear geometry with sp hybridization."
+        },
+        {
+            "question": "What is the oxidation state of Chromium (Cr) in the dichromate ion (Cr₂O₇²⁻)?",
+            "options": ["+6", "+3", "+7", "+4"],
+            "correct_answer": "+6",
+            "explanation": "7 oxygens contribute -14. With net charge -2: 2(Cr) - 14 = -2 → 2(Cr) = +12 → Cr = +6."
+        },
+        {
+            "question": "What is the pH of a 0.001 M HCl solution at 25°C?",
+            "options": ["3.0", "1.0", "4.0", "11.0"],
+            "correct_answer": "3.0",
+            "explanation": "HCl is a strong acid completely dissociating: [H+] = 10⁻³ M. pH = -log₁₀(10⁻³) = 3.0."
+        },
+        {
+            "question": "According to Le Chatelier's principle, what happens to <code>N₂(g) + 3H₂(g) ⇌ 2NH₃(g)</code> when system pressure is increased?",
+            "options": [
+                "Shifts toward products (fewer moles of gas)",
+                "Shifts toward reactants (more moles of gas)",
+                "No change occurs in equilibrium position",
+                "Equilibrium constant K increases"
+            ],
+            "correct_answer": "Shifts toward products (fewer moles of gas)",
+            "explanation": "4 moles of gaseous reactants produce 2 moles of product. Higher pressure favors the side with fewer gas molecules."
+        },
+        {
+            "question": "Which dominant intermolecular force accounts for water's unusually high boiling point compared to H₂S?",
+            "options": ["Hydrogen bonding", "London dispersion forces", "Ion-dipole forces", "Covalent network bonding"],
+            "correct_answer": "Hydrogen bonding",
+            "explanation": "Strong hydrogen bonding between highly electronegative oxygen atoms and hydrogen atoms requires high energy to vaporize."
+        },
+        {
+            "question": "What is the organic product formed when reducing an aldehyde with sodium borohydride (NaBH₄)?",
+            "options": ["Primary alcohol", "Secondary alcohol", "Carboxylic acid", "Ketone"],
+            "correct_answer": "Primary alcohol",
+            "explanation": "NaBH₄ provides hydride (H⁻) ions to reduce the aldehyde carbonyl group into a primary alcohol (R-CH₂OH)."
+        }
+    ],
+    "ai systems": [
+        {
+            "question": "What is the primary role of the Softmax activation function in the output layer of a classifier?",
+            "options": [
+                "Converts raw logits into a valid probability distribution summing to 1.0",
+                "Prevents vanishing gradients in deep recurrent layers",
+                "Performs feature dimensionality reduction like PCA",
+                "Clips gradient vectors to avoid exploding gradients"
+            ],
+            "correct_answer": "Converts raw logits into a valid probability distribution summing to 1.0",
+            "explanation": "Softmax exponentiates logits and normalizes them so all outputs lie in [0, 1] and sum exactly to 1.0."
+        },
+        {
+            "question": "What is the theoretical time complexity of standard self-attention with sequence length N in a Transformer?",
+            "options": ["O(N²)", "O(N log N)", "O(N)", "O(N³)"],
+            "correct_answer": "O(N²)",
+            "explanation": "The QKᵀ attention matrix calculation computes inner products between all N query and N key vectors, scaling quadratically O(N²)."
+        },
+        {
+            "question": "Why does L1 regularization (Lasso) encourage sparse weights compared to L2 regularization (Ridge)?",
+            "options": [
+                "Its diamond-shaped constraint has sharp corners on parameter axes, driving weights to exact zeros",
+                "L1 penalizes large weights quadratically while ignoring small weights",
+                "L1 uses matrix inversion instead of gradient descent",
+                "L1 only applies to bias terms, leaving weights unregularized"
+            ],
+            "correct_answer": "Its diamond-shaped constraint has sharp corners on parameter axes, driving weights to exact zeros",
+            "explanation": "The L1 penalty |w| has a constant slope that pushes parameters directly to zero at coordinate axes, producing sparse solutions."
+        },
+        {
+            "question": "What is the primary purpose of Dropout during neural network training?",
+            "options": [
+                "Prevent co-adaptation of neurons and reduce overfitting",
+                "Speed up matrix multiplication during inference",
+                "Normalize batch activations to zero mean",
+                "Enforce orthogonal weights across layers"
+            ],
+            "correct_answer": "Prevent co-adaptation of neurons and reduce overfitting",
+            "explanation": "Dropout randomly deactivates neurons during training, preventing complex co-adaptations and promoting redundant, generalizable features."
+        },
+        {
+            "question": "In Deep Knowledge Tracing (DKT), how is student knowledge state modeled over time?",
+            "options": [
+                "A Recurrent Neural Network (LSTM/GRU) updates hidden state vectors as answers are submitted",
+                "A static decision tree assigns fixed mastery levels once at registration",
+                "A linear regression model computes average completion time only",
+                "A k-means clustering model groups students once a month"
+            ],
+            "correct_answer": "A Recurrent Neural Network (LSTM/GRU) updates hidden state vectors as answers are submitted",
+            "explanation": "DKT uses RNN architectures to track the student's evolving latent knowledge state from the temporal sequence of exercises."
+        }
+    ]
+}
+
+def get_curated_questions(subject: str, topic: str = "", count: int = 3) -> List[Dict[str, Any]]:
+    """Sample count distinct randomized questions from the curated bank for the subject."""
+    sub = (subject or "").lower().strip()
+    top = (topic or "").lower().strip()
+
+    if "math" in sub or "calc" in sub or "algebra" in sub or "math" in top:
+        key = "maths"
+    elif "chem" in sub or "organic" in sub or "chem" in top:
+        key = "chemistry"
+    elif "ai" in sub or "cs" in sub or "computer" in sub or "ml" in sub or "ai" in top:
+        key = "ai systems"
+    else:
+        key = "python"
+
+    pool = CURATED_QUESTION_BANK.get(key, CURATED_QUESTION_BANK["python"])
+    sample_size = max(1, min(count, len(pool)))
+    sampled = random.sample(pool, sample_size)
+    return [dict(q) for q in sampled]
+
+
 quiz_questions = []
 
 @app.post("/generate-quiz")
@@ -659,21 +928,28 @@ def generate_quiz(
     request: GenerateQuizRequest,
     db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
 ):
-    if not client:
-        return {"error": "GROQ_API_KEY is not configured in environment or .env file."}
+    requested_count = max(1, min(request.count or 3, 10))
+    ai_questions = []
 
-    prompt = build_quiz_prompt(request.subject, request.topic, request.difficulty, request.count)
+    # 1. If Groq client is configured, attempt AI generation
+    if client:
+        prompt = build_quiz_prompt(request.subject, request.topic, request.difficulty, requested_count)
+        try:
+            response = client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            ai_reply = response.choices[0].message.content
+            ai_questions = parse_json_response(ai_reply)
+        except Exception as e:
+            print(f"[QuizGen] Groq generation notice: {e}. Falling back to curated bank.")
+            ai_questions = []
 
-    try:
-        response = client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        ai_reply = response.choices[0].message.content
-        ai_questions = parse_json_response(ai_reply)
-    except Exception as e:
-        return {"error": "Failed to generate quiz. Please try again.", "details": str(e)}
+    # 2. Fallback to randomized curated question bank if no client or AI failed/empty
+    if not ai_questions:
+        ai_questions = get_curated_questions(request.subject, request.topic, requested_count)
 
+    # 3. Database persistence path
     if DATABASE_AVAILABLE and db:
         quiz_in = schemas.QuizCreate(
             subject=request.subject,
@@ -685,6 +961,7 @@ def generate_quiz(
                     question_text=q["question"],
                     options=q["options"],
                     correct_answer=q["correct_answer"],
+                    explanation=q.get("explanation", ""),
                 )
                 for q in ai_questions
             ],
@@ -692,6 +969,9 @@ def generate_quiz(
         db_quiz = crud.create_quiz_with_questions(db, quiz_in)
         return {
             "quiz_id": db_quiz.id,
+            "subject": db_quiz.subject,
+            "topic": db_quiz.topic,
+            "difficulty": db_quiz.difficulty,
             "questions": [
                 {
                     "id": q.id,
@@ -699,11 +979,14 @@ def generate_quiz(
                     "topic": db_quiz.topic,
                     "question": q.question_text,
                     "options": q.options,
+                    "correct_answer": q.correct_answer,
+                    "explanation": q.explanation or "",
                 }
                 for q in db_quiz.questions
             ],
         }
 
+    # 4. In-memory fallback path
     global quiz_questions
     quiz_questions = []
     next_id = 1
@@ -714,22 +997,19 @@ def generate_quiz(
             "topic": request.topic,
             "question": ai_question["question"],
             "options": ai_question["options"],
-            "correct_answer": ai_question["correct_answer"]
+            "correct_answer": ai_question["correct_answer"],
+            "explanation": ai_question.get("explanation", ""),
         }
         quiz_questions.append(new_question)
         next_id += 1
 
-    frontend_questions = []
-    for q in quiz_questions:
-        frontend_questions.append({
-            "id": q["id"],
-            "subject": q["subject"],
-            "topic": q["topic"],
-            "question": q["question"],
-            "options": q["options"]
-        })
-
-    return {"questions": frontend_questions}
+    return {
+        "quiz_id": None,
+        "subject": request.subject,
+        "topic": request.topic,
+        "difficulty": request.difficulty,
+        "questions": quiz_questions,
+    }
 
 @app.post("/quiz/answer")
 def check_quiz_answers(

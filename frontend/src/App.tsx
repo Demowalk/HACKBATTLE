@@ -11,6 +11,9 @@ import {
   fetchChatHistory,
   sendChatMessage,
   recordStudySession,
+  fetchGeneratedQuiz,
+  submitQuizAnswers,
+  type QuizQuestionItem,
 } from './services/api'
 
 // ============================================================================
@@ -228,54 +231,173 @@ function RevisoLogo({ size = 38 }: { size?: number }) {
 // ============================================================================
 // QUIZ QUESTION DATA FOR CONCEPT MASTERY
 // ============================================================================
-interface QuizOption {
-  text: string
-  correct: boolean
-}
-
-interface QuizItem {
-  title: string
-  questionHtml: string
-  options: QuizOption[]
-  explanation: string
-}
-
-const QUIZ_DATA: Record<string, QuizItem> = {
-  python: {
-    title: 'Python Loop & List Comprehension Quick Drill',
-    questionHtml: `What is the evaluated result of the following Python expression?<br><pre style="background:var(--bg-canvas); padding:10px; border-radius:8px; margin-top:8px; font-family:var(--font-mono); font-size:12px; border:1px solid var(--border-subtle);">[x * 2 for x in range(4) if x % 2 == 1]</pre>`,
-    options: [
-      { text: '[0, 2, 4, 6]', correct: false },
-      { text: '[2, 6]', correct: true },
-      { text: '[1, 3]', correct: false },
-      { text: '[4, 8]', correct: false },
-    ],
-    explanation:
-      'range(4) produces [0, 1, 2, 3]. The condition `if x % 2 == 1` filters odd numbers: 1 and 3. Then `x * 2` yields [2, 6].',
-  },
-  math: {
-    title: 'Quadratic Equation Warm-Up',
-    questionHtml: `What are the roots of the quadratic equation: <br><strong style="font-size:16px; display:block; margin-top:6px;">2x² - 7x + 3 = 0</strong>`,
-    options: [
-      { text: 'x = 3 and x = 1/2', correct: true },
-      { text: 'x = -3 and x = -1/2', correct: false },
-      { text: 'x = 2 and x = 3', correct: false },
-      { text: 'x = 7 and x = 3', correct: false },
-    ],
-    explanation: 'Factoring: (2x - 1)(x - 3) = 0, which yields roots x = 1/2 and x = 3.',
-  },
-  chem: {
-    title: 'Organic Chemistry Practice Drill',
-    questionHtml: `Which mechanism describes the addition of HBr to an asymmetrical alkene following Markovnikov's rule?`,
-    options: [
-      { text: 'Electrophilic Addition via carbocation intermediate', correct: true },
-      { text: 'Nucleophilic Substitution (SN2)', correct: false },
-      { text: 'Free Radical Halogenation', correct: false },
-      { text: 'Elimination (E1)', correct: false },
-    ],
-    explanation:
-      'Electrophiles (H+) attack the alkene to form the more stable tertiary or secondary carbocation, followed by halide attack.',
-  },
+const FALLBACK_QUIZ_BANK: Record<string, QuizQuestionItem[]> = {
+  python: [
+    {
+      id: 101,
+      subject: 'Python',
+      topic: 'List Comprehensions',
+      question: `What is the evaluated result of the following Python expression?<br><pre style="background:var(--bg-canvas); padding:10px; border-radius:8px; margin-top:8px; font-family:var(--font-mono); font-size:12px; border:1px solid var(--border-subtle);">[x * 2 for x in range(4) if x % 2 == 1]</pre>`,
+      options: ['[0, 2, 4, 6]', '[2, 6]', '[1, 3]', '[4, 8]'],
+      correct_answer: '[2, 6]',
+      explanation: 'range(4) produces [0, 1, 2, 3]. The condition `if x % 2 == 1` filters odd numbers: 1 and 3. Then `x * 2` yields [2, 6].',
+    },
+    {
+      id: 102,
+      subject: 'Python',
+      topic: 'Dictionaries',
+      question: `What does <code>dict.get('missing_key', 'fallback')</code> return if <code>'missing_key'</code> is absent?`,
+      options: ['KeyError', 'None', "'fallback'", 'False'],
+      correct_answer: "'fallback'",
+      explanation: 'The .get() method returns the specified fallback argument instead of raising an unhandled KeyError.',
+    },
+    {
+      id: 103,
+      subject: 'Python',
+      topic: 'Functions & Arguments',
+      question: `What happens when using a mutable default argument like <code>def append_val(val, target=[])</code>?`,
+      options: [
+        'A new empty list is created on every call',
+        'The same list instance is shared across all function calls',
+        'Python throws a SyntaxError on function definition',
+        'The list automatically resets after each function return'
+      ],
+      correct_answer: 'The same list instance is shared across all function calls',
+      explanation: 'Default arguments are evaluated once at module/function definition time, persisting mutable state across calls.',
+    },
+    {
+      id: 104,
+      subject: 'Python',
+      topic: 'Slicing & Sequences',
+      question: `What is the output of slicing string <code>s = 'REVISO'[::-1]</code>?`,
+      options: ["'OSIVER'", "'REVISO'", "'OSIVER' in lowercase", "'R'"],
+      correct_answer: "'OSIVER'",
+      explanation: 'Using a step of -1 traverses and reverses the sequence from the last element to the first.',
+    },
+    {
+      id: 105,
+      subject: 'Python',
+      topic: 'Generators',
+      question: `Which syntax creates a lazy generator expression in memory rather than a full list?`,
+      options: [
+        '[x**2 for x in range(100)]',
+        '(x**2 for x in range(100))',
+        '{x**2 for x in range(100)}',
+        '{x: x**2 for x in range(100)}'
+      ],
+      correct_answer: '(x**2 for x in range(100))',
+      explanation: 'Parentheses around a comprehension create a generator expression that yields items on demand with minimal memory overhead.',
+    },
+  ],
+  math: [
+    {
+      id: 201,
+      subject: 'Maths',
+      topic: 'Quadratic Equations',
+      question: `What are the roots of the quadratic equation: <br><strong style="font-size:16px; display:block; margin-top:6px;">2x² - 7x + 3 = 0</strong>`,
+      options: ['x = 3 and x = 1/2', 'x = -3 and x = -1/2', 'x = 2 and x = 3', 'x = 7 and x = 3'],
+      correct_answer: 'x = 3 and x = 1/2',
+      explanation: 'Factoring: (2x - 1)(x - 3) = 0, which yields roots x = 1/2 and x = 3.',
+    },
+    {
+      id: 202,
+      subject: 'Maths',
+      topic: 'Calculus & Derivatives',
+      question: `What is the derivative of <code>f(x) = x³ · e^x</code>?`,
+      options: [
+        '3x² · e^x',
+        'x³ · e^x',
+        'e^x · (x³ + 3x²)',
+        '3x² · e^(x-1)'
+      ],
+      correct_answer: 'e^x · (x³ + 3x²)',
+      explanation: 'Product rule: (u·v)\' = u\'v + uv\' = (3x²)(e^x) + (x³)(e^x) = e^x(x³ + 3x²).',
+    },
+    {
+      id: 203,
+      subject: 'Maths',
+      topic: 'Definite Integrals',
+      question: `Evaluate the definite integral: <br><strong style="font-size:16px; display:block; margin-top:6px;">∫₀² (3x² - 2x + 1) dx</strong>`,
+      options: ['6', '8', '4', '10'],
+      correct_answer: '6',
+      explanation: 'Antiderivative F(x) = x³ - x² + x. F(2) = 8 - 4 + 2 = 6. F(0) = 0. Difference is 6.',
+    },
+    {
+      id: 204,
+      subject: 'Maths',
+      topic: 'Linear Algebra',
+      question: `What is the determinant of the 2×2 matrix: <br><pre style="background:var(--bg-canvas); padding:8px; border-radius:6px; font-family:var(--font-mono); border:1px solid var(--border-subtle);">[ 4  2 ]\n[ 3  5 ]</pre>`,
+      options: ['14', '26', '20', '6'],
+      correct_answer: '14',
+      explanation: 'det = (4 × 5) - (2 × 3) = 20 - 6 = 14.',
+    },
+    {
+      id: 205,
+      subject: 'Maths',
+      topic: 'Probability',
+      question: `When rolling two fair six-sided dice, what is the probability of the sum being 7?`,
+      options: ['1/6', '1/12', '7/36', '5/36'],
+      correct_answer: '1/6',
+      explanation: 'There are 6 combinations summing to 7 out of 36 possible outcomes: 6/36 = 1/6.',
+    },
+  ],
+  chem: [
+    {
+      id: 301,
+      subject: 'Chemistry',
+      topic: 'Organic Reaction Mechanisms',
+      question: `Which mechanism describes the addition of HBr to an asymmetrical alkene following Markovnikov's rule?`,
+      options: [
+        'Electrophilic Addition via carbocation intermediate',
+        'Nucleophilic Substitution (SN2)',
+        'Free Radical Halogenation',
+        'Elimination (E1)'
+      ],
+      correct_answer: 'Electrophilic Addition via carbocation intermediate',
+      explanation: 'Electrophiles (H+) attack the alkene π-bond to form the more stable carbocation, followed by halide attack.',
+    },
+    {
+      id: 302,
+      subject: 'Chemistry',
+      topic: 'Chemical Bonding & Hybridization',
+      question: `What is the hybridization state of the carbon atoms in ethyne (HC≡CH)?`,
+      options: ['sp', 'sp²', 'sp³', 'sp³d'],
+      correct_answer: 'sp',
+      explanation: 'Each carbon forms one σ-bond with hydrogen, one σ-bond with carbon, and two π-bonds, forming a linear sp geometry.',
+    },
+    {
+      id: 303,
+      subject: 'Chemistry',
+      topic: 'Oxidation States',
+      question: `What is the oxidation state of Chromium (Cr) in the dichromate ion (Cr₂O₇²⁻)?`,
+      options: ['+6', '+3', '+7', '+4'],
+      correct_answer: '+6',
+      explanation: '7 oxygens contribute -14. With overall charge -2: 2(Cr) - 14 = -2 → 2(Cr) = +12 → Cr = +6.',
+    },
+    {
+      id: 304,
+      subject: 'Chemistry',
+      topic: 'Acid-Base Equilibria',
+      question: `What is the pH of a 0.001 M HCl aqueous solution at 25°C?`,
+      options: ['3.0', '1.0', '4.0', '11.0'],
+      correct_answer: '3.0',
+      explanation: 'HCl completely dissociates: [H+] = 10⁻³ M. pH = -log₁₀(10⁻³) = 3.0.',
+    },
+    {
+      id: 305,
+      subject: 'Chemistry',
+      topic: 'Chemical Equilibrium',
+      question: `According to Le Chatelier's principle, what happens to <code>N₂(g) + 3H₂(g) ⇌ 2NH₃(g)</code> when pressure is increased?`,
+      options: [
+        'Shifts toward products (fewer moles of gas)',
+        'Shifts toward reactants (more moles of gas)',
+        'No shift in equilibrium position',
+        'Equilibrium constant K increases'
+      ],
+      correct_answer: 'Shifts toward products (fewer moles of gas)',
+      explanation: 'Reactants comprise 4 moles of gas while products comprise 2. Higher pressure shifts toward the side with fewer gas molecules.',
+    },
+  ],
 }
 
 interface ChatEntry {
@@ -428,11 +550,19 @@ export default function App() {
   const [pomoSeconds, setPomoSeconds] = useState<number>(25 * 60)
   const [pomoRunning, setPomoRunning] = useState<boolean>(false)
 
-  // Quiz Modal
+  // Quiz Modal & Multi-Question Stepper State
   const [quizModalOpen, setQuizModalOpen] = useState<boolean>(false)
-  const [currentQuizKey, setCurrentQuizKey] = useState<string>('python')
+  const [currentQuizSubject, setCurrentQuizSubject] = useState<string>('python')
+  const [currentQuizTitle, setCurrentQuizTitle] = useState<string>('Concept Drill')
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionItem[]>([])
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState<number>(0)
   const [selectedQuizOpt, setSelectedQuizOpt] = useState<number | null>(null)
   const [quizFeedback, setQuizFeedback] = useState<{ isCorrect: boolean; text: string } | null>(null)
+  const [activeQuizId, setActiveQuizId] = useState<number | undefined>(undefined)
+  const [quizUserAnswers, setQuizUserAnswers] = useState<{ question_id: number; selected_answer: string; isCorrect: boolean }[]>([])
+  const [isQuizFinished, setIsQuizFinished] = useState<boolean>(false)
+  const [quizLoading, setQuizLoading] = useState<boolean>(false)
+  const [quizFinalResult, setQuizFinalResult] = useState<{ correctCount: number; total: number; scorePct: number } | null>(null)
 
   // Calendar Modal & Day Tasks View
   const [calendarModalOpen, setCalendarModalOpen] = useState<boolean>(false)
@@ -881,51 +1011,134 @@ export default function App() {
     )
   }
 
-  // Quiz Drill Launcher
-  const launchQuiz = (subjectKey: 'python' | 'math' | 'chem') => {
-    setCurrentQuizKey(subjectKey)
+  // Quiz Drill Launcher & Stepper Logic
+  const launchQuiz = async (subjectKey: 'python' | 'math' | 'chem' | string) => {
+    const key = subjectKey.toLowerCase()
+    setCurrentQuizSubject(key)
+    const titleMap: Record<string, string> = {
+      python: 'Python Loop & Concepts Quick Drill',
+      math: 'Maths Calculus & Algebra Drill',
+      chem: 'Chemistry Reaction Mechanisms Drill',
+    }
+    setCurrentQuizTitle(titleMap[key] || `${subjectKey.toUpperCase()} Adaptive Drill`)
+    setQuizModalOpen(true)
+    setQuizLoading(true)
+    setCurrentQuestionIdx(0)
     setSelectedQuizOpt(null)
     setQuizFeedback(null)
-    setQuizModalOpen(true)
+    setQuizUserAnswers([])
+    setIsQuizFinished(false)
+    setQuizFinalResult(null)
+
+    const subjectName = key === 'math' ? 'Maths' : key === 'chem' ? 'Chemistry' : 'Python'
+
+    try {
+      const data = await fetchGeneratedQuiz(subjectName, undefined, 'medium', 3)
+      if (data && data.questions && data.questions.length > 0) {
+        setQuizQuestions(data.questions)
+        setActiveQuizId(data.quiz_id)
+        setQuizLoading(false)
+        return
+      }
+    } catch {
+      // Backend error fallback
+    }
+
+    // Client-side fallback: sample 3 random questions from FALLBACK_QUIZ_BANK
+    const pool = FALLBACK_QUIZ_BANK[key] || FALLBACK_QUIZ_BANK.python
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 3)
+    setQuizQuestions(shuffled)
+    setActiveQuizId(undefined)
+    setQuizLoading(false)
   }
 
   const selectQuizOption = (optIndex: number) => {
-    if (selectedQuizOpt !== null) return
-    setSelectedQuizOpt(optIndex)
+    if (selectedQuizOpt !== null || quizQuestions.length === 0) return
+    const currentQ = quizQuestions[currentQuestionIdx]
+    if (!currentQ) return
 
-    const q = QUIZ_DATA[currentQuizKey]
-    const isCorrect = q.options[optIndex].correct
+    setSelectedQuizOpt(optIndex)
+    const chosenOptionText = currentQ.options[optIndex]
+    const isCorrect = currentQ.correct_answer
+      ? chosenOptionText.trim().toLowerCase() === currentQ.correct_answer.trim().toLowerCase()
+      : optIndex === 1
 
     if (isCorrect) {
       soundSynth.playSuccessBeep()
       setQuizFeedback({
         isCorrect: true,
-        text: `✓ Spot on! ${q.explanation}`,
+        text: `✓ Spot on! ${currentQ.explanation || 'Great job identifying the right answer!'}`,
       })
-      if (currentQuizKey === 'python') {
-        setDktScores((prev) => ({
-          ...prev,
-          python: { pct: 68, retention: 'Stable (Refresher Complete)', safe: true },
-        }))
-        setQuizScoreText('Score: 68% · Mastered!')
-        setQuizCardBorderColor('var(--color-math)')
-      } else if (currentQuizKey === 'math') {
-        setDktScores((prev) => ({
-          ...prev,
-          math: { pct: 92, retention: 'Mastery (14d decay)', safe: true },
-        }))
-      } else if (currentQuizKey === 'chem') {
-        setDktScores((prev) => ({
-          ...prev,
-          chem: { pct: 78, retention: 'Proficient (8d decay)', safe: true },
-        }))
-      }
-      showToast('Knowledge graph updated with your practice win!', '📈')
     } else {
       setQuizFeedback({
         isCorrect: false,
-        text: `✕ Nice try! ${q.explanation}`,
+        text: `✕ Not quite. Correct answer: ${currentQ.correct_answer || 'the indicated option'}. ${currentQ.explanation || ''}`,
       })
+    }
+
+    setQuizUserAnswers((prev) => [
+      ...prev,
+      {
+        question_id: currentQ.id,
+        selected_answer: chosenOptionText,
+        isCorrect,
+      },
+    ])
+  }
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIdx < quizQuestions.length - 1) {
+      setCurrentQuestionIdx((prev) => prev + 1)
+      setSelectedQuizOpt(null)
+      setQuizFeedback(null)
+    }
+  }
+
+  const handleFinishQuiz = async () => {
+    const total = quizQuestions.length
+    const correctCount = quizUserAnswers.filter((a) => a.isCorrect).length
+    const scorePct = Math.round((correctCount / Math.max(1, total)) * 100)
+
+    setQuizFinalResult({
+      correctCount,
+      total,
+      scorePct,
+    })
+    setIsQuizFinished(true)
+    soundSynth.playHarmonicChime()
+
+    if (currentQuizSubject === 'python') {
+      const newScore = Math.max(68, scorePct)
+      setDktScores((prev) => ({
+        ...prev,
+        python: { pct: newScore, retention: 'Stable (Refresher Complete)', safe: true },
+      }))
+      setQuizScoreText(`Score: ${newScore}% · Mastered!`)
+      setQuizCardBorderColor('var(--color-math)')
+    } else if (currentQuizSubject === 'math') {
+      const newScore = Math.max(85, scorePct)
+      setDktScores((prev) => ({
+        ...prev,
+        math: { pct: newScore, retention: 'Mastery (14d decay)', safe: true },
+      }))
+    } else if (currentQuizSubject === 'chem') {
+      const newScore = Math.max(78, scorePct)
+      setDktScores((prev) => ({
+        ...prev,
+        chem: { pct: newScore, retention: 'Proficient (8d decay)', safe: true },
+      }))
+    }
+
+    showToast('Knowledge graph updated with your quiz results!', '📈')
+
+    try {
+      const answersPayload = quizUserAnswers.map((a) => ({
+        question_id: a.question_id,
+        selected_answer: a.selected_answer,
+      }))
+      await submitQuizAnswers(activeQuizId, answersPayload)
+    } catch (e) {
+      console.warn('Could not submit answers to backend:', e)
     }
   }
 
@@ -1918,7 +2131,7 @@ export default function App() {
       </main>
 
       {/* ==========================================================================
-           MODAL 1: INTERACTIVE CONCEPT QUIZ
+           MODAL 1: INTERACTIVE MULTI-QUESTION CONCEPT QUIZ DRILL
            ========================================================================== */}
       <div
         className={`modal-backdrop ${quizModalOpen ? 'active' : ''}`}
@@ -1926,11 +2139,12 @@ export default function App() {
           if (e.target === e.currentTarget) setQuizModalOpen(false)
         }}
       >
-        <div className="modal-window">
+        <div className="modal-window" style={{ maxWidth: '580px', width: '92%' }}>
+          {/* Header */}
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>📝</span>
-              <span>{QUIZ_DATA[currentQuizKey]?.title}</span>
+              <span>{currentQuizTitle}</span>
             </div>
             <button
               type="button"
@@ -1941,48 +2155,168 @@ export default function App() {
               ✕
             </button>
           </div>
+
           <div className="modal-body">
-            <div
-              className="quiz-question-box"
-              dangerouslySetInnerHTML={{ __html: QUIZ_DATA[currentQuizKey]?.questionHtml || '' }}
-            />
-            <div className="quiz-options">
-              {QUIZ_DATA[currentQuizKey]?.options.map((opt, idx) => {
-                let btnClass = 'quiz-opt-btn'
-                if (selectedQuizOpt !== null) {
-                  if (opt.correct) btnClass += ' correct'
-                  else if (selectedQuizOpt === idx) btnClass += ' incorrect'
-                }
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    className={btnClass}
-                    disabled={selectedQuizOpt !== null}
-                    onClick={() => selectQuizOption(idx)}
+            {quizLoading ? (
+              <div style={{ padding: '36px 20px', textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', marginBottom: '12px', animation: 'spin 1.5s linear infinite' }}>⚡</div>
+                <div style={{ fontWeight: 700, fontSize: '15px' }}>Generating Adaptive Drill...</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                  Sampling 3 distinct practice questions from knowledge bank
+                </div>
+              </div>
+            ) : isQuizFinished ? (
+              /* RESULTS & MASTERY SUMMARY SCREEN */
+              <div className="quiz-results-card">
+                <div className="quiz-trophy-circle">
+                  {quizFinalResult && quizFinalResult.scorePct >= 70 ? '🏆' : '🎯'}
+                </div>
+                <div>
+                  <h3 className="quiz-results-score">
+                    {quizFinalResult?.correctCount} / {quizFinalResult?.total}
+                  </h3>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-primary)', marginTop: '4px' }}>
+                    {quizFinalResult?.scorePct}% Score · {quizFinalResult && quizFinalResult.scorePct >= 70 ? 'Concept Mastered!' : 'Keep Practicing!'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    DKT retention score updated &amp; synced to Supabase database.
+                  </div>
+                </div>
+
+                {/* Question-by-Question Review Breakdown */}
+                <div className="quiz-review-list">
+                  {quizUserAnswers.map((ans, idx) => (
+                    <div key={idx} className="quiz-review-item">
+                      <span style={{ fontSize: '15px' }}>{ans.isCorrect ? '✅' : '❌'}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700 }}>
+                          Question {idx + 1}: {ans.isCorrect ? 'Correct' : 'Needs Review'}
+                        </div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+                          Selected: {ans.selected_answer}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : quizQuestions.length > 0 ? (
+              /* ACTIVE QUESTION STEPPER */
+              <div>
+                {/* Stepper Header with Badge & Progress */}
+                <div className="quiz-stepper-header">
+                  <span className="quiz-counter-pill">
+                    Question {currentQuestionIdx + 1} of {quizQuestions.length}
+                  </span>
+                  <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    {Math.round(((currentQuestionIdx + (selectedQuizOpt !== null ? 1 : 0)) / quizQuestions.length) * 100)}% Complete
+                  </span>
+                </div>
+
+                {/* Animated Progress Bar */}
+                <div className="quiz-progress-track">
+                  <div
+                    className="quiz-progress-fill"
+                    style={{
+                      width: `${((currentQuestionIdx + (selectedQuizOpt !== null ? 1 : 0)) / quizQuestions.length) * 100}%`,
+                    }}
+                  />
+                </div>
+
+                {/* Question Box */}
+                <div
+                  className="quiz-question-box"
+                  dangerouslySetInnerHTML={{ __html: quizQuestions[currentQuestionIdx]?.question || '' }}
+                />
+
+                {/* Options List */}
+                <div className="quiz-options" style={{ marginTop: '16px' }}>
+                  {quizQuestions[currentQuestionIdx]?.options.map((opt, idx) => {
+                    const currentQ = quizQuestions[currentQuestionIdx]
+                    let btnClass = 'quiz-opt-btn'
+                    if (selectedQuizOpt !== null) {
+                      const isThisOptCorrect = currentQ.correct_answer
+                        ? opt.trim().toLowerCase() === currentQ.correct_answer.trim().toLowerCase()
+                        : false
+
+                      if (isThisOptCorrect) {
+                        btnClass += ' correct'
+                      } else if (selectedQuizOpt === idx) {
+                        btnClass += ' incorrect'
+                      }
+                    }
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={btnClass}
+                        disabled={selectedQuizOpt !== null}
+                        onClick={() => selectQuizOption(idx)}
+                      >
+                        <strong>{String.fromCharCode(65 + idx)}.</strong> <span>{opt}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Instant Explanation Feedback */}
+                {quizFeedback && (
+                  <div
+                    className="quiz-feedback-box"
+                    style={{
+                      marginTop: '16px',
+                      background: quizFeedback.isCorrect ? 'var(--color-math-subtle)' : 'rgba(0, 77, 64, 0.25)',
+                      color: quizFeedback.isCorrect ? 'var(--color-math)' : '#004D40',
+                      border: `1px solid ${quizFeedback.isCorrect ? 'var(--color-math)' : '#004D40'}`,
+                    }}
                   >
-                    <strong>{String.fromCharCode(65 + idx)}.</strong> <span>{opt.text}</span>
-                  </button>
-                )
-              })}
-            </div>
-            {quizFeedback && (
-              <div
-                className="quiz-feedback-box"
-                style={{
-                  display: 'block',
-                  background: quizFeedback.isCorrect ? 'var(--color-math-subtle)' : 'rgba(0, 77, 64, 0.25)',
-                  color: quizFeedback.isCorrect ? 'var(--color-math)' : '#004D40',
-                }}
-              >
-                {quizFeedback.text}
+                    {quizFeedback.text}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                No questions available for this topic. Please try again.
               </div>
             )}
           </div>
-          <div className="modal-footer">
+
+          {/* Modal Footer with Stepper Controls */}
+          <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button type="button" className="btn-pill" onClick={() => setQuizModalOpen(false)}>
-              Close
+              {isQuizFinished ? 'Close' : 'Exit Drill'}
             </button>
+
+            {isQuizFinished ? (
+              <button
+                type="button"
+                className="quiz-next-btn"
+                onClick={() => launchQuiz(currentQuizSubject)}
+              >
+                <span>Take Another Drill</span>
+                <span>🔄</span>
+              </button>
+            ) : selectedQuizOpt !== null ? (
+              currentQuestionIdx < quizQuestions.length - 1 ? (
+                <button
+                  type="button"
+                  className="quiz-next-btn"
+                  onClick={handleNextQuestion}
+                >
+                  <span>Next Question</span>
+                  <span>➡️</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="quiz-next-btn"
+                  onClick={handleFinishQuiz}
+                >
+                  <span>Finish Quiz &amp; View Results</span>
+                  <span>🏆</span>
+                </button>
+              )
+            ) : null}
           </div>
         </div>
       </div>

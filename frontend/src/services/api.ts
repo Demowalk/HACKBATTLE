@@ -374,3 +374,92 @@ export async function toggleCriticalAction(id: number): Promise<boolean> {
     return false
   }
 }
+
+// ---------------------------------------------------------------------------
+// Quiz Generation & Answers API
+// ---------------------------------------------------------------------------
+export interface QuizQuestionItem {
+  id: number
+  subject?: string
+  topic?: string
+  question: string
+  options: string[]
+  correct_answer?: string
+  explanation?: string
+}
+
+export interface GeneratedQuizResponse {
+  quiz_id?: number
+  subject: string
+  topic: string
+  difficulty?: string
+  questions: QuizQuestionItem[]
+}
+
+export async function fetchGeneratedQuiz(
+  subject: string,
+  topic: string = 'Quick Concept Drill',
+  difficulty: string = 'medium',
+  count: number = 3,
+  userId?: number
+): Promise<GeneratedQuizResponse | null> {
+  const uid = userId ?? getStoredUserId()
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 4000)
+
+    const response = await fetch(`${BACKEND_URL}/generate-quiz`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        subject,
+        topic,
+        difficulty,
+        count,
+        user_id: uid,
+      }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data && Array.isArray(data.questions) && data.questions.length > 0) {
+        return data
+      }
+    }
+  } catch {
+    // Offline fallback
+  }
+  return null
+}
+
+export async function submitQuizAnswers(
+  quizId: number | undefined,
+  answers: { question_id: number; selected_answer: string }[],
+  userId?: number
+): Promise<{ correct_count: number; total: number; score_percentage: number; next_difficulty?: string } | null> {
+  const uid = userId ?? getStoredUserId()
+  try {
+    const response = await fetch(`${BACKEND_URL}/quiz/answer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        quiz_id: quizId,
+        user_id: uid,
+        answers,
+      }),
+    })
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch {
+    // offline
+  }
+  return null
+}
+
