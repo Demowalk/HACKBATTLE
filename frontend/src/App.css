@@ -16,11 +16,11 @@
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
   --transition-speed: 0.2s;
 
-  /* Vibrant & Warm Gradients */
-  --grad-primary: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  /* Vibrant & Clean Gradients */
+  --grad-primary: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
   --grad-math: linear-gradient(135deg, #10b981 0%, #059669 100%);
   --grad-chem: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-  --grad-python: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+  --grad-python: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
   --grad-ai: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
   --grad-dark-card: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
 
@@ -37,17 +37,17 @@
   --text-secondary: #94a3b8;
   --text-tertiary: #64748b;
 
-  --accent-primary: #f59e0b;
-  --accent-primary-hover: #d97706;
-  --accent-primary-subtle: rgba(245, 158, 11, 0.16);
+  --accent-primary: #ffffff;
+  --accent-primary-hover: #e2e8f0;
+  --accent-primary-subtle: rgba(255, 255, 255, 0.15);
 
-  /* Pastel Subject Accents */
+  /* Subject Accents (Clean White for Python, Pastel Emerald & Sky Blue for others) */
   --color-math: #34d399; /* Soft Emerald */
   --color-math-subtle: rgba(16, 185, 129, 0.15);
   --color-chem: #38bdf8; /* Sky Blue */
   --color-chem-subtle: rgba(56, 189, 248, 0.15);
-  --color-python: #fb923c; /* Warm Amber/Coral */
-  --color-python-subtle: rgba(251, 146, 60, 0.15);
+  --color-python: #ffffff; /* Clean White */
+  --color-python-subtle: rgba(255, 255, 255, 0.12);
   --color-ai: #a78bfa;
   --color-ai-subtle: rgba(139, 92, 246, 0.16);
 
@@ -474,8 +474,9 @@ header.navbar {
 }
 
 .streak-pill {
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   font-size: 11px;
   font-weight: 800;
   padding: 4px 10px;
@@ -483,7 +484,7 @@ header.navbar {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }
 
 .daily-progress-text {
@@ -499,14 +500,14 @@ header.navbar {
 
 .daily-progress-track {
   height: 8px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
   overflow: hidden;
 }
 
 .daily-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #10b981 0%, #f59e0b 100%);
+  background: #ffffff;
   border-radius: 9999px;
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -548,19 +549,20 @@ header.navbar {
   gap: 14px;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .sync-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.08);
 }
 
 .sync-badge {
   width: 42px;
   height: 42px;
-  background: var(--grad-primary);
+  background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -568,7 +570,7 @@ header.navbar {
   justify-content: center;
   font-size: 10px;
   font-weight: 800;
-  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .sync-badge span:first-child {
@@ -754,9 +756,9 @@ header.navbar {
 }
 
 .task-tag-python {
-  background: rgba(251, 146, 60, 0.15);
-  color: #fb923c; /* Pastel Amber/Coral */
-  border: 1px solid rgba(251, 146, 60, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .task-card-right {
@@ -856,9 +858,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .badge-upcoming {
-  background: rgba(245, 158, 11, 0.12);
-  color: var(--accent-primary);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .badge-done {
@@ -868,9 +870,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .badge-critical {
-  background: rgba(251, 146, 60, 0.14);
-  color: var(--color-python);
-  border: 1px solid rgba(251, 146, 60, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 /* FREE TIME & BRAIN BREAK BLOCKS */
@@ -890,7 +892,7 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .empty-block:hover {
-  border-color: var(--accent-primary);
+  border-color: #ffffff;
   background-color: var(--bg-surface-elevated);
 }
 
@@ -901,9 +903,9 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .empty-tag {
-  background: rgba(245, 158, 11, 0.12);
-  color: var(--accent-primary);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   padding: 3px 9px;
   border-radius: 9999px;
   font-size: 11px;
@@ -1053,15 +1055,15 @@ html[data-theme="light"] .btn-alarm-bell.active {
 }
 
 .btn-concept-quiz:hover {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  background: var(--accent-primary-subtle);
+  border-color: #ffffff;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* FOCUS AREAS & BOOSTERS PANEL */
 .criticals-panel {
-  border: 1.5px solid rgba(245, 158, 11, 0.3);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, var(--bg-surface) 100%);
+  border: 1.5px solid var(--border-subtle);
+  background: var(--bg-surface);
   border-radius: 16px;
   padding: 20px;
   display: flex;

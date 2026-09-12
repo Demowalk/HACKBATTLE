@@ -1075,10 +1075,7 @@ export default function App() {
               {/* Free Time Block 2 (Prime Window) */}
               <div className="empty-block">
                 <div className="empty-block-left">
-                  <span
-                    className="empty-tag"
-                    style={{ borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}
-                  >
+                  <span className="empty-tag">
                     {isRemediationScheduled ? 'Lunch Break 🥪' : 'Free Time 🌿'}
                   </span>
                   <span>
@@ -1311,12 +1308,12 @@ export default function App() {
               <div
                 className="concept-card"
                 style={{
-                  borderTop: '3px solid var(--color-python)',
+                  borderTop: '3px solid #ffffff',
                 }}
               >
                 <div className="concept-header">
                   <span className="concept-name">Python (Loops &amp; Logic)</span>
-                  <span className="concept-pct" style={{ color: 'var(--color-python)' }}>
+                  <span className="concept-pct" style={{ color: '#ffffff' }}>
                     {dktScores.python.pct}%
                   </span>
                 </div>
@@ -1325,7 +1322,7 @@ export default function App() {
                 </div>
                 <div className="decay-risk-bar">
                   <span>Retention:</span>
-                  <span className="decay-danger" style={{ color: 'var(--color-python)' }}>
+                  <span className="decay-danger" style={{ color: '#ffffff' }}>
                     {dktScores.python.retention}
                   </span>
                 </div>
@@ -1357,7 +1354,7 @@ export default function App() {
                 <span>🎯</span>
                 <span>Focus Areas &amp; Boosters</span>
               </div>
-              <span style={{ fontSize: '11.5px', color: 'var(--accent-primary)', fontWeight: 700 }}>
+              <span style={{ fontSize: '11.5px', color: '#ffffff', fontWeight: 700 }}>
                 {pendingBoostersCount} Recommendations Available
               </span>
             </div>
@@ -1365,7 +1362,7 @@ export default function App() {
             {/* Booster 1 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <span style={{ color: 'var(--accent-primary)', fontSize: '16px' }}>💡</span>
+                <span style={{ color: '#ffffff', fontSize: '16px' }}>💡</span>
                 <div>
                   <strong>Quick recap suggested:</strong> A 20-min loop refresher will make your upcoming lab a breeze!
                 </div>
@@ -1548,8 +1545,8 @@ export default function App() {
                 className="quiz-feedback-box"
                 style={{
                   display: 'block',
-                  background: quizFeedback.isCorrect ? 'var(--color-math-subtle)' : 'var(--color-python-subtle)',
-                  color: quizFeedback.isCorrect ? 'var(--color-math)' : 'var(--color-python)',
+                  background: quizFeedback.isCorrect ? 'var(--color-math-subtle)' : 'rgba(255, 255, 255, 0.1)',
+                  color: quizFeedback.isCorrect ? 'var(--color-math)' : '#ffffff',
                 }}
               >
                 {quizFeedback.text}
