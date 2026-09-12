@@ -36,10 +36,27 @@ class ReplanRequest(BaseModel):
     weak_topic: str
 
 load_dotenv()
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+# Also check backend/.env if not loaded
+backend_env = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(backend_env):
+    load_dotenv(backend_env)
 
+groq_api_key = os.environ.get("GROQ_API_KEY")
+client = Groq(api_key=groq_api_key) if groq_api_key else None
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
 
-app = FastAPI()
+def parse_json_response(content: str):
+    """Safely parse JSON response from LLM, stripping any surrounding markdown code blocks."""
+    text = content.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return json.loads(text.strip())
+
+app = FastAPI(title="Reviso Backend API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -141,15 +158,18 @@ Respond ONLY with a valid JSON array, no other text. Example format:
 
 @app.post("/generate-plan")
 def generate_plan(request: GeneratePlanRequest):
+    if not client:
+        return {"error": "GROQ_API_KEY is not configured in environment or .env file."}
+
     prompt = build_prompt(request.subjects, request.hours_available)
 
     try:
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model=GROQ_MODEL,
             messages=[{"role": "user", "content": prompt}]
         )
         ai_reply = response.choices[0].message.content
-        ai_tasks = json.loads(ai_reply)
+        ai_tasks = parse_json_response(ai_reply)
     except Exception as e:
         return {"error": "Failed to generate plan. Please try again.", "details": str(e)}
 
@@ -175,15 +195,18 @@ quiz_questions = []
 
 @app.post("/generate-quiz")
 def generate_quiz(request: GenerateQuizRequest):
+    if not client:
+        return {"error": "GROQ_API_KEY is not configured in environment or .env file."}
+
     prompt = build_quiz_prompt(request.subject, request.topic, request.difficulty, request.count)
 
     try:
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model=GROQ_MODEL,
             messages=[{"role": "user", "content": prompt}]
         )
         ai_reply = response.choices[0].message.content
-        ai_questions = json.loads(ai_reply)
+        ai_questions = parse_json_response(ai_reply)
     except Exception as e:
         return {"error": "Failed to generate quiz. Please try again.", "details": str(e)}
 
@@ -258,6 +281,9 @@ def export_calendar():
 
 @app.post("/replan")
 def replan(request: ReplanRequest):
+    if not client:
+        return {"error": "GROQ_API_KEY is not configured in environment or .env file."}
+
     prompt = build_replan_prompt(
         request.subjects,
         request.hours_available,
@@ -267,11 +293,11 @@ def replan(request: ReplanRequest):
 
     try:
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model=GROQ_MODEL,
             messages=[{"role": "user", "content": prompt}]
         )
         ai_reply = response.choices[0].message.content
-        ai_tasks = json.loads(ai_reply)
+        ai_tasks = parse_json_response(ai_reply)
     except Exception as e:
         return {"error": "Failed to replan. Please try again.", "details": str(e)}
 
@@ -292,3 +318,8 @@ def replan(request: ReplanRequest):
         next_id += 1
 
     return {"tasks": tasks}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
