@@ -73,7 +73,7 @@ class AudioSynthesizer {
 const soundSynth = new AudioSynthesizer()
 
 // ============================================================================
-// QUIZ QUESTION DATA FOR DKT ENGINE
+// QUIZ QUESTION DATA FOR CONCEPT MASTERY
 // ============================================================================
 interface QuizOption {
   text: string
@@ -89,8 +89,8 @@ interface QuizItem {
 
 const QUIZ_DATA: Record<string, QuizItem> = {
   python: {
-    title: 'Python Loop & List Comprehension Diagnostic',
-    questionHtml: `What is the evaluated result of the following Python expression?<br><pre style="background:var(--bg-canvas); padding:10px; border-radius:7px; margin-top:8px; font-family:var(--font-mono); font-size:12px; border:1px solid var(--border-subtle);">[x * 2 for x in range(4) if x % 2 == 1]</pre>`,
+    title: 'Python Loop & List Comprehension Quick Drill',
+    questionHtml: `What is the evaluated result of the following Python expression?<br><pre style="background:var(--bg-canvas); padding:10px; border-radius:8px; margin-top:8px; font-family:var(--font-mono); font-size:12px; border:1px solid var(--border-subtle);">[x * 2 for x in range(4) if x % 2 == 1]</pre>`,
     options: [
       { text: '[0, 2, 4, 6]', correct: false },
       { text: '[2, 6]', correct: true },
@@ -101,7 +101,7 @@ const QUIZ_DATA: Record<string, QuizItem> = {
       'range(4) produces [0, 1, 2, 3]. The condition `if x % 2 == 1` filters odd numbers: 1 and 3. Then `x * 2` yields [2, 6].',
   },
   math: {
-    title: 'Quadratic Equation Mastery Check',
+    title: 'Quadratic Equation Warm-Up',
     questionHtml: `What are the roots of the quadratic equation: <br><strong style="font-size:16px; display:block; margin-top:6px;">2x² - 7x + 3 = 0</strong>`,
     options: [
       { text: 'x = 3 and x = 1/2', correct: true },
@@ -112,7 +112,7 @@ const QUIZ_DATA: Record<string, QuizItem> = {
     explanation: 'Factoring: (2x - 1)(x - 3) = 0, which yields roots x = 1/2 and x = 3.',
   },
   chem: {
-    title: 'Organic Chemistry Reaction Drill',
+    title: 'Organic Chemistry Practice Drill',
     questionHtml: `Which mechanism describes the addition of HBr to an asymmetrical alkene following Markovnikov's rule?`,
     options: [
       { text: 'Electrophilic Addition via carbocation intermediate', correct: true },
@@ -159,9 +159,9 @@ export default function App() {
       tagClass: 'task-tag-math',
       tagIcon: '📐 Maths',
       timeSlot: '9:00–10:30 AM',
-      completed: false,
+      completed: true,
       alarmActive: true,
-      status: 'Upcoming',
+      status: 'Done',
     },
     {
       id: 'task-2',
@@ -198,33 +198,43 @@ export default function App() {
     },
   ])
 
-  // Dynamic Empty Blocks
+  // Dynamic Free Time / Brain Break Blocks
   const [emptyBlocks, setEmptyBlocks] = useState({
-    'empty-1': { filled: false, title: '', time: '10:30–11:00 AM', label: '10:30–11:00 AM (30 min recovery buffer)' },
-    'empty-3': { filled: false, title: '', time: '2:15–3:00 PM', label: '2:15–3:00 PM (45 min open buffer)' },
+    'empty-1': {
+      filled: false,
+      title: '',
+      time: '10:30–11:00 AM',
+      label: 'Brain Break ☕ (30 min recovery buffer)',
+    },
+    'empty-3': {
+      filled: false,
+      title: '',
+      time: '2:15–3:00 PM',
+      label: 'Brain Break ☕ (45 min open buffer)',
+    },
   })
 
   // Remediation State
   const [isRemediationScheduled, setIsRemediationScheduled] = useState<boolean>(false)
-  const [quizScoreText, setQuizScoreText] = useState<string>('Score: 35% · Critical Gap Detected')
+  const [quizScoreText, setQuizScoreText] = useState<string>('Score: 35% · Quick Review Recommended')
   const [quizCardBorderColor, setQuizCardBorderColor] = useState<string>('')
   const [pythonCritScheduled, setPythonCritScheduled] = useState<boolean>(false)
   const [mathMidtermScheduled, setMathMidtermScheduled] = useState<boolean>(false)
 
-  // Knowledge Tracing (DKT) Scores
+  // Concept Retention Scores
   const [dktScores, setDktScores] = useState({
     math: { pct: 84, retention: 'Safe (12d decay)', safe: true },
     chem: { pct: 65, retention: 'Moderate (4d decay)', safe: true },
-    python: { pct: 35, retention: 'Critical Decay (<24h)', safe: false },
+    python: { pct: 35, retention: 'Refresher Recommended 🔄', safe: false },
   })
 
-  // Chat & Stream
+  // Chat & Stream (Soft, Encouraging Persona)
   const [chatList, setChatList] = useState<ChatEntry[]>([
     {
       id: 'init-1',
       type: 'msg',
       sender: 'bot',
-      text: `Hi Laksh! I continuously introspect your quiz scores and study pace. <br><br>I identified a critical knowledge drop in <strong>Python Nested Loops & Comprehensions (35%)</strong>. I've found an optimal 90-minute gap in your calendar between 12:00 PM and 1:30 PM. Would you like me to schedule your remediation session?`,
+      text: `Hey Laksh! 👋 Noticed nested loops were a bit tricky on today's quiz. No stress at all — loops take practice! Want to squeeze in a quick 20-minute recap before lunch? I found a nice open slot right after chemistry!`,
     },
   ])
   const [chatInput, setChatInput] = useState<string>('')
@@ -288,7 +298,7 @@ export default function App() {
           if (prev <= 1) {
             setPomoRunning(false)
             soundSynth.playHarmonicChime()
-            showToast('Pomodoro session completed! Great job!', '🎉')
+            showToast('Pomodoro session completed! Great job, Laksh!', '🎉')
             return 25 * 60
           }
           return prev - 1
@@ -368,7 +378,7 @@ export default function App() {
         if (t.id === taskId) {
           const next = !t.completed
           if (next) {
-            showToast('Session completed! Points added to knowledge graph.', '🎉')
+            showToast('Awesome! Session marked complete.', '🎉')
             soundSynth.playSuccessBeep()
           }
           return {
@@ -426,65 +436,70 @@ export default function App() {
     ])
   }
 
-  // Auto Schedule Critical Remediation into empty block 2
-  const triggerAutoSchedule = (taskTitle = 'Python Loop Remediation') => {
+  // Auto Schedule Practice Session into Free Time
+  const triggerAutoSchedule = (taskTitle = 'Python Loop Quick Recap') => {
     if (isRemediationScheduled) {
-      showToast('Remediation session already scheduled!', 'ℹ️')
+      showToast('Practice session already slotted into your schedule!', 'ℹ️')
       return
     }
 
-    addToolExecutionTrace('get_free_calendar_slots', { min_duration_minutes: 45 })
+    addToolExecutionTrace('get_free_calendar_slots', { min_duration_minutes: 20 })
 
     setTimeout(() => {
       addToolExecutionTrace('solve_optimal_slot', {
-        selected_gap: '12:00–1:30 PM',
-        allocated_study: '12:00–1:00 PM (60m)',
-        buffer_remaining: '1:00–1:30 PM (30m Lunch)',
+        selected_gap: '12:00–1:30 PM (Free Time)',
+        allocated_practice: '12:00–12:30 PM (30m Quick Recap)',
+        lunch_break: '12:30–1:30 PM (60m Lunch & Chill)',
       })
 
       setTimeout(() => {
         setIsRemediationScheduled(true)
         setPythonCritScheduled(true)
-        setQuizScoreText('Score: 35% · Remediation Active')
+        setQuizScoreText('Score: 35% · Practice Slotted ✨')
         setQuizCardBorderColor('var(--color-math)')
 
-        // Update DKT score
+        // Update retention score
         setDktScores((prev) => ({
           ...prev,
           python: {
-            pct: 48,
-            retention: '+13% projected with remediation',
-            safe: false,
+            pct: 54,
+            retention: '+19% projected with recap',
+            safe: true,
           },
         }))
 
         soundSynth.playHarmonicChime()
-        showToast('Slotted 60-min remediation into empty block with 30-min lunch!', '⚡')
+        showToast('Added 30-min recap to your schedule — lunch break preserved!', '⚡')
 
         addChatMessage(
-          `I completed calendar resolution:<br>• Slotted <strong>${taskTitle}</strong> into your 12:00–1:00 PM empty window.<br>• Preserved a 30-minute lunch buffer before your 1:30 PM lab.<br>• Enabled study alarm chime for 12:00 PM sharp.`,
+          `All set, Laksh! I added <strong>${taskTitle}</strong> for 12:00–12:30 PM. You still have a full hour of relaxing lunch time before lab at 1:30 PM. You've got this! 💪`,
           'bot'
         )
       }, 600)
     }, 500)
   }
 
-  // Manual slot fill
-  const fillSlotManual = (title: string, time: string, blockId: 'empty-1' | 'empty-3') => {
+  // Smart free time actions (e.g. "Take a walk", "Quick quiz", "Power nap")
+  const handleFreeTimeActivity = (
+    activityName: string,
+    timeSlot: string,
+    blockId: 'empty-1' | 'empty-3',
+    icon = '🌿'
+  ) => {
     setEmptyBlocks((prev) => ({
       ...prev,
       [blockId]: {
         ...prev[blockId],
         filled: true,
-        title,
+        title: `${icon} ${activityName}`,
       },
     }))
-    if (title.includes('Math Midterm')) {
-      setMathMidtermScheduled(true)
-    }
-    showToast(`Slotted '${title}' into calendar gap`, '📅')
+    showToast(`Slotted '${activityName}' into your break (${timeSlot})`, icon)
     soundSynth.playHarmonicChime()
-    addChatMessage(`Added **${title}** into your open calendar block at **${time}** with study alarm active.`, 'bot')
+    addChatMessage(
+      `Great idea! Enjoy your **${activityName}** at **${timeSlot}**. Taking brain breaks is proven to boost memory retention.`,
+      'bot'
+    )
   }
 
   // Quiz Drill Launcher
@@ -496,7 +511,7 @@ export default function App() {
   }
 
   const selectQuizOption = (optIndex: number) => {
-    if (selectedQuizOpt !== null) return // already answered
+    if (selectedQuizOpt !== null) return
     setSelectedQuizOpt(optIndex)
 
     const q = QUIZ_DATA[currentQuizKey]
@@ -506,14 +521,14 @@ export default function App() {
       soundSynth.playSuccessBeep()
       setQuizFeedback({
         isCorrect: true,
-        text: `✓ Correct! ${q.explanation}`,
+        text: `✓ Spot on! ${q.explanation}`,
       })
       if (currentQuizKey === 'python') {
         setDktScores((prev) => ({
           ...prev,
-          python: { pct: 62, retention: 'Stabilized (Quiz Passed)', safe: true },
+          python: { pct: 68, retention: 'Stable (Refresher Complete)', safe: true },
         }))
-        setQuizScoreText('Score: 62% · Passed')
+        setQuizScoreText('Score: 68% · Mastered!')
         setQuizCardBorderColor('var(--color-math)')
       } else if (currentQuizKey === 'math') {
         setDktScores((prev) => ({
@@ -526,11 +541,11 @@ export default function App() {
           chem: { pct: 78, retention: 'Proficient (8d decay)', safe: true },
         }))
       }
-      showToast('Knowledge score updated in knowledge graph!', '📈')
+      showToast('Knowledge graph updated with your practice win!', '📈')
     } else {
       setQuizFeedback({
         isCorrect: false,
-        text: `✕ Incorrect. ${q.explanation}`,
+        text: `✕ Nice try! ${q.explanation}`,
       })
     }
   }
@@ -540,17 +555,17 @@ export default function App() {
     addChatMessage(actionText, 'user')
 
     setTimeout(() => {
-      if (actionText.includes('remediation plan') || actionText.includes('Auto-Schedule')) {
-        triggerAutoSchedule('Python Loop Remediation')
-      } else if (actionText.includes('Remediation Quiz')) {
+      if (actionText.includes('recap') || actionText.includes('Practice') || actionText.includes('Auto-Schedule')) {
+        triggerAutoSchedule('Python Loop Quick Recap')
+      } else if (actionText.includes('drill') || actionText.includes('Quiz')) {
         launchQuiz('python')
-      } else if (actionText.includes('forgetting curve')) {
-        addToolExecutionTrace('ebbinghaus_decay_audit', {
+      } else if (actionText.includes('retention')) {
+        addToolExecutionTrace('memory_retention_check', {
           student_id: 'laksh_01',
-          critical_hazards: ['python.loops.nested', 'python.comprehensions'],
+          focus_topic: 'python.nested_loops',
         })
         addChatMessage(
-          `📉 <strong>Ebbinghaus Forgetting Curve Analysis:</strong><br>• <strong>Python Loops</strong> has dropped to <strong>35% retention</strong> after 48 hours without retrieval practice.<br>• Without targeted revision in the next 12 hours, recall probability drops to &lt;20%.<br>• Taking the 3-minute quiz will reset your half-life to 4 days.`,
+          `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
           'bot'
         )
       } else if (actionText.includes('Pomodoro')) {
@@ -571,28 +586,33 @@ export default function App() {
       const lower = text.toLowerCase()
       if (lower.includes('alarm') || lower.includes('bell')) {
         triggerAlarm('Interactive Study Alarm Test', 'Right Now')
-        addChatMessage("I've triggered a live test of your Study Alarm system with Web Audio chimes!", 'bot')
+        addChatMessage("I've triggered a test of your Study Alarm chime with snooze and dismiss options!", 'bot')
       } else if (lower.includes('pdf') || lower.includes('export') || lower.includes('share')) {
         exportSharePdf()
-        addChatMessage('Opening full-color PDF export dialog now!', 'bot')
-      } else if (lower.includes('quiz') || lower.includes('test')) {
+        addChatMessage('Opening your print-ready PDF export now!', 'bot')
+      } else if (lower.includes('quiz') || lower.includes('test') || lower.includes('drill')) {
         launchQuiz('python')
-        addChatMessage('Launched your adaptive Python Diagnostic Quiz.', 'bot')
-      } else if (lower.includes('schedule') || lower.includes('remediation') || lower.includes('gap')) {
-        triggerAutoSchedule('Python Loop Remediation')
+        addChatMessage('Opened your quick Python concept drill.', 'bot')
+      } else if (lower.includes('recap') || lower.includes('schedule') || lower.includes('practice') || lower.includes('gap')) {
+        triggerAutoSchedule('Python Loop Quick Recap')
       } else if (lower.includes('theme') || lower.includes('dark') || lower.includes('light')) {
         toggleTheme()
-        addChatMessage('Toggled theme mode as requested.', 'bot')
+        addChatMessage('Switched theme mode as requested.', 'bot')
       } else {
         addChatMessage(
-          `Got it, Laksh. I've logged your request: "<em>${text}</em>". I am continuously optimizing your knowledge retention graph and schedule buffers.`,
+          `Got it, Laksh! Noted: "<em>${text}</em>". I'm keeping your schedule smooth, balanced, and stress-free.`,
           'bot'
         )
       }
     }, 450)
   }
 
-  const pendingCriticalCount = (pythonCritScheduled ? 0 : 1) + (mathMidtermScheduled ? 0 : 1)
+  // Progress calculations for Daily Motivation Banner
+  const completedCount = tasks.filter((t) => t.completed).length + (isRemediationScheduled ? 1 : 0)
+  const totalCount = tasks.length + (isRemediationScheduled ? 1 : 0)
+  const progressPct = Math.round((completedCount / totalCount) * 100)
+
+  const pendingBoostersCount = (pythonCritScheduled ? 0 : 1) + (mathMidtermScheduled ? 0 : 1)
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-canvas)' }}>
@@ -617,7 +637,7 @@ export default function App() {
             </span>
           </div>
 
-          {/* Export / Share PDF with Full Colors */}
+          {/* Export / Share PDF */}
           <button
             type="button"
             className="btn-pill btn-primary"
@@ -655,7 +675,7 @@ export default function App() {
             type="button"
             className="btn-icon"
             onClick={toggleTheme}
-            title="Switch Dark / Light Theme"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
           </button>
@@ -688,7 +708,7 @@ export default function App() {
                   <div className="dropdown-meta">
                     <span className="dropdown-full-name">{userName}</span>
                     <span className="dropdown-email">laksh.hs@adaptive.ai</span>
-                    <span className="dropdown-badge">Pro Student • Active</span>
+                    <span className="dropdown-badge">Student • Grade 12</span>
                   </div>
                 </div>
                 <div className="dropdown-divider" />
@@ -782,6 +802,24 @@ export default function App() {
       <main className="app-workspace">
         {/* LEFT: CALENDAR, DEEP KNOWLEDGE TRACING & EMPTY BLOCK DETECTOR */}
         <section className="left-column">
+          {/* DAILY MOTIVATION & PROGRESS BANNER */}
+          <div className="daily-progress-banner">
+            <div className="daily-progress-header">
+              <div className="daily-progress-title-wrap">
+                <span className="streak-pill">🔥 5-Day Streak!</span>
+                <span className="daily-progress-text">
+                  {completedCount} of {totalCount} study blocks completed ({progressPct}%)
+                </span>
+              </div>
+              <span className="daily-progress-sub">
+                Awesome momentum, {userName.split(' ')[0]}! Keep going strong.
+              </span>
+            </div>
+            <div className="daily-progress-track">
+              <div className="daily-progress-fill" style={{ width: `${progressPct}%` }} />
+            </div>
+          </div>
+
           {/* Panel 1: Today's Adaptive Schedule */}
           <div className="panel">
             <div className="panel-header-row">
@@ -790,31 +828,31 @@ export default function App() {
                 <span>Today's Adaptive Schedule</span>
               </h2>
 
-              {/* Diagnostic Quiz Result Card */}
+              {/* Diagnostic Review Card (Encouraging Tone) */}
               <div
                 className="sync-card"
-                onClick={() => triggerAutoSchedule('Python Loop Remediation')}
-                title="Auto-find empty block and insert targeted remediation"
+                onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
+                title="Squeeze in a quick friendly recap into your free time"
                 style={{ borderColor: quizCardBorderColor || undefined }}
               >
                 <div className="sync-badge">
-                  <span>⚠️</span>
+                  <span>💡</span>
                   <span>QUIZ</span>
                 </div>
                 <div className="sync-meta">
                   <div className="sync-score">{quizScoreText}</div>
-                  <div className="sync-name">Python Loop Diagnostics</div>
+                  <div className="sync-name">Python Nested Loops &amp; Comprehensions</div>
                 </div>
                 <div className="sync-btn-auto">
                   <span>⚡</span>
                   <span>
-                    {isRemediationScheduled ? 'Remediation Slotted (12:00 PM)' : 'Auto-Schedule Remediation'}
+                    {isRemediationScheduled ? 'Recap Slotted (12:00 PM)' : 'Add 20m Practice'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Schedule List with Dynamic Empty Blocks */}
+            {/* Schedule List with De-cluttered Task Cards & Smart Free Time Chips */}
             <div className="timeline-list">
               {/* Task 1: Maths */}
               <div className={`task-card ${tasks[0].completed ? 'completed' : ''}`}>
@@ -843,25 +881,19 @@ export default function App() {
                     type="button"
                     className={`btn-alarm-bell ${tasks[0].alarmActive ? 'active' : ''}`}
                     onClick={() => toggleAlarmBell(tasks[0].id, tasks[0].title)}
+                    title={tasks[0].alarmActive ? 'Alarm Active' : 'Muted'}
                   >
                     🔔
                   </button>
-                  <span className="badge badge-upcoming">{tasks[0].status}</span>
+                  <span className="badge badge-done">{tasks[0].status}</span>
                 </div>
               </div>
 
-              {/* Empty Block 1 */}
+              {/* Free Time Block 1 (Smart Suggestions) */}
               <div className="empty-block">
                 <div className="empty-block-left">
-                  <span
-                    className="empty-tag"
-                    style={
-                      emptyBlocks['empty-1'].filled
-                        ? { background: 'var(--color-math-subtle)', color: 'var(--color-math)', borderColor: 'var(--color-math)' }
-                        : undefined
-                    }
-                  >
-                    {emptyBlocks['empty-1'].filled ? 'Scheduled' : 'Empty Block'}
+                  <span className="empty-tag">
+                    {emptyBlocks['empty-1'].filled ? 'Scheduled' : 'Brain Break ☕'}
                   </span>
                   <span>
                     {emptyBlocks['empty-1'].filled
@@ -870,19 +902,37 @@ export default function App() {
                   </span>
                 </div>
                 {!emptyBlocks['empty-1'].filled ? (
-                  <button
-                    type="button"
-                    className="btn-quick-fill"
-                    onClick={() => fillSlotManual('Quick Flashcard Drill', '10:30–11:00 AM', 'empty-1')}
-                  >
-                    <span>+</span>
-                    <span>Fill Slot</span>
-                  </button>
+                  <div className="empty-actions-row">
+                    <button
+                      type="button"
+                      className="chip-suggestion"
+                      onClick={() => handleFreeTimeActivity('Take a walk', '10:30–11:00 AM', 'empty-1', '🚶')}
+                    >
+                      <span>🚶</span>
+                      <span>Take a walk</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="chip-suggestion"
+                      onClick={() => handleFreeTimeActivity('Power nap', '10:30–11:00 AM', 'empty-1', '😴')}
+                    >
+                      <span>😴</span>
+                      <span>Power nap</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-quick-fill"
+                      onClick={() => handleFreeTimeActivity('Quick Revision', '10:30–11:00 AM', 'empty-1', '⚡')}
+                    >
+                      <span>+</span>
+                      <span>Add drill</span>
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
                     className="btn-alarm-bell active"
-                    onClick={() => showToast('Alarm active for Quick Flashcard Drill', '🔔')}
+                    onClick={() => showToast('Alarm active for scheduled break', '🔔')}
                   >
                     🔔
                   </button>
@@ -916,6 +966,7 @@ export default function App() {
                     type="button"
                     className={`btn-alarm-bell ${tasks[1].alarmActive ? 'active' : ''}`}
                     onClick={() => toggleAlarmBell(tasks[1].id, tasks[1].title)}
+                    title="Alarm notification"
                   >
                     🔔
                   </button>
@@ -923,22 +974,22 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Slotted Remediation Card if scheduled */}
+              {/* Slotted Practice Card if scheduled */}
               {isRemediationScheduled && (
                 <div className="task-card critical-remediation">
                   <div className="task-card-left">
                     <div
                       className="task-check-circle"
-                      onClick={() => showToast('Remediation task toggled', '✓')}
+                      onClick={() => showToast('Loop Practice session marked done!', '✓')}
                     >
                       ✓
                     </div>
                     <div className="task-info">
-                      <div className="task-title">⚡ Critical Remediation: Python Loop Debugging</div>
+                      <div className="task-title">⚡ Quick Practice: Python Nested Loops</div>
                       <div className="task-meta-row">
                         <span className="task-tag task-tag-python">🐍 Python</span>
                         <span>·</span>
-                        <span>12:00–1:00 PM (Auto-Slotted in Empty Block)</span>
+                        <span>12:00–12:30 PM (Quick Booster in Free Time)</span>
                       </div>
                     </div>
                   </div>
@@ -946,49 +997,59 @@ export default function App() {
                     <button
                       type="button"
                       className="btn-timer"
-                      onClick={() => openPomodoroModal('Python Loop Remediation')}
+                      onClick={() => openPomodoroModal('Python Loop Recap')}
                     >
                       ⏱️ Focus
                     </button>
                     <button
                       type="button"
                       className="btn-alarm-bell active"
-                      onClick={() => showToast('Alarm enabled for Python Loop Debugging', '🔔')}
+                      onClick={() => showToast('Alarm set for Python practice', '🔔')}
                     >
                       🔔
                     </button>
-                    <span className="badge badge-critical">Critical Remediation</span>
+                    <span className="badge badge-upcoming">Review Slotted</span>
                   </div>
                 </div>
               )}
 
-              {/* Optimal Empty Block 2 */}
+              {/* Free Time Block 2 (Prime Window) */}
               <div className="empty-block">
                 <div className="empty-block-left">
                   <span
                     className="empty-tag"
                     style={{ borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}
                   >
-                    {isRemediationScheduled ? 'Remaining Buffer' : 'Optimal Free Window'}
+                    {isRemediationScheduled ? 'Lunch Break 🥪' : 'Free Time 🌿'}
                   </span>
                   <span>
                     {isRemediationScheduled
-                      ? '1:00–1:30 PM (30 min Lunch & Relaxation)'
+                      ? '12:30–1:30 PM (60 min Lunch & Relaxation)'
                       : '12:00–1:30 PM (90 min open study window)'}
                   </span>
                 </div>
                 {!isRemediationScheduled ? (
-                  <button
-                    type="button"
-                    className="btn-quick-fill"
-                    onClick={() => triggerAutoSchedule('Python Loop Remediation')}
-                  >
-                    <span>⚡</span>
-                    <span>Fit Critical Remediation</span>
-                  </button>
+                  <div className="empty-actions-row">
+                    <button
+                      type="button"
+                      className="chip-suggestion"
+                      onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
+                    >
+                      <span>⚡</span>
+                      <span>Fit 20m practice</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="chip-suggestion"
+                      onClick={() => showToast('Enjoy your relaxing lunch window!', '🥪')}
+                    >
+                      <span>🥪</span>
+                      <span>Chill & Lunch</span>
+                    </button>
+                  </div>
                 ) : (
                   <span style={{ fontSize: '11.5px', color: 'var(--text-tertiary)', fontWeight: 600 }}>
-                    Buffer Open
+                    Relaxation Time
                   </span>
                 )}
               </div>
@@ -1027,7 +1088,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Empty Block 3 */}
+              {/* Free Time Block 3 */}
               <div className="empty-block">
                 <div className="empty-block-left">
                   <span
@@ -1038,7 +1099,7 @@ export default function App() {
                         : undefined
                     }
                   >
-                    {emptyBlocks['empty-3'].filled ? 'Scheduled' : 'Empty Block'}
+                    {emptyBlocks['empty-3'].filled ? 'Scheduled' : 'Brain Break ☕'}
                   </span>
                   <span>
                     {emptyBlocks['empty-3'].filled
@@ -1047,26 +1108,44 @@ export default function App() {
                   </span>
                 </div>
                 {!emptyBlocks['empty-3'].filled ? (
-                  <button
-                    type="button"
-                    className="btn-quick-fill"
-                    onClick={() => fillSlotManual('Practice Questions', '2:15–3:00 PM', 'empty-3')}
-                  >
-                    <span>+</span>
-                    <span>Fill Slot</span>
-                  </button>
+                  <div className="empty-actions-row">
+                    <button
+                      type="button"
+                      className="chip-suggestion"
+                      onClick={() => handleFreeTimeActivity('Take a walk', '2:15–3:00 PM', 'empty-3', '🚶')}
+                    >
+                      <span>🚶</span>
+                      <span>Walk</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="chip-suggestion"
+                      onClick={() => handleFreeTimeActivity('Power nap', '2:15–3:00 PM', 'empty-3', '😴')}
+                    >
+                      <span>😴</span>
+                      <span>Power nap</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-quick-fill"
+                      onClick={() => handleFreeTimeActivity('Quick Math Review', '2:15–3:00 PM', 'empty-3', '📐')}
+                    >
+                      <span>+</span>
+                      <span>Add drill</span>
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
                     className="btn-alarm-bell active"
-                    onClick={() => showToast('Alarm active for Practice Questions', '🔔')}
+                    onClick={() => showToast('Alarm active for scheduled break', '🔔')}
                   >
                     🔔
                   </button>
                 )}
               </div>
 
-              {/* Task 4: Completed Maths */}
+              {/* Task 4: Completed Maths (Crisp Strikethrough & High Contrast) */}
               <div className={`task-card ${tasks[3].completed ? 'completed' : ''}`}>
                 <div className="task-card-left">
                   <div className="task-check-circle" onClick={() => toggleTask(tasks[3].id)}>
@@ -1095,22 +1174,22 @@ export default function App() {
             </div>
           </div>
 
-          {/* Panel 2: Deep Knowledge Tracing & Memory Retention */}
+          {/* Panel 2: Concept Mastery & Retention */}
           <div className="panel">
             <div className="panel-header-row">
               <div>
                 <h2 className="panel-title">
                   <span>🧠</span>
-                  <span>Deep Knowledge Tracing & Memory Retention</span>
+                  <span>Concept Mastery &amp; Retention</span>
                 </h2>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  Predicting forgetting curves and concept mastery per subject
+                  Smart spaced repetition to keep your memory sharp and stress-free
                 </div>
               </div>
               <span
-                className={`badge ${isRemediationScheduled ? 'badge-upcoming' : 'badge-critical'}`}
+                className={`badge ${isRemediationScheduled ? 'badge-done' : 'badge-upcoming'}`}
               >
-                {isRemediationScheduled ? 'Remediation Active' : '1 High Decay Risk'}
+                {isRemediationScheduled ? 'All Refreshed ✨' : '1 Refresher Recommended'}
               </span>
             </div>
 
@@ -1127,7 +1206,7 @@ export default function App() {
                   <div className="progress-fill fill-math" style={{ width: `${dktScores.math.pct}%` }} />
                 </div>
                 <div className="decay-risk-bar">
-                  <span>Retention stability:</span>
+                  <span>Retention:</span>
                   <span style={{ color: 'var(--color-math)', fontWeight: 700 }}>
                     {dktScores.math.retention}
                   </span>
@@ -1154,7 +1233,7 @@ export default function App() {
                   <div className="progress-fill fill-chem" style={{ width: `${dktScores.chem.pct}%` }} />
                 </div>
                 <div className="decay-risk-bar">
-                  <span>Retention stability:</span>
+                  <span>Retention:</span>
                   <span style={{ color: 'var(--color-chem)', fontWeight: 700 }}>
                     {dktScores.chem.retention}
                   </span>
@@ -1173,13 +1252,11 @@ export default function App() {
               <div
                 className="concept-card"
                 style={{
-                  border: '2px solid var(--color-python)',
-                  background:
-                    'linear-gradient(180deg, rgba(244, 63, 94, 0.1) 0%, var(--bg-surface-elevated) 100%)',
+                  borderTop: '3px solid var(--color-python)',
                 }}
               >
                 <div className="concept-header">
-                  <span className="concept-name">Python (Loops & Logic)</span>
+                  <span className="concept-name">Python (Loops &amp; Logic)</span>
                   <span className="concept-pct" style={{ color: 'var(--color-python)' }}>
                     {dktScores.python.pct}%
                   </span>
@@ -1188,108 +1265,111 @@ export default function App() {
                   <div className="progress-fill fill-py" style={{ width: `${dktScores.python.pct}%` }} />
                 </div>
                 <div className="decay-risk-bar">
-                  <span>Retention stability:</span>
-                  <span className="decay-danger">{dktScores.python.retention}</span>
+                  <span>Retention:</span>
+                  <span className="decay-danger" style={{ color: 'var(--color-python)' }}>
+                    {dktScores.python.retention}
+                  </span>
                 </div>
                 <button
                   type="button"
                   className="btn-concept-quiz"
-                  style={{ borderColor: 'var(--color-python)', color: 'var(--color-python)', fontWeight: 800 }}
+                  style={{ borderColor: 'var(--color-python)', color: 'var(--color-python)', fontWeight: 700 }}
                   onClick={() => launchQuiz('python')}
                 >
                   <span>⚡</span>
-                  <span>Take Remediation Quiz</span>
+                  <span>Take Booster Drill</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Panel 3: Alarming Criticals */}
+          {/* Panel 3: Focus Areas & Boosters (Softer, Encouraging Tone) */}
           <div className="criticals-panel">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div
                 style={{
                   fontSize: '13.5px',
                   fontWeight: 800,
-                  color: 'var(--color-python)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
+                  color: 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '7px',
                 }}
               >
-                <span>⚠️</span>
-                <span>Alarming Criticals</span>
+                <span>🎯</span>
+                <span>Focus Areas &amp; Boosters</span>
               </div>
-              <span style={{ fontSize: '11.5px', color: 'var(--color-python)', fontWeight: 700 }}>
-                {pendingCriticalCount} Actions Pending
+              <span style={{ fontSize: '11.5px', color: 'var(--accent-primary)', fontWeight: 700 }}>
+                {pendingBoostersCount} Recommendations Available
               </span>
             </div>
 
-            {/* Critical 1 */}
+            {/* Booster 1 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <span style={{ color: 'var(--color-python)', fontSize: '16px' }}>⚠️</span>
+                <span style={{ color: 'var(--accent-primary)', fontSize: '16px' }}>💡</span>
                 <div>
-                  <strong>URGENT:</strong> Python Loop score (35%) critical. Skill gap will impact upcoming lab!
+                  <strong>Quick recap suggested:</strong> A 20-min loop refresher will make your upcoming lab a breeze!
                 </div>
               </div>
               <button
                 type="button"
                 className={`btn-schedule-critical ${pythonCritScheduled ? 'scheduled' : ''}`}
-                onClick={() => triggerAutoSchedule('Python Loop Remediation')}
+                onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
               >
                 <span>{pythonCritScheduled ? '✓' : '⚡'}</span>
-                <span>{pythonCritScheduled ? 'Scheduled in 12:00 PM Gap' : 'Auto-Schedule in Gap'}</span>
+                <span>{pythonCritScheduled ? 'Slotted for 12:00 PM' : 'Squeeze in 20m Practice'}</span>
               </button>
             </div>
 
-            {/* Critical 2 */}
+            {/* Booster 2 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <span style={{ color: 'var(--accent-primary)', fontSize: '16px' }}>📅</span>
+                <span style={{ color: 'var(--color-chem)', fontSize: '16px' }}>📅</span>
                 <div>
-                  <strong>UPCOMING EXAM:</strong> Math Midterm in 5 days. Quadratic roots review recommended.
+                  <strong>Math Midterm in 5 days:</strong> Let's do a relaxed 25m brush-up on quadratic roots.
                 </div>
               </div>
               <button
                 type="button"
                 className={`btn-schedule-critical ${mathMidtermScheduled ? 'scheduled' : ''}`}
-                onClick={() => fillSlotManual('Math Midterm Mock Exam', '2:15–3:00 PM', 'empty-3')}
+                onClick={() => {
+                  setMathMidtermScheduled(true)
+                  handleFreeTimeActivity('Math Midterm Review', '2:15–3:00 PM', 'empty-3', '📐')
+                }}
               >
                 <span>{mathMidtermScheduled ? '✓' : '📅'}</span>
-                <span>{mathMidtermScheduled ? 'Slotted in 2:15 PM' : 'Slot in 2:15 PM'}</span>
+                <span>{mathMidtermScheduled ? 'Slotted in 2:15 PM' : 'Slot 25m Review'}</span>
               </button>
             </div>
           </div>
         </section>
 
-        {/* RIGHT: AI AGENT OBSERVABILITY, TOOL STREAM & INTERACTIVE CHAT */}
+        {/* RIGHT: AI STUDY COPILOT & INTERACTIVE CHAT */}
         <aside className="right-column">
           <div className="agent-header">
             <div className="agent-identity">
-              <div className="agent-avatar">AI</div>
+              <div className="agent-avatar">✨</div>
               <div>
-                <div className="agent-name">StudySync AI Orchestrator</div>
+                <div className="agent-name">StudySync Copilot</div>
                 <div className="agent-status-label">
-                  <span>●</span> Introspective Agent Active
+                  <span>●</span> Ready to help you thrive ✨
                 </div>
               </div>
             </div>
             <div style={{ fontSize: '11.5px', color: 'var(--text-tertiary)', fontWeight: 600 }}>
-              {userName}'s Model
+              {userName}'s Study Buddy
             </div>
           </div>
 
-          {/* Chat & Agent Trace Stream */}
+          {/* Chat & Friendly Stream */}
           <div className="chat-messages">
             {chatList.map((entry) => {
               if (entry.type === 'trace') {
                 return (
                   <div key={entry.id} className="tool-call-trace">
                     <div className="tool-header">
-                      <span>⚡ agent_tool_call:</span> <strong>{entry.toolName}()</strong>
+                      <span>⚡ study_copilot_action:</span> <strong>{entry.toolName}()</strong>
                     </div>
                     <div>{JSON.stringify(entry.toolArgs, null, 2)}</div>
                   </div>
@@ -1306,30 +1386,30 @@ export default function App() {
             <div ref={chatBottomRef} />
           </div>
 
-          {/* Agent Quick Action Chips */}
+          {/* Encouraging Quick Action Chips */}
           <div className="quick-actions-bar">
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('⚡ Auto-Schedule Remediation in Gap')}
+              onClick={() => triggerQuickAction('⚡ Add 20m loop recap before lunch')}
             >
-              <span>⚡ Auto-Schedule Remediation in Gap</span>
+              <span>⚡ Add 20m loop recap before lunch</span>
               <span className="arrow">→</span>
             </button>
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('📝 Take 3-Question Remediation Quiz')}
+              onClick={() => triggerQuickAction('📝 Try a friendly 3-question drill')}
             >
-              <span>📝 Take 3-Question Remediation Quiz</span>
+              <span>📝 Try a friendly 3-question drill</span>
               <span className="arrow">→</span>
             </button>
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('📉 Explain my forgetting curve decay')}
+              onClick={() => triggerQuickAction('📉 How does my memory retention look?')}
             >
-              <span>📉 Explain my forgetting curve decay</span>
+              <span>📉 How does my memory retention look?</span>
               <span className="arrow">→</span>
             </button>
             <button
@@ -1342,12 +1422,12 @@ export default function App() {
             </button>
           </div>
 
-          {/* Input Field */}
+          {/* Chat Input Field */}
           <div className="chat-input-row">
             <input
               type="text"
               className="chat-input-field"
-              placeholder="Ask AI assistant, e.g., 'test alarm', 'export pdf', 'quiz'..."
+              placeholder="Ask your study copilot, e.g., 'help with loops', 'test alarm'..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => {
@@ -1362,7 +1442,7 @@ export default function App() {
       </main>
 
       {/* ==========================================================================
-           MODAL 1: INTERACTIVE DIAGNOSTIC QUIZ
+           MODAL 1: INTERACTIVE CONCEPT QUIZ
            ========================================================================== */}
       <div className={`modal-backdrop ${quizModalOpen ? 'active' : ''}`}>
         <div className="modal-window">
@@ -1451,7 +1531,7 @@ export default function App() {
                 {`${String(Math.floor(pomoSeconds / 60)).padStart(2, '0')}:${String(pomoSeconds % 60).padStart(2, '0')}`}
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                Deep Focus Block · Distractions Silenced
+                Deep Focus Block · Take it one step at a time
               </div>
             </div>
             <div className="timer-controls" style={{ justifyContent: 'center' }}>
@@ -1472,7 +1552,7 @@ export default function App() {
           </div>
           <div className="modal-footer" style={{ justifyContent: 'center' }}>
             <span style={{ fontSize: '11.5px', color: 'var(--text-tertiary)' }}>
-              Harmonic completion chime rings when finished
+              A soothing chime will celebrate when you finish!
             </span>
           </div>
         </div>
@@ -1500,17 +1580,15 @@ export default function App() {
                 fontSize: '32px',
                 marginBottom: '12px',
                 boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)',
-                animation: 'bellBounce 1.2s infinite ease-in-out',
               }}
             >
               🔔
             </div>
             <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '6px' }}>
-              🔔 Study Alarm: {activeAlarmTitle}
+              🔔 Time for {activeAlarmTitle}
             </h3>
             <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginBottom: '22px', lineHeight: 1.45 }}>
-              Your scheduled session <strong>{activeAlarmTitle}</strong> ({activeAlarmTime}) is starting now. Put away
-              distractions and get ready!
+              Your session ({activeAlarmTime}) is starting now. Grab some water, get comfortable, and let's make progress!
             </p>
             <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
               <button
