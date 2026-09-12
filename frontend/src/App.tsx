@@ -524,8 +524,20 @@ export default function App() {
   const [editDailyGoal, setEditDailyGoal] = useState<number>(120)
   const profileRef = useRef<HTMLDivElement>(null)
 
+  type TimelineTask = {
+    id: string
+    title: string
+    subject: string
+    tagClass: string
+    tagIcon: string
+    timeSlot: string
+    completed: boolean
+    alarmActive: boolean
+    status: string
+  }
+
   // Schedule & Tasks
-  const [tasks, setTasks] = useState([
+  const [tasks, setTasks] = useState<TimelineTask[]>([
     {
       id: 'task-1',
       title: 'Algebra basics & quadratic formulas',
@@ -571,6 +583,43 @@ export default function App() {
       status: 'Done',
     },
   ])
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/tasks')
+      .then((res) => res.json())
+      .then((data: any[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const formattedTasks: TimelineTask[] = data.map((t) => {
+            const sub = t.subject || 'Study'
+            let tagClass = 'task-tag-chem'
+            let tagIcon = `🧪 ${sub}`
+            if (sub.toLowerCase().includes('math')) {
+              tagClass = 'task-tag-math'
+              tagIcon = `📐 ${sub}`
+            } else if (sub.toLowerCase().includes('python') || sub.toLowerCase().includes('code')) {
+              tagClass = 'task-tag-python'
+              tagIcon = `🐍 ${sub}`
+            } else if (sub.toLowerCase().includes('ai')) {
+              tagClass = 'task-tag-ai'
+              tagIcon = `🧠 ${sub}`
+            }
+            return {
+              id: `task-${t.id}`,
+              title: t.title || t.topic || `${sub} Practice`,
+              subject: sub,
+              tagClass,
+              tagIcon,
+              timeSlot: t.timeSlot || `${t.duration_minutes || 45} min`,
+              completed: !!t.completed,
+              alarmActive: t.alarmEnabled ?? true,
+              status: t.completed ? 'Done' : 'Upcoming',
+            }
+          })
+          setTasks(formattedTasks)
+        }
+      })
+      .catch((err) => console.error('Failed to fetch tasks from backend:', err))
+  }, [])
 
   // Dynamic Free Time / Brain Break Blocks
   const [emptyBlocks, setEmptyBlocks] = useState({
@@ -1705,40 +1754,41 @@ export default function App() {
 
             {/* Schedule List with De-cluttered Task Cards & Smart Free Time Chips */}
             <div className="timeline-list">
-              {/* Task 1: Maths */}
-              <div className={`task-card ${tasks[0].completed ? 'completed' : ''}`}>
-                <div className="task-card-left">
-                  <div className="task-check-circle" onClick={() => toggleTask(tasks[0].id)}>
-                    ✓
-                  </div>
-                  <div className="task-info">
-                    <div className="task-title">{tasks[0].title}</div>
-                    <div className="task-meta-row">
-                      <span className="task-tag task-tag-math">{tasks[0].tagIcon}</span>
-                      <span>·</span>
-                      <span>{tasks[0].timeSlot}</span>
+              {tasks.map((task) => (
+                <div key={task.id} className={`task-card ${task.completed ? 'completed' : ''}`}>
+                  <div className="task-card-left">
+                    <div className="task-check-circle" onClick={() => toggleTask(task.id)}>
+                      ✓
+                    </div>
+                    <div className="task-info">
+                      <div className="task-title">{task.title}</div>
+                      <div className="task-meta-row">
+                        <span className={`task-tag ${task.tagClass}`}>{task.tagIcon}</span>
+                        <span>·</span>
+                        <span>{task.timeSlot}</span>
+                      </div>
                     </div>
                   </div>
+                  <div className="task-card-right">
+                    <button
+                      type="button"
+                      className="btn-timer"
+                      onClick={() => openPomodoroModal(task.title)}
+                    >
+                      ⏱️ Focus
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn-alarm-bell ${task.alarmActive ? 'active' : ''}`}
+                      onClick={() => toggleAlarmBell(task.id, task.title)}
+                      title={task.alarmActive ? 'Alarm Active' : 'Muted'}
+                    >
+                      <BellIcon size={14} />
+                    </button>
+                    <span className={`badge ${task.completed ? 'badge-done' : 'badge-upcoming'}`}>{task.status}</span>
+                  </div>
                 </div>
-                <div className="task-card-right">
-                  <button
-                    type="button"
-                    className="btn-timer"
-                    onClick={() => openPomodoroModal('Algebra Basics')}
-                  >
-                    ⏱️ Focus
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn-alarm-bell ${tasks[0].alarmActive ? 'active' : ''}`}
-                    onClick={() => toggleAlarmBell(tasks[0].id, tasks[0].title)}
-                    title={tasks[0].alarmActive ? 'Alarm Active' : 'Muted'}
-                  >
-                    <BellIcon size={14} />
-                  </button>
-                  <span className="badge badge-done">{tasks[0].status}</span>
-                </div>
-              </div>
+              ))}
 
               {/* Free Time Block 1 (Smart Suggestions) */}
               <div className="empty-block">
@@ -1788,41 +1838,6 @@ export default function App() {
                     <BellIcon size={14} />
                   </button>
                 )}
-              </div>
-
-              {/* Task 2: Chemistry */}
-              <div className={`task-card ${tasks[1].completed ? 'completed' : ''}`}>
-                <div className="task-card-left">
-                  <div className="task-check-circle" onClick={() => toggleTask(tasks[1].id)}>
-                    ✓
-                  </div>
-                  <div className="task-info">
-                    <div className="task-title">{tasks[1].title}</div>
-                    <div className="task-meta-row">
-                      <span className="task-tag task-tag-chem">{tasks[1].tagIcon}</span>
-                      <span>·</span>
-                      <span>{tasks[1].timeSlot}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="task-card-right">
-                  <button
-                    type="button"
-                    className="btn-timer"
-                    onClick={() => openPomodoroModal('Organic Chemistry')}
-                  >
-                    ⏱️ Focus
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn-alarm-bell ${tasks[1].alarmActive ? 'active' : ''}`}
-                    onClick={() => toggleAlarmBell(tasks[1].id, tasks[1].title)}
-                    title="Alarm notification"
-                  >
-                    <BellIcon size={14} />
-                  </button>
-                  <span className="badge badge-upcoming">{tasks[1].status}</span>
-                </div>
               </div>
 
               {/* Slotted Practice Card if scheduled */}
@@ -1902,40 +1917,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Task 3: Python */}
-              <div className={`task-card ${tasks[2].completed ? 'completed' : ''}`}>
-                <div className="task-card-left">
-                  <div className="task-check-circle" onClick={() => toggleTask(tasks[2].id)}>
-                    ✓
-                  </div>
-                  <div className="task-info">
-                    <div className="task-title">{tasks[2].title}</div>
-                    <div className="task-meta-row">
-                      <span className="task-tag task-tag-python">{tasks[2].tagIcon}</span>
-                      <span>·</span>
-                      <span>{tasks[2].timeSlot}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="task-card-right">
-                  <button
-                    type="button"
-                    className="btn-timer"
-                    onClick={() => openPomodoroModal('Loop Structures Lab')}
-                  >
-                    ⏱️ Focus
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn-alarm-bell ${tasks[2].alarmActive ? 'active' : ''}`}
-                    onClick={() => toggleAlarmBell(tasks[2].id, tasks[2].title)}
-                  >
-                    <BellIcon size={14} />
-                  </button>
-                  <span className="badge badge-upcoming">{tasks[2].status}</span>
-                </div>
-              </div>
-
               {/* Free Time Block 3 */}
               <div className="empty-block">
                 <div className="empty-block-left">
@@ -1991,33 +1972,6 @@ export default function App() {
                     <BellIcon size={14} />
                   </button>
                 )}
-              </div>
-
-              {/* Task 4: Completed Maths (Crisp Strikethrough & High Contrast) */}
-              <div className={`task-card ${tasks[3].completed ? 'completed' : ''}`}>
-                <div className="task-card-left">
-                  <div className="task-check-circle" onClick={() => toggleTask(tasks[3].id)}>
-                    ✓
-                  </div>
-                  <div className="task-info">
-                    <div className="task-title">{tasks[3].title}</div>
-                    <div className="task-meta-row">
-                      <span className="task-tag task-tag-math">{tasks[3].tagIcon}</span>
-                      <span>·</span>
-                      <span>{tasks[3].timeSlot}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="task-card-right">
-                  <button
-                    type="button"
-                    className="btn-alarm-bell"
-                    onClick={() => toggleAlarmBell(tasks[3].id, tasks[3].title)}
-                  >
-                    <BellIcon size={14} />
-                  </button>
-                  <span className="badge badge-done">{tasks[3].status}</span>
-                </div>
               </div>
             </div>
           </div>

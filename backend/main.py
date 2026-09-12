@@ -584,6 +584,9 @@ def generate_plan(
     request: GeneratePlanRequest,
     db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
 ):
+    if not request.subjects or request.hours_available <= 0:
+        return {"error": "Please provide at least one subject and a positive number of hours."}
+
     if not client:
         return {"error": "GROQ_API_KEY is not configured in environment or .env file."}
 
