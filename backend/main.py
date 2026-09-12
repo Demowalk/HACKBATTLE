@@ -21,3 +21,11 @@ def read_root():
 @app.get("/tasks")
 def get_tasks():
     return tasks
+
+@app.patch("/tasks/{id}")
+def update_task(id: int):
+    for task in tasks:
+        if task["id"] == id:
+            task["completed"] = True
+            return task
+    return {"error": "Task not found"}
