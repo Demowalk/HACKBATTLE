@@ -31,7 +31,7 @@ def get_supabase() -> Optional[Client]:
             _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
             return _supabase_client
         except Exception as e:
-            print(f"⚠️ Failed to initialize Supabase client: {e}")
+            print(f"[Supabase] Failed to initialize client: {e}")
             return None
     return None
 

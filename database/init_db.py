@@ -14,9 +14,9 @@ from database.models import User, Task, ConceptMastery, CriticalAction, ChatMess
 
 
 def init_database():
-    print("🚀 Initializing Reviso Database Tables...")
+    print("[Reviso DB] Initializing Reviso Database Tables...")
     Base.metadata.create_all(bind=engine)
-    print("✅ All tables created successfully!")
+    print("[Reviso DB] All tables created successfully!")
 
 
 def seed_demo_data():
@@ -25,10 +25,10 @@ def seed_demo_data():
         # Check if tasks already exist
         existing_tasks = db.query(Task).count()
         if existing_tasks > 0:
-            print(f"ℹ️ Database already contains {existing_tasks} tasks. Skipping initial seeding.")
+            print(f"[Reviso DB] Database already contains {existing_tasks} tasks. Skipping initial seeding.")
             return
 
-        print("🌱 Seeding initial demo student and tasks matching frontend state...")
+        print("[Reviso DB] Seeding initial demo student and tasks matching frontend state...")
 
         # 1. Create Default User
         today_str = datetime.utcnow().strftime("%Y-%m-%d")
@@ -210,10 +210,10 @@ def seed_demo_data():
         db.add_all(chat_messages)
 
         db.commit()
-        print("🎉 Database seeded with initial student, tasks, mastery, focus areas, and chat messages!")
+        print("[Reviso DB] Database seeded with initial student, tasks, mastery, focus areas, and chat messages!")
     except Exception as e:
         db.rollback()
-        print(f"❌ Error during database seeding: {e}")
+        print(f"[Reviso DB] Error during database seeding: {e}")
         raise e
     finally:
         db.close()

@@ -163,9 +163,9 @@ def on_startup():
             Base.metadata.create_all(bind=engine)
             with SessionLocal() as db:
                 crud.get_or_create_default_user(db)
-            print("🚀 [Reviso Database] Tables and default student profile verified on startup.")
+            print("[Reviso Database] Tables and default student profile verified on startup.")
         except Exception as e:
-            print(f"⚠️ [Reviso Database] Startup initialization notice: {e}")
+            print(f"[Reviso Database] Startup initialization notice: {e}")
 
 @app.get("/")
 def read_root():
@@ -268,7 +268,7 @@ def get_tasks(
                     for t in db_tasks
                 ]
         except Exception as e:
-            print(f"⚠️ Error fetching from database: {e}")
+            print(f"[Reviso Tasks] Notice fetching from database: {e}")
     return tasks
 
 @app.post("/tasks")
@@ -343,7 +343,7 @@ def update_task(id: int, db: Session = Depends(get_db) if DATABASE_AVAILABLE els
                     "statusTag": updated.status_tag,
                 }
         except Exception as e:
-            print(f"⚠️ Error updating task in database: {e}")
+            print(f"[Reviso Tasks] Error updating task in database: {e}")
 
     for task in tasks:
         if task["id"] == id:
@@ -1420,7 +1420,7 @@ def schedule_critical_remediation(
 
     duration_mins = req.duration_minutes or 60
     time_slot = req.time_slot or "4:30–5:30 PM"
-    task_title = f"🚨 Critical 1hr Study: {req.subject} - {req.topic}"
+    task_title = f"Focused Review: {req.subject} - {req.topic}"
 
     # 1. Update Concept Mastery in DB if available
     if DATABASE_AVAILABLE and db:

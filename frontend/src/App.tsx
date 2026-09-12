@@ -1,6 +1,40 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import {
+  Calendar,
+  Clock,
+  Sun,
+  Moon,
+  User,
+  History,
+  Target,
+  Settings,
+  LogOut,
+  Search,
+  X,
+  MessageSquare,
+  Lightbulb,
+  Zap,
+  Check,
+  Brain,
+  FileText,
+  AlertCircle,
+  Video,
+  ExternalLink,
+  Trash2,
+  Plus,
+  Play,
+  Pause,
+  RotateCcw,
+  Sparkles,
+  Download,
+  Menu,
+  CheckCircle,
+  XCircle,
+  Bookmark,
+  TrendingDown
+} from 'lucide-react'
+import {
   fetchUserProfile,
   updateUserProfile,
   getStoredUserName,
@@ -221,242 +255,6 @@ function CheckIcon({
       aria-hidden="true"
     >
       <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
-}
-
-function CalendarIcon({
-  size = 14,
-  color = 'currentColor',
-  className = '',
-}: {
-  size?: number
-  color?: string
-  className?: string
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
-      aria-hidden="true"
-    >
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  )
-}
-
-function ClockIcon({
-  size = 14,
-  color = 'currentColor',
-  className = '',
-}: {
-  size?: number
-  color?: string
-  className?: string
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  )
-}
-
-function RefreshIcon({
-  size = 14,
-  color = 'currentColor',
-  className = '',
-}: {
-  size?: number
-  color?: string
-  className?: string
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
-      aria-hidden="true"
-    >
-      <polyline points="23 4 23 10 17 10" />
-      <polyline points="1 20 1 14 7 14" />
-      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-    </svg>
-  )
-}
-
-function SendIcon({
-  size = 14,
-  color = 'currentColor',
-  className = '',
-}: {
-  size?: number
-  color?: string
-  className?: string
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
-      aria-hidden="true"
-    >
-      <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  )
-}
-
-function ExternalLinkIcon({
-  size = 13,
-  color = 'currentColor',
-  className = '',
-}: {
-  size?: number
-  color?: string
-  className?: string
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
-      aria-hidden="true"
-    >
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-      <polyline points="15 3 21 3 21 9" />
-      <line x1="10" y1="14" x2="21" y2="3" />
-    </svg>
-  )
-}
-
-function SunIcon({ size = 15, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <circle cx="12" cy="12" r="5" />
-      <line x1="12" y1="1" x2="12" y2="3" />
-      <line x1="12" y1="21" x2="12" y2="23" />
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-      <line x1="1" y1="12" x2="3" y2="12" />
-      <line x1="21" y1="12" x2="23" y2="12" />
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-    </svg>
-  )
-}
-
-function MoonIcon({ size = 15, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-  )
-}
-
-function PlayIcon({ size = 14, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <polygon points="5 3 19 12 5 21 5 3" />
-    </svg>
-  )
-}
-
-function PauseIcon({ size = 14, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <rect x="6" y="4" width="4" height="16" rx="1" />
-      <rect x="14" y="4" width="4" height="16" rx="1" />
-    </svg>
-  )
-}
-
-function TrashIcon({ size = 14, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  )
-}
-
-function SearchIcon({ size = 13, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  )
-}
-
-function UserIcon({ size = 14, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  )
-}
-
-function SettingsIcon({ size = 14, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  )
-}
-
-function LogOutIcon({ size = 14, color = 'currentColor', className = '' }: { size?: number; color?: string; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }} aria-hidden="true">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   )
 }
@@ -2253,12 +2051,12 @@ export default function App() {
       soundSynth.playSuccessBeep()
       setQuizFeedback({
         isCorrect: true,
-        text: `✓ Spot on! ${currentQ.explanation || 'Great job identifying the right answer!'}`,
+        text: `Spot on! ${currentQ.explanation || 'Great job identifying the right answer!'}`,
       })
     } else {
       setQuizFeedback({
         isCorrect: false,
-        text: `✕ Not quite. Correct answer: ${currentQ.correct_answer || 'the indicated option'}. ${currentQ.explanation || ''}`,
+        text: `Not quite. Correct answer: ${currentQ.correct_answer || 'the indicated option'}. ${currentQ.explanation || ''}`,
       })
     }
 
@@ -2684,7 +2482,7 @@ export default function App() {
             onClick={() => setCalendarModalOpen(true)}
             title="Open Interactive Study Calendar & Sync"
           >
-            <CalendarIcon size={14} />
+            <Calendar size={14} />
             <span>Calendar</span>
           </button>
 
@@ -2695,7 +2493,7 @@ export default function App() {
             onClick={() => openPomodoroModal('Organic Chemistry (11:00 AM)')}
             title="Launch 25-minute Pomodoro Study Timer"
           >
-            <ClockIcon size={14} />
+            <Clock size={14} />
             <span>Focus Timer</span>
           </button>
 
@@ -2717,7 +2515,7 @@ export default function App() {
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {theme === 'dark' ? <SunIcon size={15} /> : <MoonIcon size={15} />}
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
 
           {/* User Profile */}
@@ -2748,15 +2546,14 @@ export default function App() {
                     className={`profile-tab-btn ${profileTab === 'profile' ? 'active' : ''}`}
                     onClick={() => setProfileTab('profile')}
                   >
-                    <UserIcon size={13} />
-                    <span>Profile</span>
+                    <User size={14} /> <span>Profile</span>
                   </button>
                   <button
                     type="button"
                     className={`profile-tab-btn ${profileTab === 'history' ? 'active' : ''}`}
                     onClick={() => setProfileTab('history')}
                   >
-                    <ClockIcon size={13} />
+                    <History size={13} className="inline mr-1" />
                     <span>Chat History</span>
                     <span className="profile-tab-badge">
                       {chatList.filter((c) => c.type === 'msg').length}
@@ -2775,7 +2572,7 @@ export default function App() {
                         <span className="dropdown-email">laksh.hs@adaptive.ai</span>
                         <span className="dropdown-badge">{userRole} • {userGrade}</span>
                         <span style={{ fontSize: '11px', color: 'var(--brand-mint)', marginTop: '3px', fontWeight: 600 }}>
-                          {userTargetExam} • {userDailyGoal}m/day
+                          {userTargetExam} • {userDailyGoal} min/day
                         </span>
                       </div>
                     </div>
@@ -2796,7 +2593,7 @@ export default function App() {
                         width: '100%',
                       }}
                     >
-                      <ClockIcon size={16} />
+                      <History size={18} className="text-emerald-500" />
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
                         <span style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text-primary)' }}>
                           Chat History
@@ -2967,7 +2764,7 @@ export default function App() {
                         className="dropdown-action-btn"
                         onClick={() => setIsEditingName(true)}
                       >
-                        <SettingsIcon size={14} />
+                        <Settings size={14} />
                         <span>Edit Profile & Goals</span>
                       </button>
                     )}
@@ -2976,7 +2773,7 @@ export default function App() {
                       className="dropdown-action-btn logout-btn"
                       onClick={() => setIsProfileOpen(false)}
                     >
-                      <LogOutIcon size={14} />
+                      <LogOut size={14} />
                       <span>Sign Out</span>
                     </button>
                   </div>
@@ -2993,7 +2790,7 @@ export default function App() {
                         >
                           ‹
                         </button>
-                        <ClockIcon size={15} />
+                        <History size={16} />
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>
                             Chat History
@@ -3013,7 +2810,7 @@ export default function App() {
                           disabled={isRefreshingHistory}
                         >
                           <span style={{ display: 'inline-block', transform: isRefreshingHistory ? 'rotate(180deg)' : 'none', transition: 'transform 0.5s ease' }}>
-                            <RefreshIcon size={13} />
+                            <RotateCcw size={14} />
                           </span>
                         </button>
                         <button
@@ -3032,7 +2829,7 @@ export default function App() {
 
                     {/* Search Input */}
                     <div className="history-search-bar">
-                      <SearchIcon size={13} />
+                      <Search size={14} className="opacity-60" />
                       <input
                         type="text"
                         placeholder="Search conversation history..."
@@ -3046,7 +2843,7 @@ export default function App() {
                           className="history-clear-search-btn"
                           onClick={() => setHistorySearchQuery('')}
                         >
-                          ✕
+                          <X size={15} />
                         </button>
                       )}
                     </div>
@@ -3055,7 +2852,7 @@ export default function App() {
                     <div className="profile-history-list">
                       {filteredChatList.length === 0 ? (
                         <div className="history-empty-state">
-                          <ClockIcon size={24} />
+                          <Clock size={24} />
                           <div style={{ fontWeight: 600, fontSize: '12px', marginTop: '6px' }}>
                             {historySearchQuery ? 'No matching messages found' : 'No chat history recorded yet'}
                           </div>
@@ -3094,10 +2891,10 @@ export default function App() {
                           if (chatInputElem) {
                             chatInputElem.focus()
                           }
-                          showToast('Jumped to active tutor chat!')
+                          showToast('Switched to tutor chat', 'chat')
                         }}
                       >
-                        <span>Continue in Tutor Chat</span>
+                        <MessageSquare size={13} className="inline mr-1" /> <span>Continue in Tutor Chat</span>
                       </button>
                     </div>
                   </div>
@@ -3136,7 +2933,7 @@ export default function App() {
           <div className="panel" id="schedule-panel">
             <div className="panel-header-row">
               <h2 className="panel-title">
-                <CalendarIcon size={16} />
+                <Calendar size={16} className="inline mr-1.5 text-emerald-400" />
                 <span>Today's Adaptive Schedule</span>
               </h2>
 
@@ -3148,15 +2945,16 @@ export default function App() {
                 style={{ borderColor: quizCardBorderColor || undefined }}
               >
                 <div className="sync-badge">
-                  <span>QUIZ</span>
+                  <span>DIAGNOSTIC</span>
                 </div>
                 <div className="sync-meta">
                   <div className="sync-score">{quizScoreText}</div>
                   <div className="sync-name">Python Nested Loops &amp; Comprehensions</div>
                 </div>
                 <div className="sync-btn-auto">
+                  <Zap size={12} className="inline mr-1 text-amber-400" />
                   <span>
-                    {isRemediationScheduled ? 'Recap Slotted (12:00 PM)' : '+ Add 20m Practice'}
+                    {isRemediationScheduled ? 'Recap Slotted (12:00 PM)' : 'Add 20m Practice'}
                   </span>
                 </div>
               </div>
@@ -3168,7 +2966,7 @@ export default function App() {
                 <div key={task.id} className={`task-card ${task.completed ? 'completed' : ''}`}>
                   <div className="task-card-left">
                     <div className="task-check-circle" onClick={() => toggleTask(task.id)}>
-                      ✓
+                      <Check size={12} strokeWidth={2.5} />
                     </div>
                     <div className="task-info">
                       <div className="task-title">{task.title}</div>
@@ -3198,7 +2996,7 @@ export default function App() {
                         }}
                         title={`Watch ${task.videoTitle || 'Tutorial'} on YouTube`}
                       >
-                        Watch Video ↗
+                        Video
                       </a>
                     )}
                     <button
@@ -3206,8 +3004,7 @@ export default function App() {
                       className="btn-timer"
                       onClick={() => openPomodoroModal(task.title)}
                     >
-                      <ClockIcon size={12} />
-                      <span>Focus</span>
+                      Focus
                     </button>
                     <button
                       type="button"
@@ -3227,7 +3024,7 @@ export default function App() {
               <div className="empty-block">
                 <div className="empty-block-left">
                   <span className="empty-tag">
-                    {emptyBlocks['empty-1'].filled ? 'Scheduled' : 'Break'}
+                    {emptyBlocks['empty-1'].filled ? 'Scheduled' : 'Recovery Buffer'}
                   </span>
                   <span>
                     {emptyBlocks['empty-1'].filled
@@ -3240,23 +3037,24 @@ export default function App() {
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => handleFreeTimeActivity('Take a walk', '10:30–11:00 AM', 'empty-1', '')}
+                      onClick={() => handleFreeTimeActivity('Walk', '10:30–11:00 AM', 'empty-1', 'walk')}
                     >
-                      <span>Take a walk</span>
+                      <span>Walk</span>
                     </button>
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => handleFreeTimeActivity('Power nap', '10:30–11:00 AM', 'empty-1', '')}
+                      onClick={() => handleFreeTimeActivity('Rest', '10:30–11:00 AM', 'empty-1', 'rest')}
                     >
-                      <span>Power nap</span>
+                      <span>Rest</span>
                     </button>
                     <button
                       type="button"
                       className="btn-quick-fill"
-                      onClick={() => handleFreeTimeActivity('Quick Revision', '10:30–11:00 AM', 'empty-1', '')}
+                      onClick={() => handleFreeTimeActivity('Quick Revision', '10:30–11:00 AM', 'empty-1', 'revision')}
                     >
-                      <span>+ Add drill</span>
+                      <span>+</span>
+                      <span>Add drill</span>
                     </button>
                   </div>
                 ) : (
@@ -3278,10 +3076,10 @@ export default function App() {
                       className="task-check-circle"
                       onClick={() => showToast('Loop Practice session marked done!')}
                     >
-                      ✓
+                      <Check size={12} strokeWidth={2.5} />
                     </div>
                     <div className="task-info">
-                      <div className="task-title">Quick Practice: Python Nested Loops</div>
+                      <div className="task-title">Focused Review: Python Nested Loops</div>
                       <div className="task-meta-row">
                         <span className="task-tag task-tag-python">Python</span>
                         <span>·</span>
@@ -3295,8 +3093,7 @@ export default function App() {
                       className="btn-timer"
                       onClick={() => openPomodoroModal('Python Loop Recap')}
                     >
-                      <ClockIcon size={12} />
-                      <span>Focus</span>
+                      Focus
                     </button>
                     <button
                       type="button"
@@ -3314,7 +3111,7 @@ export default function App() {
               <div className="empty-block">
                 <div className="empty-block-left">
                   <span className="empty-tag">
-                    {isRemediationScheduled ? 'Lunch Break' : 'Free Time'}
+                    {isRemediationScheduled ? 'Lunch Break' : 'Open Buffer'}
                   </span>
                   <span>
                     {isRemediationScheduled
@@ -3329,14 +3126,15 @@ export default function App() {
                       className="chip-suggestion"
                       onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
                     >
-                      <span>+ Fit 20m practice</span>
+                      <Zap size={12} className="inline mr-1" />
+                      <span>20m Practice</span>
                     </button>
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => showToast('Enjoy your relaxing lunch window!')}
+                      onClick={() => showToast('Scheduled lunch break', 'coffee')}
                     >
-                      <span>Break &amp; Lunch</span>
+                      <span>Lunch Break</span>
                     </button>
                   </div>
                 ) : (
@@ -3357,7 +3155,7 @@ export default function App() {
                         : undefined
                     }
                   >
-                    {emptyBlocks['empty-3'].filled ? 'Scheduled' : 'Break'}
+                    {emptyBlocks['empty-3'].filled ? 'Scheduled' : 'Recovery Buffer'}
                   </span>
                   <span>
                     {emptyBlocks['empty-3'].filled
@@ -3370,23 +3168,24 @@ export default function App() {
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => handleFreeTimeActivity('Take a walk', '2:15–3:00 PM', 'empty-3', '')}
+                      onClick={() => handleFreeTimeActivity('Walk', '2:15–3:00 PM', 'empty-3', 'walk')}
                     >
-                      <span>Take a walk</span>
+                      <span>Walk</span>
                     </button>
                     <button
                       type="button"
                       className="chip-suggestion"
-                      onClick={() => handleFreeTimeActivity('Power nap', '2:15–3:00 PM', 'empty-3', '')}
+                      onClick={() => handleFreeTimeActivity('Rest', '2:15–3:00 PM', 'empty-3', 'rest')}
                     >
-                      <span>Power nap</span>
+                      <span>Rest</span>
                     </button>
                     <button
                       type="button"
                       className="btn-quick-fill"
-                      onClick={() => handleFreeTimeActivity('Quick Math Review', '2:15–3:00 PM', 'empty-3', '')}
+                      onClick={() => handleFreeTimeActivity('Math Review', '2:15–3:00 PM', 'empty-3', 'math')}
                     >
-                      <span>+ Add drill</span>
+                      <span>+</span>
+                      <span>Add drill</span>
                     </button>
                   </div>
                 ) : (
@@ -3407,6 +3206,7 @@ export default function App() {
             <div className="panel-header-row">
               <div>
                 <h2 className="panel-title">
+                  <Brain size={16} className="inline mr-1.5 text-emerald-400" />
                   <span>Concept Mastery &amp; Retention</span>
                 </h2>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -3416,7 +3216,7 @@ export default function App() {
               <span
                 className={`badge ${isRemediationScheduled ? 'badge-done' : 'badge-upcoming'}`}
               >
-                {isRemediationScheduled ? 'All Refreshed' : '1 Refresher Recommended'}
+                {isRemediationScheduled ? 'All Concepts Stable' : '1 Review Recommended'}
               </span>
             </div>
 
@@ -3443,6 +3243,7 @@ export default function App() {
                   className="btn-concept-quiz"
                   onClick={() => launchQuiz('math')}
                 >
+                  <FileText size={12} className="inline mr-1 text-slate-400" />
                   <span>Take Math Drill</span>
                 </button>
               </div>
@@ -3469,6 +3270,7 @@ export default function App() {
                   className="btn-concept-quiz"
                   onClick={() => launchQuiz('chem')}
                 >
+                  <FileText size={12} className="inline mr-1 text-slate-400" />
                   <span>Take Chem Drill</span>
                 </button>
               </div>
@@ -3500,6 +3302,7 @@ export default function App() {
                   className="btn-concept-quiz"
                   onClick={() => launchQuiz('python')}
                 >
+                  <Zap size={13} className="inline text-amber-400" />
                   <span>Take Booster Drill</span>
                 </button>
               </div>
@@ -3519,6 +3322,7 @@ export default function App() {
                   gap: '7px',
                 }}
               >
+                <Target size={14} className="inline text-emerald-400" />
                 <span>Focus Areas &amp; Boosters</span>
               </div>
               <span style={{ fontSize: '11.5px', color: '#004D40', fontWeight: 700 }}>
@@ -3529,7 +3333,7 @@ export default function App() {
             {/* Booster 1 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#004D40', marginTop: '6px', flexShrink: 0 }} />
+                <Lightbulb size={16} className="text-amber-400" />
                 <div>
                   <strong>Quick recap suggested:</strong> A 20-min loop refresher will make your upcoming lab a breeze!
                 </div>
@@ -3539,14 +3343,15 @@ export default function App() {
                 className={`btn-schedule-critical ${pythonCritScheduled ? 'scheduled' : ''}`}
                 onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
               >
-                <span>{pythonCritScheduled ? '✓ Slotted for 12:00 PM' : 'Squeeze in 20m Practice'}</span>
+                {pythonCritScheduled ? <Check size={12} className="inline mr-1" /> : <Zap size={12} className="inline mr-1" />}
+                <span>{pythonCritScheduled ? 'Slotted for 12:00 PM' : 'Squeeze in 20m Practice'}</span>
               </button>
             </div>
 
             {/* Booster 2 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-chem)', marginTop: '6px', flexShrink: 0 }} />
+                <Calendar size={16} className="text-sky-400" />
                 <div>
                   <strong>Math Midterm in 5 days:</strong> Let's do a relaxed 25m brush-up on quadratic roots.
                 </div>
@@ -3559,7 +3364,8 @@ export default function App() {
                   handleFreeTimeActivity('Math Midterm Review', '2:15–3:00 PM', 'empty-3')
                 }}
               >
-                <span>{mathMidtermScheduled ? '✓ Slotted in 2:15 PM' : 'Slot 25m Review'}</span>
+                {mathMidtermScheduled ? <Check size={12} className="inline mr-1" /> : <Calendar size={12} className="inline mr-1" />}
+                <span>{mathMidtermScheduled ? 'Slotted in 2:15 PM' : 'Slot 25m Review'}</span>
               </button>
             </div>
           </div>
@@ -3575,7 +3381,7 @@ export default function App() {
               <div>
                 <div className="agent-name">Reviso Copilot</div>
                 <div className="agent-status-label">
-                  <span>●</span> Ready to assist
+                  <span className="status-dot">●</span> Active &amp; Ready
                 </div>
               </div>
             </div>
@@ -3592,7 +3398,7 @@ export default function App() {
                 return (
                   <div key={entry.id} className="tool-call-trace">
                     <div className="tool-header">
-                      <span>study_copilot_action:</span> <strong>{entry.toolName}()</strong>
+                      <Zap size={12} className="inline mr-1 text-amber-400" /> <span>copilot_action:</span> <strong>{entry.toolName}()</strong>
                     </div>
                     <div>{JSON.stringify(entry.toolArgs, null, 2)}</div>
                   </div>
@@ -3614,33 +3420,33 @@ export default function App() {
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('Add 20m loop recap before lunch')}
+              onClick={() => triggerQuickAction('Schedule 20m review before lunch')}
             >
-              <span>Add 20m loop recap before lunch</span>
+              <Zap size={12} className="inline mr-1" /> <span>Schedule 20m review before lunch</span>
               <span className="arrow">→</span>
             </button>
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('Try a friendly 3-question drill')}
+              onClick={() => triggerQuickAction('Start 3-question diagnostic drill')}
             >
-              <span>Try a 3-question drill</span>
+              <FileText size={12} className="inline mr-1" /> <span>Start 3-question diagnostic drill</span>
               <span className="arrow">→</span>
             </button>
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('How does my memory retention look?')}
+              onClick={() => triggerQuickAction('Analyze memory retention')}
             >
-              <span>How does my memory retention look?</span>
+              <TrendingDown size={12} className="inline mr-1" /> <span>Analyze memory retention</span>
               <span className="arrow">→</span>
             </button>
             <button
               type="button"
               className="quick-btn"
-              onClick={() => triggerQuickAction('Start a 25-minute Pomodoro timer')}
+              onClick={() => triggerQuickAction('Start 25-minute focus timer')}
             >
-              <span>Start a 25-minute timer</span>
+              <Clock size={12} className="inline mr-1" /> <span>Start 25-minute focus timer</span>
               <span className="arrow">→</span>
             </button>
           </div>
@@ -3658,7 +3464,7 @@ export default function App() {
               }}
             />
             <button type="button" className="chat-send-btn" onClick={sendChat} title="Send">
-              <SendIcon size={14} />
+              Send
             </button>
           </div>
         </aside>
@@ -3677,6 +3483,7 @@ export default function App() {
           {/* Header */}
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileText size={12} className="inline mr-1 text-slate-400" />
               <span>{currentQuizTitle}</span>
             </div>
             <button
@@ -3685,13 +3492,14 @@ export default function App() {
               style={{ width: '30px', height: '30px' }}
               onClick={() => setQuizModalOpen(false)}
             >
-              ✕
+              <X size={15} />
             </button>
           </div>
 
           <div className="modal-body" style={{ overflowY: 'auto', flex: 1, padding: '20px 24px' }}>
             {quizLoading ? (
               <div style={{ padding: '36px 20px', textAlign: 'center' }}>
+                <RotateCcw size={32} className="animate-spin text-emerald-400 inline-block mb-3" />
                 <div style={{ fontWeight: 700, fontSize: '15px' }}>Generating Adaptive Baseline Drill...</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                   Loading 3 diagnostic questions to evaluate concept retention
@@ -3765,7 +3573,7 @@ export default function App() {
                     <div className="quiz-stage-head">
                       <span className="quiz-stage-pill">Stage 1 · Baseline</span>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        {quizFinalResult?.stage1Correct === 3 ? '3/3 Correct' : quizFinalResult?.stage1Correct === 2 ? '2/3 Correct' : 'Foundational'}
+                        {quizFinalResult?.stage1Correct === 3 ? 'Score: 3/3 (100%)' : quizFinalResult?.stage1Correct === 2 ? 'Score: 2/3 (67%)' : 'Foundational'}
                       </span>
                     </div>
                     <div className="quiz-stage-score-val">
@@ -3817,7 +3625,7 @@ export default function App() {
                   <div className="quiz-critical-remediation-box">
                     <div className="quiz-critical-top">
                       <div className="quiz-critical-icon-wrap">
-                        <CalendarIcon size={18} color="#f87171" />
+                        
                       </div>
                       <div className="quiz-critical-header-text">
                         <h4>Critical Intervention Scheduled ({quizFinalResult.totalCorrect}/5 Correct)</h4>
@@ -3836,14 +3644,14 @@ export default function App() {
                         </div>
                         <div className="quiz-cal-details">
                           <div className="quiz-cal-title-line">
-                            1-Hour Dedicated Study: {criticalRemediationInfo.subject} - {criticalRemediationInfo.topic}
+                            Dedicated Study Session: {criticalRemediationInfo.subject} - {criticalRemediationInfo.topic}
                           </div>
                           <div className="quiz-cal-sub-line">
-                            <span>{criticalRemediationInfo.dayName}</span>
+                            <span><Calendar size={12} className="inline mr-1" /> {criticalRemediationInfo.dayName}</span>
                             <span>•</span>
-                            <span>{criticalRemediationInfo.timeSlot} (60 mins)</span>
+                            <span><Clock size={12} className="inline mr-1" /> {criticalRemediationInfo.timeSlot} (60 min)</span>
                             <span>•</span>
-                            <span>Study Alarm Armed</span>
+                            <span><BellIcon size={12} className="inline mr-1" /> Study Alarm Armed</span>
                           </div>
                         </div>
                       </div>
@@ -3872,8 +3680,7 @@ export default function App() {
                           setCalendarModalOpen(true)
                         }}
                       >
-                        <CalendarIcon size={13} />
-                        <span>View in Calendar</span>
+                        <Calendar size={14} className="inline mr-1" /> <span>View on Calendar</span>
                       </button>
                     </div>
 
@@ -3882,7 +3689,7 @@ export default function App() {
                       <div className="quiz-yt-masterclass-card">
                         <div className="quiz-yt-left">
                           <div className="quiz-yt-play-badge">
-                            <PlayIcon size={11} color="#ffffff" />
+                            ▶
                           </div>
                           <div className="quiz-yt-info">
                             <span className="quiz-yt-tag">Recommended Masterclass Video</span>
@@ -3901,8 +3708,7 @@ export default function App() {
                           rel="noopener noreferrer"
                           className="quiz-yt-btn"
                         >
-                          <ExternalLinkIcon size={13} />
-                          <span>Watch on YouTube ↗</span>
+                          <ExternalLink size={13} className="inline mr-1" /> <span>Watch Tutorial</span>
                         </a>
                       </div>
                     )}
@@ -3950,7 +3756,7 @@ export default function App() {
                         <div key={idx} className={`quiz-review-card ${ans.isCorrect ? 'correct' : 'wrong'}`}>
                           <div className="quiz-review-card-top">
                             <div className="quiz-q-num-pill">
-                              <span>{ans.isCorrect ? '✓' : '✗'}</span>
+                              <span>{ans.isCorrect ? <CheckCircle size={14} className="text-emerald-400" /> : <XCircle size={14} className="text-rose-400" />}</span>
                               <span>Question {idx + 1}</span>
                               <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                                 ({idx < 3 ? 'Stage 1: Baseline' : `Stage 2: ${adaptiveDifficulty?.toUpperCase() || 'ADAPTIVE'}`})
@@ -3971,13 +3777,13 @@ export default function App() {
 
                           <div className="quiz-answers-comparison">
                             <div className={`quiz-ans-row ${ans.isCorrect ? 'user-correct' : 'user-wrong'}`}>
-                              <span>{ans.isCorrect ? '✓' : '✗'} Your Answer:</span>
+                              <span>{ans.isCorrect ? <Check size={12} className="inline text-emerald-400" /> : <X size={12} className="inline text-rose-400" />} Your Answer:</span>
                               <strong>{ans.selected_answer || '(No answer provided)'}</strong>
                             </div>
 
                             {!ans.isCorrect && q?.correct_answer && (
                               <div className="quiz-ans-row correct-ans">
-                                <span>Correct Answer:</span>
+                                <span><Check size={12} className="inline text-emerald-400" /> Correct Answer:</span>
                                 <strong>{q.correct_answer}</strong>
                               </div>
                             )}
@@ -3999,6 +3805,7 @@ export default function App() {
                 {/* Adaptive Stage 2 Notification Banner */}
                 {quizStage === 2 && adaptiveNotice && (
                   <div className={`quiz-adaptive-banner ${adaptiveDifficulty || 'medium'}`}>
+                    <Zap size={14} className="text-amber-400" />
                     <span><strong>Stage 1: {stage1Score}/3 correct</strong> — {adaptiveNotice}</span>
                   </div>
                 )}
@@ -4122,8 +3929,7 @@ export default function App() {
                       setCalendarModalOpen(true)
                     }}
                   >
-                    <CalendarIcon size={13} />
-                    <span>Open in Calendar</span>
+                    <Calendar size={14} className="inline mr-1" /> <span>Open in Calendar</span>
                   </button>
                 )}
                 <button
@@ -4131,8 +3937,8 @@ export default function App() {
                   className="quiz-next-btn"
                   onClick={() => launchQuiz(currentQuizSubject)}
                 >
-                  <RefreshIcon size={14} />
-                  <span>Retake Adaptive Drill</span>
+                  <span>Take Another Adaptive Drill</span>
+                  <RotateCcw size={14} />
                 </button>
               </div>
             ) : selectedQuizOpt !== null ? (
@@ -4189,7 +3995,7 @@ export default function App() {
         <div className="modal-window" style={{ maxWidth: '420px', textAlign: 'center' }}>
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ClockIcon size={16} />
+              <Clock size={14} />
               <span>Focus: {pomoSessionName}</span>
             </div>
             <button
@@ -4198,7 +4004,7 @@ export default function App() {
               style={{ width: '30px', height: '30px' }}
               onClick={() => setPomoModalOpen(false)}
             >
-              ✕
+              <X size={15} />
             </button>
           </div>
           <div className="modal-body">
@@ -4207,7 +4013,7 @@ export default function App() {
                 {formatTimerDigits(pomoSeconds)}
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                {pomoDurationMinutes <= 15 ? 'Break & Recovery Buffer' : 'Deep Focus Block · Keep up the momentum'}
+                {pomoDurationMinutes <= 15 ? 'Break & Recovery Buffer' : 'Deep Focus Block · Work steadily'}
               </div>
 
               {/* Progress Track */}
@@ -4297,11 +4103,11 @@ export default function App() {
             {/* Quick Presets Row */}
             <div className="timer-presets-row">
               {[
-                { label: '15m Focus', mins: 15 },
-                { label: '25m Pomodoro', mins: 25 },
-                { label: '45m Deep', mins: 45 },
-                { label: '60m Block', mins: 60 },
-                { label: '90m Exam Prep', mins: 90 },
+                { label: '15 min', mins: 15 },
+                { label: '25 min', mins: 25 },
+                { label: '45 min', mins: 45 },
+                { label: '60 min', mins: 60 },
+                { label: '90 min', mins: 90 },
                 { label: '5m Break', mins: 5 },
               ].map((preset) => (
                 <button
@@ -4322,7 +4128,7 @@ export default function App() {
                 style={{ padding: '10px 24px', fontSize: '14px', minWidth: '124px' }}
                 onClick={togglePomodoro}
               >
-                {pomoRunning ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
+                {pomoRunning ? <Pause size={14} /> : <Play size={14} />}
                 <span>{pomoRunning ? 'Pause' : 'Start'}</span>
               </button>
 
@@ -4449,7 +4255,7 @@ export default function App() {
               onClick={() => setGcalSidebarOpen((prev) => !prev)}
               title="Main menu (Toggle Sidebar)"
             >
-              ☰
+              <Menu size={16} />
             </button>
 
             {/* Google Calendar Logo & Brand */}
@@ -4512,8 +4318,8 @@ export default function App() {
                 value={gcalSearchQuery}
                 onChange={(e) => setGcalSearchQuery(e.target.value)}
               />
-              <span style={{ position: 'absolute', left: '10px', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
-                <SearchIcon size={13} color="#8b949e" />
+              <span style={{ position: 'absolute', left: '10px', fontSize: '12px', color: '#8b949e', pointerEvents: 'none' }}>
+                <Search size={14} />
               </span>
             </div>
 
@@ -4536,7 +4342,7 @@ export default function App() {
               onClick={handleSyncCalendar}
               title="Download standard RFC-5545 .ics for Google Calendar"
             >
-              <ExternalLinkIcon size={13} />
+              <Download size={14} />
               <span>{calendarSyncActive ? 'Exporting...' : 'Export .ics'}</span>
             </button>
 
@@ -4547,7 +4353,7 @@ export default function App() {
               onClick={() => setCalendarModalOpen(false)}
               title="Exit Calendar (Esc)"
             >
-              ✕
+              <X size={15} />
             </button>
           </div>
         </header>
@@ -4684,7 +4490,7 @@ export default function App() {
                           border: `1.5px solid ${item.color}`,
                         }}
                       >
-                        {isChecked ? '✓' : ''}
+                        {isChecked ? <Check size={11} strokeWidth={2.5} /> : ''}
                       </div>
                       <span>{item.name}</span>
                     </div>
@@ -4873,7 +4679,7 @@ export default function App() {
                                   title="Drag to change time or day • Click to view"
                                 >
                                   <div className="gcal-event-title">
-                                    {t.completed ? '✓ ' : ''}{t.title}
+                                    {t.completed ? 'Completed: ' : ''}{t.title}
                                   </div>
                                   <div className="gcal-event-time">
                                     {t.timeSlot}
@@ -4985,7 +4791,7 @@ export default function App() {
                               }}
                               title={`Drag to move date • ${t.subject}: ${t.title}`}
                             >
-                              {t.completed ? '✓ ' : ''}{t.subject}: {t.title}
+                              {t.completed ? 'Completed: ' : ''}{t.subject}: {t.title}
                             </div>
                           )
                         })}
@@ -5132,7 +4938,7 @@ export default function App() {
                                 >
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <span className="gcal-event-title" style={{ fontSize: '13px' }}>
-                                      {t.completed ? '✓ ' : ''}{t.title}
+                                      {t.completed ? 'Completed: ' : ''}{t.title}
                                     </span>
                                     <span style={{ fontSize: '10.5px', opacity: 0.8 }}>{t.subject}</span>
                                   </div>
@@ -5185,13 +4991,13 @@ export default function App() {
                                 handleToggleCalTask(d, t.id, calYear, calMonth)
                               }}
                             >
-                              {t.completed ? '✓' : ''}
+                              {t.completed ? <Check size={11} strokeWidth={2.5} /> : ''}
                             </button>
                             <div className="cal-task-info">
                               <div className="cal-task-name">{t.title}</div>
                               <div className="cal-task-sub">
                                 <span className={`task-tag ${t.tagClass}`}>{t.subject}</span>
-                                <span>{t.timeSlot}</span>
+                                <span><Clock size={11} className="inline mr-1" />{t.timeSlot}</span>
                                 {t.videoUrl && (
                                   <a
                                     href={t.videoUrl}
@@ -5209,13 +5015,13 @@ export default function App() {
                                       marginLeft: '6px',
                                     }}
                                   >
-                                    Video Tutorial ↗
+                                    <Video size={11} style={{ marginRight: 3 }} /> Video Tutorial
                                   </a>
                                 )}
                               </div>
                             </div>
                             <span className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}>
-                              {t.completed ? 'Done ✓' : 'Scheduled'}
+                              {t.completed ? 'Completed' : 'Scheduled'}
                             </span>
                           </div>
                         ))}
@@ -5259,18 +5065,21 @@ export default function App() {
                     className="gcal-close-btn"
                     onClick={() => setGcalActiveEvent(null)}
                   >
-                    ✕
+                    <X size={15} />
                   </button>
                 </div>
 
                 <div className="gcal-popover-meta">
                   <div className="gcal-popover-meta-row">
+                    <Calendar size={14} />
                     <span>{gcalActiveEvent.dateKey || `${MONTH_NAMES[calMonth]} ${selectedCalDay}, ${calYear}`}</span>
                   </div>
                   <div className="gcal-popover-meta-row">
+                    <Clock size={14} />
                     <span>{gcalActiveEvent.timeSlot} ({gcalActiveEvent.duration_minutes || 45} mins)</span>
                   </div>
                   <div className="gcal-popover-meta-row">
+                    <Bookmark size={14} />
                     <span className={`task-tag ${gcalActiveEvent.tagClass}`}>{gcalActiveEvent.subject}</span>
                     <span style={{ fontSize: '11px', color: '#8b949e', textTransform: 'capitalize' }}>
                       • {gcalActiveEvent.priority || 'medium'} priority
@@ -5295,7 +5104,7 @@ export default function App() {
                   >
                     <div>
                       <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                        Recommended Masterclass Video
+                        <Video size={14} className="inline mr-1.5" /> Recommended Video
                       </div>
                       <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
                         {gcalActiveEvent.videoTitle || 'Curated Tutorial Lesson'}
@@ -5323,10 +5132,7 @@ export default function App() {
                         gap: '4px',
                         boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
                       }}
-                    >
-                      <ExternalLinkIcon size={12} color="#ffffff" />
-                      <span>Watch Lesson</span>
-                    </a>
+                    ><Video size={13} style={{ marginRight: 4 }} /> Watch on YouTube</a>
                   </div>
                 )}
 
@@ -5339,7 +5145,7 @@ export default function App() {
                     onClick={() => handleShiftEventTime(-30)}
                     title="Move 30 minutes earlier"
                   >
-                    30m Earlier
+                    ⬅️ 30m Earlier
                   </button>
                   <button
                     type="button"
@@ -5347,7 +5153,7 @@ export default function App() {
                     onClick={() => handleShiftEventTime(30)}
                     title="Move 30 minutes later"
                   >
-                    30m Later
+                    +30m
                   </button>
                   <button
                     type="button"
@@ -5381,7 +5187,7 @@ export default function App() {
                       setGcalActiveEvent((prev) => (prev ? { ...prev, completed: !prev.completed } : null))
                     }}
                   >
-                    <span>{gcalActiveEvent.completed ? '✓ Completed' : 'Mark Complete'}</span>
+                    <span>{gcalActiveEvent.completed ? 'Completed' : 'Mark Complete'}</span>
                   </button>
 
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -5396,7 +5202,6 @@ export default function App() {
                       }}
                       title="Start deep work Pomodoro focus session"
                     >
-                      <ClockIcon size={12} />
                       <span>Focus</span>
                     </button>
 
@@ -5411,7 +5216,7 @@ export default function App() {
                       }}
                       title="Delete event"
                     >
-                      <TrashIcon size={14} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
@@ -5433,14 +5238,14 @@ export default function App() {
               <div className="gcal-popover-body">
                 <div className="gcal-popover-title-row">
                   <div className="gcal-popover-title">
-                    <span>New Study Session</span>
+                    <Plus size={14} className="inline mr-1" /> New Study Session
                   </div>
                   <button
                     type="button"
                     className="gcal-close-btn"
                     onClick={() => setGcalQuickCreateOpen(false)}
                   >
-                    ✕
+                    <X size={15} />
                   </button>
                 </div>
 
@@ -5511,7 +5316,7 @@ export default function App() {
                       onChange={(e) => setNewCalTaskPriority(e.target.value as any)}
                     >
                       <option value="medium">Medium</option>
-                      <option value="high">High</option>
+                      <option value="high">High Priority</option>
                       <option value="low">Low</option>
                     </select>
                   </div>
@@ -5572,9 +5377,10 @@ export default function App() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    fontSize: '18px',
                   }}
                 >
-                  <ClockIcon size={18} />
+                  <History size={16} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
@@ -5600,7 +5406,7 @@ export default function App() {
                       transition: 'transform 0.5s ease',
                     }}
                   >
-                    <RefreshIcon size={14} />
+                    <RotateCcw size={14} />
                   </span>
                 </button>
                 <button
@@ -5608,7 +5414,7 @@ export default function App() {
                   className="btn-icon"
                   onClick={() => setIsChatHistoryModalOpen(false)}
                 >
-                  ✕
+                  <X size={15} />
                 </button>
               </div>
             </div>
@@ -5621,7 +5427,7 @@ export default function App() {
               }}
             >
               <div className="history-search-bar" style={{ margin: 0 }}>
-                <SearchIcon size={13} color="var(--text-tertiary)" />
+                <Search size={14} className="opacity-60" />
                 <input
                   type="text"
                   placeholder="Search across all messages and tutor recommendations..."
@@ -5635,7 +5441,7 @@ export default function App() {
                     className="history-clear-search-btn"
                     onClick={() => setHistorySearchQuery('')}
                   >
-                    ✕
+                    <X size={15} />
                   </button>
                 )}
               </div>
@@ -5644,7 +5450,7 @@ export default function App() {
             <div className="chat-history-modal-body">
               {filteredChatList.length === 0 ? (
                 <div className="history-empty-state" style={{ padding: '60px 20px' }}>
-                  <ClockIcon size={32} />
+                  <MessageSquare size={36} className="text-slate-500" />
                   <div style={{ fontWeight: 700, fontSize: '14px', marginTop: '10px' }}>
                     {historySearchQuery ? 'No matching messages found' : 'No conversation history logged yet'}
                   </div>
@@ -5661,7 +5467,7 @@ export default function App() {
                   >
                     <div className="history-item-meta" style={{ marginBottom: '4px' }}>
                       <span className="history-sender-badge" style={{ fontSize: '11px' }}>
-                        {entry.sender === 'user' ? 'Laksh (You)' : 'Reviso Autonomous Copilot'}
+                        {entry.sender === 'user' ? 'Laksh (You)' : 'Reviso Copilot'}
                       </span>
                       {entry.timestamp && (
                         <span className="history-timestamp" style={{ fontSize: '11px' }}>
@@ -5707,10 +5513,10 @@ export default function App() {
                     setIsChatHistoryModalOpen(false)
                     const chatInputElem = document.querySelector('.chat-input-field') as HTMLInputElement
                     if (chatInputElem) chatInputElem.focus()
-                    showToast('Focused tutor chat!')
+                    showToast('Focused tutor chat', 'chat')
                   }}
                 >
-                  Open Live Chat
+                  <MessageSquare size={13} className="inline mr-1" /> Open Live Chat
                 </button>
               </div>
             </div>
@@ -5725,8 +5531,20 @@ export default function App() {
             <BellIcon size={15} color="#f97316" />
           ) : toast.icon === 'bell-off' || toast.icon === 'bell-off' ? (
             <BellOffIcon size={15} color="#ffffff" />
+          ) : toast.icon === 'check' ? (
+            <CheckCircle size={15} className="text-emerald-400" />
+          ) : toast.icon === 'calendar' ? (
+            <Calendar size={15} className="text-sky-400" />
+          ) : toast.icon === 'clock' ? (
+            <Clock size={15} className="text-amber-400" />
+          ) : toast.icon === 'alert' ? (
+            <AlertCircle size={15} className="text-rose-400" />
+          ) : toast.icon === 'zap' ? (
+            <Zap size={15} className="text-amber-400" />
+          ) : toast.icon === 'trash' ? (
+            <Trash2 size={15} className="text-rose-400" />
           ) : (
-            toast.icon
+            <Sparkles size={15} className="text-emerald-400" />
           )}
         </span>
         <span>{toast.message}</span>
