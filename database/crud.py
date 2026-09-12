@@ -21,6 +21,7 @@ def get_or_create_default_user(db: Session) -> User:
     """Fetch or create a default user for student demo/development."""
     user = db.query(User).first()
     if not user:
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
         user = User(
             username="reviso_scholar",
             email="scholar@reviso.ai",
@@ -29,6 +30,9 @@ def get_or_create_default_user(db: Session) -> User:
             grade="Grade 12 / Engineering Prep",
             streak=7,
             total_study_minutes=1260,
+            target_exam="JEE / Advanced STEM",
+            daily_goal_minutes=120,
+            last_active_date=today_str,
         )
         db.add(user)
         db.commit()
@@ -41,6 +45,43 @@ def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     return db.query(User).filter(User.id == user_id).first()
 
 
+def check_and_update_streak(db: Session, user_id: int) -> User:
+    """
+    Intelligently checks and updates user streak based on consecutive daily visits.
+    - Consecutive day (1 day difference) -> increment streak
+    - Same day -> preserve current streak
+    - Missed > 1 day -> reset streak to 1
+    Updates last_active_date to today.
+    """
+    user = get_user_by_id(db, user_id) or get_or_create_default_user(db)
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    last_str = user.last_active_date
+
+    if not last_str:
+        user.last_active_date = today_str
+        user.streak = max(1, user.streak or 1)
+    elif last_str != today_str:
+        try:
+            last_date = datetime.strptime(last_str, "%Y-%m-%d").date()
+            today_date = datetime.strptime(today_str, "%Y-%m-%d").date()
+            diff_days = (today_date - last_date).days
+
+            if diff_days == 1:
+                # Consecutive daily visit: increment streak!
+                user.streak = (user.streak or 0) + 1
+            elif diff_days > 1:
+                # Missed a day: reset streak to 1
+                user.streak = 1
+            user.last_active_date = today_str
+        except Exception:
+            user.last_active_date = today_str
+
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def update_user_profile(
     db: Session,
     user_id: int,
@@ -48,6 +89,8 @@ def update_user_profile(
     grade: Optional[str] = None,
     streak: Optional[int] = None,
     total_study_minutes: Optional[int] = None,
+    target_exam: Optional[str] = None,
+    daily_goal_minutes: Optional[int] = None,
 ) -> Optional[User]:
     """Update profile fields for a user."""
     user = get_user_by_id(db, user_id)
@@ -62,11 +105,16 @@ def update_user_profile(
         user.streak = streak
     if total_study_minutes is not None:
         user.total_study_minutes = total_study_minutes
+    if target_exam is not None:
+        user.target_exam = target_exam
+    if daily_goal_minutes is not None:
+        user.daily_goal_minutes = daily_goal_minutes
 
     user.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(user)
     return user
+
 
 
 # ---------------------------------------------------------------------------
@@ -299,6 +347,16 @@ def add_chat_message(db: Session, sender: str, text: str, user_id: Optional[int]
     db.commit()
     db.refresh(msg)
     return msg
+
+
+def clear_chat_history(db: Session, user_id: Optional[int] = None) -> int:
+    """Clear chat messages for a user or all users."""
+    query = db.query(ChatMessage)
+    if user_id is not None:
+        query = query.filter(ChatMessage.user_id == user_id)
+    deleted = query.delete()
+    db.commit()
+    return deleted
 
 
 # ---------------------------------------------------------------------------

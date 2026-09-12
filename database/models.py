@@ -25,7 +25,11 @@ class User(Base):
     grade = Column(String(100), default="Grade 12 / Engineering Prep")
     streak = Column(Integer, default=7)
     total_study_minutes = Column(Integer, default=1260)
+    target_exam = Column(String(100), default="JEE / Advanced STEM")
+    daily_goal_minutes = Column(Integer, default=120)
+    last_active_date = Column(String(20), default=datetime.utcnow().strftime("%Y-%m-%d"))
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")

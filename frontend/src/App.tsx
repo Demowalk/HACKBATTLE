@@ -5,6 +5,12 @@ import {
   updateUserProfile,
   getStoredUserName,
   setStoredUserName,
+  updateTaskCompletion,
+  deleteTaskFromDb,
+  createTaskInDb,
+  fetchChatHistory,
+  sendChatMessage,
+  recordStudySession,
 } from './services/api'
 
 // ============================================================================
@@ -481,6 +487,19 @@ export default function App() {
         }
       }
     })
+
+    fetchChatHistory().then((history) => {
+      if (history && history.length > 0) {
+        setChatList(
+          history.map((m) => ({
+            id: `msg-${m.id}`,
+            type: 'msg' as const,
+            sender: (m.sender === 'user' ? 'user' : 'bot') as 'user' | 'bot',
+            text: m.text,
+          }))
+        )
+      }
+    })
   }, [])
 
   // Click outside to close profile
@@ -536,6 +555,9 @@ export default function App() {
             setPomoRunning(false)
             soundSynth.playHarmonicChime()
             showToast('Pomodoro session completed! Great job, Laksh!', '🎉')
+            recordStudySession('General Focus', 25, pomoSessionName).then((res) => {
+              if (res?.userStreak != null) setUserStreak(res.userStreak)
+            })
             return 25 * 60
           }
           return prev - 1
@@ -545,7 +567,7 @@ export default function App() {
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [pomoRunning])
+  }, [pomoRunning, pomoSessionName])
 
   // Toast helper
   const showToast = (message: string, icon = '✨') => {
@@ -627,6 +649,10 @@ export default function App() {
         return t
       })
     )
+    const numId = parseInt(taskId.replace('task-', ''), 10)
+    if (!isNaN(numId)) {
+      updateTaskCompletion(numId)
+    }
   }
 
   // Toggle task in Calendar Day view
@@ -684,6 +710,13 @@ export default function App() {
         status: 'Upcoming',
       }
       setTasks((prev) => [...prev, newTask])
+      createTaskInDb({
+        title: newCalTaskTitle.trim(),
+        subject: newCalTaskSubject,
+        topic: 'Self-Directed Review',
+        time_slot: newCalTaskTime.trim() || '5:00–6:00 PM',
+        scheduled_date: '2026-09-12',
+      })
     } else {
       const newTask = {
         id: `cal-${Date.now()}`,
@@ -708,6 +741,10 @@ export default function App() {
   const handleDeleteCalTask = (day: number, taskId: string) => {
     if (day === 12) {
       setTasks((prev) => prev.filter((t) => t.id !== taskId))
+      const numId = parseInt(taskId.replace('task-', ''), 10)
+      if (!isNaN(numId)) {
+        deleteTaskFromDb(numId)
+      }
     } else {
       setOtherDayTasks((prev) => ({
         ...prev,
@@ -759,6 +796,7 @@ export default function App() {
         text,
       },
     ])
+    sendChatMessage(sender, text)
   }
 
   // Auto Schedule Practice Session into Free Time

@@ -60,6 +60,42 @@ class UserProfileUpdateRequest(BaseModel):
     grade: Optional[str] = None
     streak: Optional[int] = None
     totalStudyMinutes: Optional[int] = None
+    targetExam: Optional[str] = None
+    dailyGoalMinutes: Optional[int] = None
+
+class CreateTaskRequest(BaseModel):
+    title: str
+    subject: str
+    topic: str
+    duration_minutes: int = 60
+    priority: str = "medium"
+    time_slot: str = "5:00–6:00 PM"
+    scheduled_date: str = "2026-09-12"
+    alarm_active: bool = True
+    is_critical: bool = False
+    status_tag: str = "Upcoming"
+    user_id: Optional[int] = 1
+
+class ChatMessageRequest(BaseModel):
+    sender: str
+    text: str
+    user_id: Optional[int] = 1
+
+class StudySessionRequest(BaseModel):
+    subject: str
+    topic: Optional[str] = None
+    duration_minutes: int = 25
+    session_type: str = "pomodoro"
+    user_id: Optional[int] = 1
+
+class ConceptMasteryRequest(BaseModel):
+    subject: str
+    topic: str
+    mastery_score: float
+    decay_risk: float = 0.2
+    low_proficiency: bool = False
+    projected_note: Optional[str] = None
+    user_id: Optional[int] = 1
 
 load_dotenv()
 # Also check backend/.env if not loaded
@@ -117,9 +153,9 @@ def get_user_profile(
     user_id: Optional[int] = Query(1),
     db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
 ):
-    """Fetch persistent user profile from database."""
+    """Fetch persistent user profile from database and evaluate daily streak."""
     if DATABASE_AVAILABLE and db:
-        user = crud.get_user_by_id(db, user_id) or crud.get_or_create_default_user(db)
+        user = crud.check_and_update_streak(db, user_id)
         return {
             "id": user.id,
             "username": user.username,
@@ -129,6 +165,9 @@ def get_user_profile(
             "grade": user.grade,
             "streak": user.streak,
             "totalStudyMinutes": user.total_study_minutes,
+            "targetExam": user.target_exam,
+            "dailyGoalMinutes": user.daily_goal_minutes,
+            "lastActiveDate": user.last_active_date,
         }
     return {
         "id": 1,
@@ -139,6 +178,9 @@ def get_user_profile(
         "grade": "Grade 12 / Engineering Prep",
         "streak": 7,
         "totalStudyMinutes": 1260,
+        "targetExam": "JEE / Advanced STEM",
+        "dailyGoalMinutes": 120,
+        "lastActiveDate": datetime.utcnow().strftime("%Y-%m-%d"),
     }
 
 @app.patch("/user/profile")
@@ -156,6 +198,8 @@ def update_user_profile_endpoint(
             grade=data.grade,
             streak=data.streak,
             total_study_minutes=data.totalStudyMinutes,
+            target_exam=data.targetExam,
+            daily_goal_minutes=data.dailyGoalMinutes,
         )
         if updated:
             return {
@@ -164,6 +208,8 @@ def update_user_profile_endpoint(
                 "grade": updated.grade,
                 "streak": updated.streak,
                 "totalStudyMinutes": updated.total_study_minutes,
+                "targetExam": updated.target_exam,
+                "dailyGoalMinutes": updated.daily_goal_minutes,
             }
     return {"id": user_id, "fullName": data.fullName}
 
@@ -197,6 +243,64 @@ def get_tasks(
             print(f"⚠️ Error fetching from database: {e}")
     return tasks
 
+@app.post("/tasks")
+def create_task_endpoint(
+    task_data: CreateTaskRequest,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Persist a new task in the database."""
+    if DATABASE_AVAILABLE and db:
+        try:
+            from database.schemas import TaskCreate
+            task_in = TaskCreate(
+                title=task_data.title,
+                subject=task_data.subject,
+                topic=task_data.topic,
+                duration_minutes=task_data.duration_minutes,
+                priority=task_data.priority,
+                time_slot=task_data.time_slot,
+                scheduled_date=task_data.scheduled_date,
+                alarm_active=task_data.alarm_active,
+                is_critical=task_data.is_critical,
+                status_tag=task_data.status_tag,
+                user_id=task_data.user_id,
+            )
+            created = crud.create_task(db, task_in)
+            return {
+                "id": created.id,
+                "title": created.title,
+                "subject": created.subject,
+                "topic": created.topic,
+                "duration_minutes": created.duration_minutes,
+                "priority": created.priority,
+                "timeSlot": created.time_slot,
+                "scheduled_date": created.scheduled_date,
+                "completed": created.completed,
+                "alarmEnabled": created.alarm_active,
+                "isCritical": created.is_critical,
+                "statusTag": created.status_tag,
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    global tasks
+    new_id = len(tasks) + 1
+    new_task = {
+        "id": new_id,
+        "title": task_data.title,
+        "subject": task_data.subject,
+        "topic": task_data.topic,
+        "duration_minutes": task_data.duration_minutes,
+        "priority": task_data.priority,
+        "timeSlot": task_data.time_slot,
+        "scheduled_date": task_data.scheduled_date,
+        "completed": False,
+        "alarmEnabled": task_data.alarm_active,
+        "isCritical": task_data.is_critical,
+        "statusTag": task_data.status_tag,
+    }
+    tasks.append(new_task)
+    return new_task
+
 @app.patch("/tasks/{id}")
 def update_task(id: int, db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
     if DATABASE_AVAILABLE and db:
@@ -219,10 +323,26 @@ def update_task(id: int, db: Session = Depends(get_db) if DATABASE_AVAILABLE els
             return task
     return {"error": "Task not found"}
 
-@app.get("/concept-mastery")
-def get_concept_mastery_endpoint(db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+@app.delete("/tasks/{id}")
+def delete_task_endpoint(
+    id: int,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Delete a task permanently from the database."""
     if DATABASE_AVAILABLE and db:
-        records = crud.get_concept_mastery_list(db)
+        success = crud.delete_task(db, id)
+        return {"success": success, "deleted_id": id}
+    global tasks
+    tasks = [t for t in tasks if t["id"] != id]
+    return {"success": True, "deleted_id": id}
+
+@app.get("/concept-mastery")
+def get_concept_mastery_endpoint(
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    if DATABASE_AVAILABLE and db:
+        records = crud.get_concept_mastery_list(db, user_id=user_id)
         return [
             {
                 "id": r.id,
@@ -237,10 +357,41 @@ def get_concept_mastery_endpoint(db: Session = Depends(get_db) if DATABASE_AVAIL
         ]
     return []
 
-@app.get("/critical-actions")
-def get_critical_actions_endpoint(db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+@app.post("/concept-mastery")
+def upsert_concept_mastery_endpoint(
+    data: ConceptMasteryRequest,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Upsert concept mastery (DKT) score."""
     if DATABASE_AVAILABLE and db:
-        actions = crud.get_critical_actions(db)
+        rec = crud.upsert_concept_mastery(
+            db=db,
+            subject=data.subject,
+            topic=data.topic,
+            mastery_score=data.mastery_score,
+            decay_risk=data.decay_risk,
+            low_proficiency=data.low_proficiency,
+            projected_note=data.projected_note,
+            user_id=data.user_id,
+        )
+        return {
+            "id": rec.id,
+            "subject": rec.subject,
+            "topic": rec.topic,
+            "masteryScore": rec.mastery_score,
+            "decayRisk": rec.decay_risk,
+            "lowProficiency": rec.low_proficiency,
+            "projectedNote": rec.projected_note,
+        }
+    return {"success": True}
+
+@app.get("/critical-actions")
+def get_critical_actions_endpoint(
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    if DATABASE_AVAILABLE and db:
+        actions = crud.get_critical_actions(db, user_id=user_id)
         return [
             {
                 "id": a.id,
@@ -255,10 +406,29 @@ def get_critical_actions_endpoint(db: Session = Depends(get_db) if DATABASE_AVAI
         ]
     return []
 
-@app.get("/chat/history")
-def get_chat_history_endpoint(db: Session = Depends(get_db) if DATABASE_AVAILABLE else None):
+@app.post("/critical-actions/{id}/toggle")
+def toggle_critical_action_endpoint(
+    id: int,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Toggle the scheduled state of a critical remediation alert."""
     if DATABASE_AVAILABLE and db:
-        msgs = crud.get_chat_history(db)
+        action = crud.toggle_critical_action(db, id)
+        if action:
+            return {
+                "id": action.id,
+                "actionKey": action.action_key,
+                "isScheduled": action.is_scheduled,
+            }
+    return {"id": id, "isScheduled": True}
+
+@app.get("/chat/history")
+def get_chat_history_endpoint(
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    if DATABASE_AVAILABLE and db:
+        msgs = crud.get_chat_history(db, user_id=user_id)
         return [
             {
                 "id": m.id,
@@ -269,6 +439,65 @@ def get_chat_history_endpoint(db: Session = Depends(get_db) if DATABASE_AVAILABL
             for m in msgs
         ]
     return []
+
+@app.post("/chat/message")
+def post_chat_message_endpoint(
+    msg: ChatMessageRequest,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Persist a conversation message in the database."""
+    if DATABASE_AVAILABLE and db:
+        saved = crud.add_chat_message(db, sender=msg.sender, text=msg.text, user_id=msg.user_id)
+        return {
+            "id": saved.id,
+            "sender": saved.sender,
+            "text": saved.text,
+            "timestamp": saved.timestamp_str,
+        }
+    return {
+        "id": 999,
+        "sender": msg.sender,
+        "text": msg.text,
+        "timestamp": datetime.utcnow().strftime("%I:%M %p"),
+    }
+
+@app.delete("/chat/history")
+def delete_chat_history_endpoint(
+    user_id: Optional[int] = Query(1),
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Clear conversation history for the student."""
+    if DATABASE_AVAILABLE and db:
+        count = crud.clear_chat_history(db, user_id=user_id)
+        return {"success": True, "deleted_count": count}
+    return {"success": True, "deleted_count": 0}
+
+@app.post("/study-sessions")
+def create_study_session_endpoint(
+    session_data: StudySessionRequest,
+    db: Session = Depends(get_db) if DATABASE_AVAILABLE else None
+):
+    """Log a completed focus / Pomodoro session and update student study stats & streak."""
+    if DATABASE_AVAILABLE and db:
+        sess = crud.record_study_session(
+            db=db,
+            subject=session_data.subject,
+            duration_minutes=session_data.duration_minutes,
+            topic=session_data.topic,
+            session_type=session_data.session_type,
+            user_id=session_data.user_id,
+        )
+        user = crud.check_and_update_streak(db, session_data.user_id or 1)
+        return {
+            "id": sess.id,
+            "subject": sess.subject,
+            "durationMinutes": sess.duration_minutes,
+            "completedAt": sess.completed_at.isoformat() if sess.completed_at else None,
+            "userStreak": user.streak,
+            "totalStudyMinutes": user.total_study_minutes,
+        }
+    return {"success": True, "durationMinutes": session_data.duration_minutes}
+
 
 def build_prompt(subjects, hours_available):
     subject_list = ""

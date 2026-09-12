@@ -1,6 +1,7 @@
 """Database initialization and initial seed script for reviso."""
 import sys
 import os
+from datetime import datetime
 
 # Add project root to sys.path so it can be run standalone as `python database/init_db.py`
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,14 +31,22 @@ def seed_demo_data():
         print("🌱 Seeding initial demo student and tasks matching frontend state...")
 
         # 1. Create Default User
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
         user = User(
             username="reviso_scholar",
             email="scholar@reviso.ai",
+            full_name="Laksh Scholar",
+            role="Student",
+            grade="Grade 12 / Engineering Prep",
             streak=7,
             total_study_minutes=1260,
+            target_exam="JEE / Advanced STEM",
+            daily_goal_minutes=120,
+            last_active_date=today_str,
         )
         db.add(user)
         db.flush()
+
 
         # 2. Seed Initial Tasks matching frontend schedule
         initial_tasks = [

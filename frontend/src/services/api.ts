@@ -12,6 +12,36 @@ export interface UserProfile {
   grade: string
   streak: number
   totalStudyMinutes: number
+  targetExam?: string
+  dailyGoalMinutes?: number
+  lastActiveDate?: string
+}
+
+export interface ChatMessageItem {
+  id: number
+  sender: string
+  text: string
+  timestamp: string
+}
+
+export interface ConceptMasteryItem {
+  id: number
+  subject: string
+  topic: string
+  masteryScore: number
+  decayRisk: number
+  lowProficiency: boolean
+  projectedNote?: string
+}
+
+export interface CriticalActionItem {
+  id: number
+  badgeLabel: string
+  descHtml: string
+  btnText: string
+  isScheduled: boolean
+  targetSlot: string
+  actionKey: string
 }
 
 const STORAGE_KEYS = {
@@ -45,6 +75,9 @@ export function setStoredUserName(name: string): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+// User Profile API
+// ---------------------------------------------------------------------------
 export async function fetchUserProfile(userId?: number): Promise<UserProfile | null> {
   const uid = userId ?? getStoredUserId()
   try {
@@ -78,7 +111,14 @@ export async function fetchUserProfile(userId?: number): Promise<UserProfile | n
 
 export async function updateUserProfile(
   userId: number,
-  updates: { fullName?: string; grade?: string; streak?: number; totalStudyMinutes?: number }
+  updates: {
+    fullName?: string
+    grade?: string
+    streak?: number
+    totalStudyMinutes?: number
+    targetExam?: string
+    dailyGoalMinutes?: number
+  }
 ): Promise<UserProfile | null> {
   try {
     const controller = new AbortController()
@@ -102,7 +142,6 @@ export async function updateUserProfile(
       return data
     }
   } catch {
-    // If backend is offline, update localStorage
     if (updates.fullName) {
       localStorage.setItem(STORAGE_KEYS.USER_NAME, updates.fullName)
     }
@@ -110,6 +149,9 @@ export async function updateUserProfile(
   return null
 }
 
+// ---------------------------------------------------------------------------
+// Task Management API
+// ---------------------------------------------------------------------------
 export async function fetchTasks(userId?: number): Promise<{ tasks: Task[]; isLive: boolean }> {
   const uid = userId ?? getStoredUserId()
   try {
@@ -129,6 +171,45 @@ export async function fetchTasks(userId?: number): Promise<{ tasks: Task[]; isLi
     // Backend is offline or CORS issue, fall back gracefully to mock tasks
   }
   return { tasks: INITIAL_TASKS, isLive: false }
+}
+
+export async function createTaskInDb(task: {
+  title: string
+  subject: string
+  topic: string
+  duration_minutes?: number
+  priority?: string
+  time_slot?: string
+  scheduled_date?: string
+  alarm_active?: boolean
+  is_critical?: boolean
+  status_tag?: string
+  user_id?: number
+}): Promise<Task | null> {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 2000)
+
+    const response = await fetch(`${BACKEND_URL}/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...task,
+        user_id: task.user_id ?? getStoredUserId(),
+      }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch {
+    // offline fallback
+  }
+  return null
 }
 
 export async function updateTaskCompletion(id: number): Promise<{ success: boolean; updatedTask?: Task }> {
@@ -153,4 +234,143 @@ export async function updateTaskCompletion(id: number): Promise<{ success: boole
     // Fallback handled locally in state
   }
   return { success: false }
+}
+
+export async function deleteTaskFromDb(id: number): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 2000)
+
+    const response = await fetch(`${BACKEND_URL}/tasks/${id}`, {
+      method: 'DELETE',
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Chat History & Persistence API
+// ---------------------------------------------------------------------------
+export async function fetchChatHistory(userId?: number): Promise<ChatMessageItem[]> {
+  const uid = userId ?? getStoredUserId()
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 2000)
+
+    const response = await fetch(`${BACKEND_URL}/chat/history?user_id=${uid}`, {
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch {
+    // offline
+  }
+  return []
+}
+
+export async function sendChatMessage(sender: string, text: string, userId?: number): Promise<ChatMessageItem | null> {
+  const uid = userId ?? getStoredUserId()
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 2000)
+
+    const response = await fetch(`${BACKEND_URL}/chat/message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sender, text, user_id: uid }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch {
+    // offline
+  }
+  return null
+}
+
+// ---------------------------------------------------------------------------
+// Study Session (Pomodoro) Persistence API
+// ---------------------------------------------------------------------------
+export async function recordStudySession(
+  subject: string,
+  durationMinutes: number = 25,
+  topic?: string,
+  userId?: number
+): Promise<{ userStreak?: number; totalStudyMinutes?: number } | null> {
+  const uid = userId ?? getStoredUserId()
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 2000)
+
+    const response = await fetch(`${BACKEND_URL}/study-sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        subject,
+        duration_minutes: durationMinutes,
+        topic,
+        session_type: 'pomodoro',
+        user_id: uid,
+      }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch {
+    // offline
+  }
+  return null
+}
+
+// ---------------------------------------------------------------------------
+// Concept Mastery & Critical Actions API
+// ---------------------------------------------------------------------------
+export async function fetchConceptMastery(userId?: number): Promise<ConceptMasteryItem[]> {
+  const uid = userId ?? getStoredUserId()
+  try {
+    const response = await fetch(`${BACKEND_URL}/concept-mastery?user_id=${uid}`)
+    if (response.ok) return await response.json()
+  } catch {
+    // offline
+  }
+  return []
+}
+
+export async function fetchCriticalActions(userId?: number): Promise<CriticalActionItem[]> {
+  const uid = userId ?? getStoredUserId()
+  try {
+    const response = await fetch(`${BACKEND_URL}/critical-actions?user_id=${uid}`)
+    if (response.ok) return await response.json()
+  } catch {
+    // offline
+  }
+  return []
+}
+
+export async function toggleCriticalAction(id: number): Promise<boolean> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/critical-actions/${id}/toggle`, {
+      method: 'POST',
+    })
+    return response.ok
+  } catch {
+    return false
+  }
 }

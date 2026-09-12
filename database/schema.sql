@@ -14,8 +14,13 @@ CREATE TABLE IF NOT EXISTS public.users (
     grade VARCHAR(100) DEFAULT 'Grade 12 / Engineering Prep',
     streak INT DEFAULT 7,
     total_study_minutes INT DEFAULT 1260,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    target_exam VARCHAR(100) DEFAULT 'JEE / Advanced STEM',
+    daily_goal_minutes INT DEFAULT 120,
+    last_active_date VARCHAR(20) DEFAULT CURRENT_DATE::text,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
 
 -- 2. STUDY SCHEDULE & CALENDAR TASKS TABLE
 CREATE TABLE IF NOT EXISTS public.tasks (

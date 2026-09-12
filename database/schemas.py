@@ -197,14 +197,27 @@ class UserBase(BaseModel):
     grade: Optional[str] = "Grade 12 / Engineering Prep"
     streak: int = 7
     total_study_minutes: int = 1260
+    target_exam: Optional[str] = "JEE / Advanced STEM"
+    daily_goal_minutes: int = 120
+    last_active_date: Optional[str] = None
 
 
 class UserCreate(UserBase):
     pass
 
 
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    grade: Optional[str] = None
+    streak: Optional[int] = None
+    total_study_minutes: Optional[int] = None
+    target_exam: Optional[str] = None
+    daily_goal_minutes: Optional[int] = None
+
+
 class UserOut(UserBase):
     id: int
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
