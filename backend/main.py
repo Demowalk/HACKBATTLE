@@ -20,6 +20,13 @@ class GenerateQuizRequest(BaseModel):
     difficulty: str
     count: int
 
+class QuizAnswer(BaseModel):
+    question_id: int
+    selected_answer: str
+
+class QuizAnswersRequest(BaseModel):
+    answers: List[QuizAnswer]
+
 load_dotenv()
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
@@ -173,3 +180,31 @@ def generate_quiz(request: GenerateQuizRequest):
         })
 
     return {"questions": frontend_questions}
+
+@app.post("/quiz/answer")
+def check_quiz_answers(request: QuizAnswersRequest):
+    correct_count = 0
+    total = len(request.answers)
+
+    for answer in request.answers:
+        for question in quiz_questions:
+            if question["id"] == answer.question_id:
+                if question["correct_answer"] == answer.selected_answer:
+                    correct_count += 1
+
+    if correct_count >= (total * 0.7):
+        next_difficulty = "hard"
+    elif correct_count <= (total * 0.3):
+        next_difficulty = "easy"
+    else:
+        next_difficulty = "medium"
+
+    return {
+        "correct_count": correct_count,
+        "total": total,
+        "next_difficulty": next_difficulty
+    }
+
+@app.get("/debug/quiz-answers")
+def debug_quiz_answers():
+    return quiz_questions
