@@ -2371,6 +2371,16 @@ export default function App() {
   const triggerAutoSchedule = (taskTitle = 'Python Loop Quick Recap') => {
     if (isRemediationScheduled) {
       showToast('Practice session already slotted into your schedule!')
+      addChatMessage(
+        `You already have <strong>${taskTitle}</strong> slotted in for 12:00–12:30 PM right before lunch!`,
+        'bot'
+      )
+      const el = document.getElementById('slotted-critical-practice')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('task-card-highlight')
+        setTimeout(() => el.classList.remove('task-card-highlight'), 2200)
+      }
       return
     }
 
@@ -2406,6 +2416,16 @@ export default function App() {
           `All set, Laksh! I added <strong>${taskTitle}</strong> for 12:00–12:30 PM. You still have a full hour of relaxing lunch time before lab at 1:30 PM. You've got this!`,
           'bot'
         )
+
+        // Smooth scroll and highlight the new scheduled card in the timeline!
+        setTimeout(() => {
+          const el = document.getElementById('slotted-critical-practice')
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            el.classList.add('task-card-highlight')
+            setTimeout(() => el.classList.remove('task-card-highlight'), 2200)
+          }
+        }, 300)
       }, 600)
     }, 500)
   }
@@ -2835,16 +2855,24 @@ export default function App() {
     addChatMessage(actionText, 'user')
 
     setTimeout(() => {
-      if (actionText.includes('recap') || actionText.includes('Practice') || actionText.includes('Auto-Schedule')) {
+      const lower = actionText.toLowerCase()
+      if (
+        lower.includes('schedule') ||
+        lower.includes('review') ||
+        lower.includes('lunch') ||
+        lower.includes('recap') ||
+        lower.includes('practice') ||
+        lower.includes('auto-schedule')
+      ) {
         triggerAutoSchedule('Python Loop Quick Recap')
-      } else if (actionText.includes('drill') || actionText.includes('Quiz')) {
+      } else if (lower.includes('drill') || lower.includes('quiz') || lower.includes('diagnostic')) {
         launchQuiz('python')
-      } else if (actionText.includes('retention')) {
+      } else if (lower.includes('retention') || lower.includes('memory') || lower.includes('analyze')) {
         addChatMessage(
           `<strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
           'bot'
         )
-      } else if (actionText.includes('Pomodoro')) {
+      } else if (lower.includes('pomodoro') || lower.includes('timer') || lower.includes('focus')) {
         openPomodoroModal('Autonomous Study Session')
       }
     }, 400)
@@ -3545,7 +3573,7 @@ export default function App() {
 
               {/* Slotted Practice Card if scheduled */}
               {isRemediationScheduled && (
-                <div className="task-card critical-remediation">
+                <div id="slotted-critical-practice" className="task-card critical-remediation">
                   <div className="task-card-left">
                     <div
                       className="task-check-circle"
