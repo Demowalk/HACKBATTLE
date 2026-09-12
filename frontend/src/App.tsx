@@ -1442,6 +1442,378 @@ export default function App() {
     }
   }
 
+  const getQuizTierResources = (
+    subject: string,
+    _topic: string,
+    totalCorrect: number,
+    userAnswers: { question_id: number; selected_answer: string; isCorrect: boolean }[],
+    questions: QuizQuestionItem[]
+  ) => {
+    const sLower = (subject || '').toLowerCase()
+
+    let tier: 1 | 2 | 3 | 4 = 1
+    if (totalCorrect <= 3) {
+      tier = 1
+    } else if (totalCorrect <= 6) {
+      tier = 2
+    } else if (totalCorrect <= 8) {
+      tier = 3
+    } else {
+      tier = 4
+    }
+
+    // Find lagging aspect from missed questions
+    const wrongQuestions = userAnswers
+      .map((ans, idx) => ({ ans, q: questions[idx] }))
+      .filter(({ ans }) => !ans.isCorrect)
+
+    let laggingAspectArea = 'Core Foundations & Edge Cases'
+    let laggingAdvice = 'Review core syntax, boundary conditions, and state mutations.'
+
+    if (sLower.includes('python')) {
+      if (wrongQuestions.some((w) => (w.q?.question || '').toLowerCase().includes('async') || (w.q?.question || '').toLowerCase().includes('await'))) {
+        laggingAspectArea = 'Asynchronous Concurrency & Event Loop'
+        laggingAdvice = 'Focus on async task scheduling, await syntax, and handling unhandled coroutine exceptions.'
+      } else if (wrongQuestions.some((w) => (w.q?.question || '').toLowerCase().includes('comprehension') || (w.q?.question || '').toLowerCase().includes('generator'))) {
+        laggingAspectArea = 'Comprehensions & Lazy Evaluation'
+        laggingAdvice = 'Practice nested list comprehensions, conditional filtering, and generator memory profiles.'
+      } else {
+        laggingAspectArea = 'Data Structure Mutability & Scope Resolution'
+        laggingAdvice = 'Work on distinguishing shallow vs deep copies, LEGB variable scoping rules, and default argument traps.'
+      }
+    } else if (sLower.includes('math')) {
+      if (wrongQuestions.some((w) => (w.q?.question || '').toLowerCase().includes('eigen') || (w.q?.question || '').toLowerCase().includes('matrix'))) {
+        laggingAspectArea = 'Matrix Decompositions & Eigenvalues'
+        laggingAdvice = 'Work on calculating characteristic polynomials det(A - λI) = 0 and orthogonal diagonalization.'
+      } else if (wrongQuestions.some((w) => (w.q?.question || '').toLowerCase().includes('vector') || (w.q?.question || '').toLowerCase().includes('span'))) {
+        laggingAspectArea = 'Vector Projections & Orthonormal Bases'
+        laggingAdvice = 'Review Gram-Schmidt orthogonalization and projection formulas onto subspaces.'
+      } else {
+        laggingAspectArea = 'Linear Transformations & Invertibility'
+        laggingAdvice = 'Focus on rank-nullity theorem proofs and determinant geometric transformations.'
+      }
+    } else if (sLower.includes('chem')) {
+      if (wrongQuestions.some((w) => (w.q?.question || '').toLowerCase().includes('nernst') || (w.q?.question || '').toLowerCase().includes('cell'))) {
+        laggingAspectArea = 'Electrochemistry & Non-Standard Potentials'
+        laggingAdvice = 'Work on calculating reaction quotients (Q) and applying the Nernst equation with correct electron moles (n).'
+      } else {
+        laggingAspectArea = 'Reaction Mechanisms & Transition States'
+        laggingAdvice = 'Focus on nucleophilic attack stereochemistry, solvent effects in SN1 vs SN2, and carbocation stability.'
+      }
+    }
+
+    // Pointers & Short Notes (Tier 2)
+    let pointers: string[] = []
+    let shortNotes: { title: string; body: string }[] = []
+
+    if (sLower.includes('python')) {
+      pointers = [
+        'Mind mutable default arguments: def fn(x=[]) reuses the exact same list across calls.',
+        'Use dict.get(k, default) instead of indexing dict[k] to gracefully handle missing keys without KeyError.',
+        'Prefer generator expressions (x for x in seq) over list comprehensions when streaming large datasets.',
+        'Remember LEGB rule (Local, Enclosing, Global, Built-in) when debugging variable scope issues.',
+      ]
+      shortNotes = [
+        {
+          title: 'List Comprehensions',
+          body: '[expr for x in iterable if cond] filters before evaluation. For if-else transformation: [a if cond else b for x in iterable].',
+        },
+        {
+          title: 'Dictionary Lookup & Mutability',
+          body: 'Dict keys must be hashable/immutable (str, int, tuple). dict.setdefault(k, v) inserts only if absent.',
+        },
+        {
+          title: 'Shallow vs Deep Copies',
+          body: 'list.copy() / [:] creates shallow copy of container. copy.deepcopy() recursively clones nested mutable objects.',
+        },
+        {
+          title: 'Context Managers',
+          body: 'with open(...) guarantees resource release via __enter__() and __exit__() even if exceptions occur.',
+        },
+      ]
+    } else if (sLower.includes('math')) {
+      pointers = [
+        'Check determinant first: det(A) ≠ 0 confirms matrix invertibility and full rank.',
+        'Eigenvalues satisfy det(A - λI) = 0; eigenvectors satisfy (A - λI)v = 0.',
+        'Dot product u · v = 0 proves geometric orthogonality in any dimensional Euclidean space.',
+        'Rank-Nullity theorem: Rank(A) + Nullity(A) = total number of columns n.',
+      ]
+      shortNotes = [
+        {
+          title: 'Matrix Inverses & Determinants',
+          body: 'For 2x2 matrix [[a,b],[c,d]], det = ad - bc. Inverse A⁻¹ = (1/det) * [[d, -b], [-c, a]].',
+        },
+        {
+          title: 'Eigenvalues & Invariance',
+          body: 'Av = λv. The sum of eigenvalues equals trace(A); the product of eigenvalues equals det(A).',
+        },
+        {
+          title: 'Vector Orthogonality & Projections',
+          body: 'proj_b(a) = ((a · b) / ||b||²) * b. Gram-Schmidt constructs orthonormal bases from linearly independent vectors.',
+        },
+        {
+          title: 'SVD & Rank',
+          body: 'Any m x n matrix factors into A = U Σ Vᵀ with orthogonal U, V and non-negative diagonal singular values.',
+        },
+      ]
+    } else {
+      // Chemistry
+      pointers = [
+        'Carefully identify reaction quotient Q vs equilibrium constant K before applying Nernst equation.',
+        'Distinguish SN1 (stepwise via carbocation, polar protic solvent) from SN2 (concerted inversion, polar aprotic solvent).',
+        'Use Le Chatelier’s principle: exothermic reactions shift left when temperature is raised.',
+        'Zaitsev’s rule predicts the more substituted alkene as the major elimination product.',
+      ]
+      shortNotes = [
+        {
+          title: 'Nernst Equation (298 K)',
+          body: 'E_cell = E°_cell - (0.0592 / n) * log10(Q). At equilibrium, E_cell = 0 and Q = K.',
+        },
+        {
+          title: 'SN1 vs SN2 Mechanisms',
+          body: 'SN2: 1-step, bimolecular, backside attack with Walden inversion. SN1: 2-step with carbocation intermediate and racemization.',
+        },
+        {
+          title: 'Buffer Capacity & Henderson-Hasselbalch',
+          body: 'pH = pKa + log([A⁻]/[HA]). Effective buffering range is pKa ± 1; maximum capacity occurs when [A⁻] = [HA].',
+        },
+        {
+          title: 'Thermodynamics & Spontaneity',
+          body: 'ΔG° = ΔH° - TΔS° = -RT ln(K) = -nFE°_cell. Negative ΔG° indicates a thermodynamically spontaneous forward process.',
+        },
+      ]
+    }
+
+    // Cheat Sheet (Tier 3)
+    let cheatSheet: { category: string; rules: string[] }[] = []
+    if (sLower.includes('python')) {
+      cheatSheet = [
+        {
+          category: 'Syntax & Comprehensions',
+          rules: [
+            'List: `[x for x in seq if cond]`',
+            'Dict: `{k: v for k, v in pairs}`',
+            'Set: `{x for x in seq}`',
+            'Ternary: `x if cond else y`',
+          ],
+        },
+        {
+          category: 'Iterators & Generators',
+          rules: [
+            '`yield` pauses function state & returns generator object',
+            '`zip(*iterables)` stops at shortest iterator',
+            '`itertools.chain(*iters)` flattens sequential iterables',
+            '`functools.lru_cache(maxsize=128)` caches function outputs',
+          ],
+        },
+        {
+          category: 'Scope & Mutability',
+          rules: [
+            'Default args evaluate once at def time (`def fn(x=None)`)',
+            '`is` checks pointer/identity; `==` checks value equality',
+            'CPython GIL permits only 1 native thread per interpreter',
+            '`__slots__ = ("a", "b")` eliminates `__dict__` overhead',
+          ],
+        },
+        {
+          category: 'Error & Context Handling',
+          rules: [
+            '`try-except-else-finally`: `else` runs only if no exception',
+            '`with open(f) as h:` handles auto-close via `__exit__`',
+            '`raise CustomError("msg") from original_err` preserves traceback',
+            '`contextlib.contextmanager` decorator converts generators to managers',
+          ],
+        },
+      ]
+    } else if (sLower.includes('math')) {
+      cheatSheet = [
+        {
+          category: 'Linear Algebra Transformations',
+          rules: [
+            'Determinant: `det(AB) = det(A)det(B)`',
+            'Inverse: `(AB)⁻¹ = B⁻¹A⁻¹`',
+            'Transpose: `(AB)ᵀ = BᵀAᵀ`',
+            'Rank: `Rank(A) = Rank(Aᵀ) = dim(Col(A))`',
+          ],
+        },
+        {
+          category: 'Spectral Theory & Eigenvalues',
+          rules: [
+            'Characteristic eq: `det(A - λI) = 0`',
+            'Trace invariant: `tr(A) = ∑ λᵢ = ∑ aᵢᵢ`',
+            'Det invariant: `det(A) = ∏ λᵢ`',
+            'Symmetric matrices have real eigenvalues & orthogonal eigenvectors',
+          ],
+        },
+        {
+          category: 'Vector Spaces & Orthogonality',
+          rules: [
+            'Dot Product: `u · v = ||u|| ||v|| cos θ`',
+            'Projection: `proj_v(u) = ((u·v)/||v||²) v`',
+            'Orthogonal Matrix: `QᵀQ = I ⟹ Q⁻¹ = Qᵀ`',
+            'Cauchy-Schwarz: `|u · v| ≤ ||u|| ||v||`',
+          ],
+        },
+        {
+          category: 'Calculus & Optimization',
+          rules: [
+            'Gradient: `∇f(x)` points in direction of steepest ascent',
+            'Hessian `H`: Positive definite `H > 0` ⟹ local minimum',
+            'Chain Rule: `d/dx [f(g(x))] = f\'(g(x)) · g\'(x)`',
+            'Integration by parts: `∫ u dv = uv - ∫ v du`',
+          ],
+        },
+      ]
+    } else {
+      cheatSheet = [
+        {
+          category: 'Electrochemistry & Cells',
+          rules: [
+            'Nernst: `E = E° - (0.0592/n) log Q` at 298 K',
+            'Free Energy: `ΔG° = -nFE°_cell` (`F = 96,485 C/mol`)',
+            'Galvanic cell: Anode (oxidation, -), Cathode (reduction, +)',
+            'Standard Hydrogen Electrode: `E° = 0.00 V`',
+          ],
+        },
+        {
+          category: 'Organic Reaction Pathways',
+          rules: [
+            '`SN2`: 1-step, inversion, 1° > 2° > 3°, polar aprotic solvent',
+            '`SN1`: 2-step, carbocation, 3° > 2° > 1°, polar protic solvent',
+            '`E2`: Anti-periplanar geometry, strong base, Zaitsev major',
+            '`Markovnikov`: H adds to C with more H’s (stable carbocation)',
+          ],
+        },
+        {
+          category: 'Kinetics & Equilibrium',
+          rules: [
+            'Arrhenius: `k = A e^(-Ea / RT)`',
+            '1st Order: `t₁/₂ = 0.693 / k`, `ln[A]_t = -kt + ln[A]_0`',
+            '2nd Order: `1/[A]_t = kt + 1/[A]_0`',
+            'Equilibrium: `ΔG° = -RT ln K`',
+          ],
+        },
+        {
+          category: 'Acids, Bases & Buffers',
+          rules: [
+            'Henderson-Hasselbalch: `pH = pKa + log([A⁻]/[HA])`',
+            '`Kw = [H⁺][OH⁻] = 1.0 × 10⁻¹⁴` at 25 °C (`pH + pOH = 14`)',
+            '`pKa = -log(Ka)`, Stronger acid ⟹ lower pKa, higher Ka',
+            'Buffer capacity highest when `[A⁻] = [HA]` ⟹ `pH = pKa`',
+          ],
+        },
+      ]
+    }
+
+    // Question Bank (25 questions for Tier 4)
+    const questionBanks: Record<string, { id: number; question: string; answer: string; hint: string }[]> = {
+      python: [
+        { id: 1, question: 'What is the output of `[x**2 for x in range(5) if x % 2 != 0]`?', answer: '[1, 9]', hint: 'Only odd numbers 1 and 3 are squared.' },
+        { id: 2, question: 'How does `dict.get(key, default)` differ from `dict[key]`?', answer: 'Returns default without raising KeyError.', hint: 'Safe dictionary lookup.' },
+        { id: 3, question: 'What is the time complexity of appending an element to a Python list?', answer: 'Amortized O(1)', hint: 'Dynamic array doubling.' },
+        { id: 4, question: 'How do you create an immutable set in Python?', answer: 'frozenset()', hint: 'Built-in frozen set constructor.' },
+        { id: 5, question: 'What is the key difference between `is` and `==`?', answer: 'is checks memory identity; == checks equality of value.', hint: 'Object identity vs equality.' },
+        { id: 6, question: 'What keyword turns a standard function into a generator?', answer: 'yield', hint: 'Suspends execution and yields values lazily.' },
+        { id: 7, question: 'What does the `@property` decorator do on a class method?', answer: 'Exposes the method as a read-only getter attribute.', hint: 'Pythonic attribute access.' },
+        { id: 8, question: 'How do `*args` and `**kwargs` unpack parameters in function calls?', answer: '*args unpacks tuples; **kwargs unpacks dictionaries.', hint: 'Variable positional and keyword arguments.' },
+        { id: 9, question: 'What is the GIL in CPython and what does it restrict?', answer: 'Global Interpreter Lock; restricts execution to one native thread at a time.', hint: 'CPython thread synchronization.' },
+        { id: 10, question: 'What is the difference between shallow copy and deepcopy?', answer: 'deepcopy clones nested structures recursively; shallow copy copies only top-level references.', hint: 'Nested object isolation.' },
+        { id: 11, question: 'What boolean value do empty containers `[]`, `{}`, `set()` evaluate to in if conditions?', answer: 'False', hint: 'Python falsy evaluation.' },
+        { id: 12, question: 'How do you catch multiple exception types in a single except block?', answer: 'except (TypeError, ValueError) as e:', hint: 'Pass exceptions as a tuple.' },
+        { id: 13, question: 'What is the output of `type(lambda x: x)`?', answer: '<class \'function\'>', hint: 'Lambdas create first-class function objects.' },
+        { id: 14, question: 'How do you reverse a list in-place in Python?', answer: 'list.reverse()', hint: 'Modifies the existing list without creating a new copy.' },
+        { id: 15, question: 'What is produced by `list(zip([1, 2], [\'a\', \'b\', \'c\']))`?', answer: '[(1, \'a\'), (2, \'b\')]', hint: 'Stops at the length of the shortest iterable.' },
+        { id: 16, question: 'What algorithm computes Method Resolution Order (MRO) for multiple inheritance?', answer: 'C3 Linearization', hint: 'Deterministic hierarchy ordering.' },
+        { id: 17, question: 'What built-in statement manages context protocols safely?', answer: 'with statement', hint: 'Calls __enter__ and __exit__.' },
+        { id: 18, question: 'What dunder methods implement the Context Manager protocol?', answer: '__enter__ and __exit__', hint: 'Used for setup and teardown cleanup.' },
+        { id: 19, question: 'What does `any([False, 0, "", 42])` evaluate to?', answer: 'True', hint: '42 is non-zero and truthy.' },
+        { id: 20, question: 'How do you deduplicate a list while preserving original insertion order in Python 3.7+?', answer: 'list(dict.fromkeys(seq))', hint: 'Leverages insertion-ordered dictionary keys.' },
+        { id: 21, question: 'What decorator in `functools` provides memoization?', answer: '@functools.lru_cache()', hint: 'Least Recently Used cache.' },
+        { id: 22, question: 'What does defining `__slots__` inside a class achieve?', answer: 'Prevents __dict__ creation, reducing memory footprint and speeding attribute lookup.', hint: 'Memory optimization.' },
+        { id: 23, question: 'How do you verify whether a class inherits from another class?', answer: 'issubclass(Child, Parent)', hint: 'Built-in inheritance check.' },
+        { id: 24, question: 'What is the difference between `asyncio.gather` and `asyncio.wait`?', answer: 'gather returns results in order; wait returns sets of completed and pending futures.', hint: 'Async concurrency helpers.' },
+        { id: 25, question: 'What is the average time complexity of dict lookup in Python?', answer: 'O(1)', hint: 'Hash table indexing.' },
+      ],
+      math: [
+        { id: 1, question: 'What is the determinant of a 2x2 matrix [[a, b], [c, d]]?', answer: 'ad - bc', hint: 'Product of main diagonal minus product of off-diagonal.' },
+        { id: 2, question: 'If Av = λv, what are v and λ?', answer: 'v is the eigenvector; λ is the scalar eigenvalue.', hint: 'Invariant direction transformation.' },
+        { id: 3, question: 'What is the dot product of two mutually orthogonal vectors?', answer: '0', hint: 'cos(90°) = 0.' },
+        { id: 4, question: 'What is the derivative of ln(x) for x > 0?', answer: '1/x', hint: 'Fundamental rate of logarithmic change.' },
+        { id: 5, question: 'What is the rank of a matrix?', answer: 'The maximum number of linearly independent column or row vectors.', hint: 'Dimension of column space.' },
+        { id: 6, question: 'What is the indefinite integral of e^(3x) dx?', answer: '(1/3) e^(3x) + C', hint: 'Inverse chain rule factor.' },
+        { id: 7, question: 'When is a square matrix guaranteed to be invertible?', answer: 'When det(A) ≠ 0 (full rank).', hint: 'Non-zero determinant condition.' },
+        { id: 8, question: 'To which vectors is the cross product u × v orthogonal?', answer: 'Orthogonal to both vector u and vector v.', hint: 'Normal vector to the span plane.' },
+        { id: 9, question: 'What is the trace of a square matrix?', answer: 'The sum of the diagonal elements (also equal to the sum of eigenvalues).', hint: 'Diagonal sum invariant.' },
+        { id: 10, question: 'State the product rule for differentiation d/dx [u(x)v(x)].', answer: 'u\'(x)v(x) + u(x)v\'(x)', hint: 'Derivative of first times second plus first times derivative of second.' },
+        { id: 11, question: 'What does |det(A)| represent geometrically for a 3x3 matrix?', answer: 'The volume scaling factor of the transformed parallelepiped.', hint: 'Volume transformation factor.' },
+        { id: 12, question: 'What is the limit of sin(x)/x as x approaches 0?', answer: '1', hint: 'Standard trigonometric limit / L\'Hôpital\'s rule.' },
+        { id: 13, question: 'What is the formula for vector projection of a onto b?', answer: '((a · b) / ||b||²) * b', hint: 'Scalar component multiplied by unit direction.' },
+        { id: 14, question: 'What is guaranteed about the eigenvalues of any real symmetric matrix?', answer: 'All eigenvalues are strictly real numbers.', hint: 'Spectral theorem guarantee.' },
+        { id: 15, question: 'What is a Taylor series centered at x = 0 called?', answer: 'Maclaurin Series', hint: 'Special case of Taylor expansion.' },
+        { id: 16, question: 'What direction does the gradient vector ∇f point towards?', answer: 'The direction of steepest ascent (maximum increase).', hint: 'Maximum rate of change.' },
+        { id: 17, question: 'What equation defines an orthogonal matrix Q?', answer: 'QᵀQ = QQᵀ = I (Q⁻¹ = Qᵀ)', hint: 'Orthonormal rows and columns.' },
+        { id: 18, question: 'Evaluate ∫ x cos(x) dx using integration by parts.', answer: 'x sin(x) + cos(x) + C', hint: 'Set u = x, dv = cos(x)dx.' },
+        { id: 19, question: 'State the Rank-Nullity Theorem for an m x n matrix A.', answer: 'Rank(A) + Nullity(A) = n (number of columns)', hint: 'Dimension of image plus kernel.' },
+        { id: 20, question: 'What is Euler\'s formula relating complex exponentials to trigonometry?', answer: 'e^(iθ) = cos(θ) + i sin(θ)', hint: 'Complex unit circle representation.' },
+        { id: 21, question: 'What is the derivative of arctan(x)?', answer: '1 / (1 + x²)', hint: 'Standard inverse tangent derivative.' },
+        { id: 22, question: 'What defines a symmetric positive definite matrix A?', answer: 'xᵀAx > 0 for all non-zero vectors x (all eigenvalues > 0).', hint: 'Positive quadratic form.' },
+        { id: 23, question: 'What does f\'(c) = 0 and f\'\'(c) > 0 indicate about point c?', answer: 'c is a local minimum.', hint: 'Second derivative concavity test.' },
+        { id: 24, question: 'How is the L2 Euclidean norm ||x||₂ defined?', answer: '√(∑ xᵢ²) = √(x · x)', hint: 'Square root of sum of squares.' },
+        { id: 25, question: 'What does Singular Value Decomposition (SVD) decompose A into?', answer: 'A = U Σ Vᵀ', hint: 'Orthogonal matrices and diagonal singular values.' },
+      ],
+      chem: [
+        { id: 1, question: 'What is the Nernst Equation for cell potential at 298 K?', answer: 'E = E° - (0.0592 / n) log10(Q)', hint: 'Relates non-standard potential to reaction quotient.' },
+        { id: 2, question: 'What is the hybridization of carbon in ethylene (C2H4)?', answer: 'sp²', hint: 'Trigonal planar geometry with one unhybridized p orbital.' },
+        { id: 3, question: 'What is the integrated rate law for a 2nd order reaction?', answer: '1/[A]_t = kt + 1/[A]_0', hint: 'Reciprocal concentration vs time.' },
+        { id: 4, question: 'How does an exothermic equilibrium shift when temperature is increased?', answer: 'Shifts left towards reactants.', hint: 'Le Chatelier\'s principle; heat is treated as a product.' },
+        { id: 5, question: 'What mechanism features a 1-step backside attack with Walden inversion?', answer: 'SN2 mechanism', hint: 'Bimolecular nucleophilic substitution.' },
+        { id: 6, question: 'What equation relates ΔG° to equilibrium constant K?', answer: 'ΔG° = -RT ln(K)', hint: 'Thermodynamic equilibrium relationship.' },
+        { id: 7, question: 'Which rule states that the most substituted alkene is the major elimination product?', answer: 'Zaitsev\'s Rule', hint: 'Thermodynamic stability of alkene double bonds.' },
+        { id: 8, question: 'What is the pH of a solution with [H⁺] = 1.0 × 10⁻⁴ M?', answer: 'pH = 4.0', hint: 'pH = -log10[H⁺].' },
+        { id: 9, question: 'What is the oxidation state of Chromium in K2Cr2O7?', answer: '+6', hint: '2(+1) + 2(Cr) + 7(-2) = 0.' },
+        { id: 10, question: 'Which catalyst is used in catalytic alkene hydrogenation?', answer: 'Finely divided Pt, Pd, or Ni', hint: 'Transition metal heterogeneous catalyst.' },
+        { id: 11, question: 'State Raoult\'s Law for vapor pressure of an ideal solution component.', answer: 'P_A = X_A · P°_A', hint: 'Partial pressure equals mole fraction times pure vapor pressure.' },
+        { id: 12, question: 'What rule dictates that electrophilic H adds to the less substituted carbon?', answer: 'Markovnikov\'s Rule', hint: 'Forms the more stable carbocation intermediate.' },
+        { id: 13, question: 'What is the half-life equation for a first-order reaction?', answer: 't₁/₂ = ln(2) / k ≈ 0.693 / k', hint: 'Independent of initial concentration.' },
+        { id: 14, question: 'What is the Henderson-Hasselbalch equation for acid buffers?', answer: 'pH = pKa + log([A⁻] / [HA])', hint: 'Ratio of conjugate base to weak acid.' },
+        { id: 15, question: 'What stereochemical relationship exists between cis- and trans-2-butene?', answer: 'Diastereomers (geometric isomers)', hint: 'Non-mirror image stereoisomers due to restricted rotation.' },
+        { id: 16, question: 'What is the value of Faraday\'s constant F?', answer: '96,485 Coulombs per mole of electrons', hint: 'Charge per mole of electrons.' },
+        { id: 17, question: 'Which spectroscopy identifies functional group vibrational frequencies?', answer: 'Infrared (IR) Spectroscopy', hint: 'Absorption in 4000–400 cm⁻¹ range.' },
+        { id: 18, question: 'What is the bond angle in a perfect tetrahedral geometry (e.g. CH4)?', answer: '109.5°', hint: 'sp³ hybridization.' },
+        { id: 19, question: 'What is the final product of an aldol condensation after dehydration?', answer: 'α,β-unsaturated aldehyde or ketone', hint: 'Loss of H2O creates conjugated double bond.' },
+        { id: 20, question: 'What does activation energy Ea represent in the Arrhenius equation?', answer: 'The minimum kinetic energy threshold required for reactants to undergo reaction.', hint: 'Energy barrier to the transition state.' },
+        { id: 21, question: 'Which reagent selectively oxidizes primary alcohols to aldehydes without over-oxidation?', answer: 'PCC (Pyridinium chlorochromate) / DMP', hint: 'Mild anhydrous oxidizing agent.' },
+        { id: 22, question: 'What principle states total enthalpy change is independent of the reaction pathway?', answer: 'Hess\'s Law', hint: 'State function property of enthalpy.' },
+        { id: 23, question: 'How does gas solubility in liquid solvents change as temperature rises?', answer: 'Gas solubility decreases.', hint: 'Gas dissolution is an exothermic process.' },
+        { id: 24, question: 'What term describes non-superimposable mirror image molecules?', answer: 'Enantiomers', hint: 'Chiral pairs rotating plane-polarized light in opposite directions.' },
+        { id: 25, question: 'What is the coordination number and geometry of [Fe(CN)6]⁴⁻?', answer: 'Coordination number 6; Octahedral geometry', hint: '6 cyanide monodentate ligands.' },
+      ],
+    }
+
+    const bank = questionBanks[sLower.includes('math') ? 'math' : sLower.includes('chem') ? 'chem' : 'python']
+
+    return {
+      tier,
+      tierLabel:
+        tier === 1
+          ? 'Tier 1 · Critical Remediation'
+          : tier === 2
+          ? 'Tier 2 · Diagnostic Pointers & Short Notes'
+          : tier === 3
+          ? 'Tier 3 · Cheat Sheet & Lagging Aspect Refinement'
+          : 'Tier 4 · Mastery Confirmed & Practice Bank',
+      pointers,
+      shortNotes,
+      laggingAspect: {
+        area: laggingAspectArea,
+        advice: laggingAdvice,
+      },
+      cheatSheet,
+      readyMsg: 'You are ready! You demonstrated strong conceptual mastery across baseline and adaptive drills. Use the 25-question high-yield practice bank below to solidify top-tier exam readiness.',
+      questionBank: bank,
+    }
+  }
+
   const GCAL_HOURS = [
     { hour: 7, label: '7 AM' },
     { hour: 8, label: '8 AM' },
@@ -1899,6 +2271,22 @@ export default function App() {
       url: string
     }
   } | null>(null)
+  const [quizTierOutcome, setQuizTierOutcome] = useState<{
+    tier: 1 | 2 | 3 | 4
+    tierLabel: string
+    pointers?: string[]
+    shortNotes?: { title: string; body: string }[]
+    laggingAspect?: { area: string; advice: string }
+    cheatSheet?: { category: string; rules: string[] }[]
+    readyMsg?: string
+    questionBank?: { id: number; question: string; answer: string; hint: string }[]
+    video?: {
+      title: string
+      channel: string
+      url: string
+    }
+  } | null>(null)
+  const [revealedBankAnswers, setRevealedBankAnswers] = useState<Record<number, boolean>>({})
 
 
 
@@ -2476,6 +2864,8 @@ export default function App() {
     setIsQuizFinished(false)
     setQuizFinalResult(null)
     setCriticalRemediationInfo(null)
+    setQuizTierOutcome(null)
+    setRevealedBankAnswers({})
     setQuizReviewFilter('all')
 
     const subjectName = key === 'math' ? 'Maths' : key === 'chem' ? 'Chemistry' : 'Python'
@@ -2603,7 +2993,6 @@ export default function App() {
     const totalCorrect = s1 + s2
     const total = quizUserAnswers.length
     const scorePct = Math.round((totalCorrect / Math.max(1, total)) * 100)
-    const isCritical = totalCorrect < 2
 
     setQuizFinalResult({
       stage1Correct: s1,
@@ -2634,8 +3023,28 @@ export default function App() {
         ? 'task-tag-chem'
         : 'task-tag-python'
 
-    if (isCritical) {
-      // 1. Automatically find the earliest available 1-hour study slot (starting from TODAY, Sep 12)
+    const topicVideo = getTopicYoutubeVideo(subjectDisplayName, topicDisplayName)
+    const tierResources = getQuizTierResources(
+      subjectDisplayName,
+      topicDisplayName,
+      totalCorrect,
+      quizUserAnswers,
+      quizQuestions
+    )
+    setQuizTierOutcome({
+      ...tierResources,
+      video: topicVideo,
+    })
+
+    const subKey: 'math' | 'chem' | 'python' =
+      (currentQuizSubject || '').toLowerCase().includes('math')
+        ? 'math'
+        : (currentQuizSubject || '').toLowerCase().includes('chem')
+        ? 'chem'
+        : 'python'
+
+    if (totalCorrect <= 3) {
+      // TIER 1: Score <= 3 (Critical Remediation & YouTube Tutorial)
       const candidateHours = [
         { slot: '4:30–5:30 PM', startMin: 990, durationMin: 60 },
         { slot: '5:30–6:30 PM', startMin: 1050, durationMin: 60 },
@@ -2664,7 +3073,7 @@ export default function App() {
           return title.includes('exam') || title.includes('midterm') || title.includes('final')
         })
 
-        if (hasExam) continue // Never schedule over exams
+        if (hasExam) continue
 
         for (const candidate of candidateHours) {
           const slotStart = candidate.startMin
@@ -2697,8 +3106,6 @@ export default function App() {
         if (foundSlot) break
       }
 
-      const topicVideo = getTopicYoutubeVideo(subjectDisplayName, topicDisplayName)
-
       setCriticalRemediationInfo({
         scheduledDate: chosenDateKey,
         dayName: chosenDayFormatted,
@@ -2709,20 +3116,18 @@ export default function App() {
         video: topicVideo,
       })
 
-      // 2. Set DKT proficiency to Critical decay risk
-      const lowPct = Math.min(28, Math.max(12, scorePct))
+      const lowPct = Math.min(30, Math.max(10, scorePct || totalCorrect * 10))
       setDktScores((prev) => ({
         ...prev,
-        [currentQuizSubject]: {
+        [subKey]: {
           pct: lowPct,
-          retention: 'Critical Decay Risk',
+          retention: 'Critical Decay Risk (1d)',
           safe: false,
         },
       }))
-      setQuizScoreText(`Score: ${scorePct}% · Critical Decay Alert!`)
+      setQuizScoreText(`Score: ${scorePct}% · Critical Intervention`)
       setQuizCardBorderColor('#EF4444')
 
-      // 3. Add 1-Hour Study Time Slot directly to Calendar
       const remediationTaskId = `remediation-${Date.now()}`
       const remediationTask: CalTaskItem = {
         id: remediationTaskId,
@@ -2746,7 +3151,6 @@ export default function App() {
         }
       })
 
-      // If scheduled for Today (2026-09-12), also inject into active timeline tasks so it is immediately visible
       if (chosenDateKey === '2026-09-12') {
         setTasks((prev) => [
           ...prev.filter((t) => !t.title.includes('Critical 1hr Study')),
@@ -2767,7 +3171,6 @@ export default function App() {
         ])
       }
 
-      // 4. Send to backend with chosen_date and chosenTimeSlot
       scheduleCriticalRemediation({
         subject: subjectDisplayName,
         topic: topicDisplayName,
@@ -2776,67 +3179,122 @@ export default function App() {
         scheduled_date: chosenDateKey,
         time_slot: chosenTimeSlot,
         duration_minutes: 60,
-      })
-        .then((res) => {
-          if (res?.video && res.video.url) {
-            setCriticalRemediationInfo((prev) => (prev ? { ...prev, video: res.video } : null))
-            setCalTasksByDate((prev) => {
-              const existing = prev[chosenDateKey] || []
-              return {
-                ...prev,
-                [chosenDateKey]: existing.map((t) =>
-                  t.id === remediationTaskId
-                    ? {
-                        ...t,
-                        videoUrl: res.video!.url,
-                        videoTitle: res.video!.title,
-                        videoChannel: res.video!.channel,
-                      }
-                    : t
-                ),
-              }
-            })
-          }
-        })
-        .catch((e) => console.warn('scheduleCriticalRemediation backend error:', e))
+      }).catch((e) => console.warn('scheduleCriticalRemediation backend error:', e))
 
-      // 5. User Feedback: Warning toast + Audio + Tutor Chat reminder message
       soundSynth.playSuccessBeep()
-      showToast(`Scored ${totalCorrect}/${total} (< 2)! Added 1-hr study slot & Video tutorial added to schedule.`)
+      showToast(`Scored ${totalCorrect}/${total} (<= 3 right)! Added 1-hr study slot & YouTube video tutorial.`)
 
       addChatMessage(
-        `<strong>Critical Diagnostic Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
-          `Because you scored less than 2 right, I have automatically added a <strong>1-hour study time slot (60 mins)</strong> to your calendar on <strong>${chosenDayFormatted} from ${chosenTimeSlot}</strong> with an active study alarm to guarantee recovery.<br><br>` +
-          `<strong>Mastery Video Tutorial:</strong><br>` +
+        `<strong>Tier 1 Diagnostic Alert (Score: ${totalCorrect}/${total}):</strong><br><br>` +
+          `Because you scored 3 or less right on <em>${subjectDisplayName} - ${topicDisplayName}</em>, I have linked the verified YouTube video tutorial below and automatically scheduled a <strong>1-hour study slot</strong> on <strong>${chosenDayFormatted} from ${chosenTimeSlot}</strong> with an active study alarm.<br><br>` +
+          `<strong>Recommended Masterclass:</strong><br>` +
           `<em>${topicVideo.title}</em> (${topicVideo.channel})<br>` +
           `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">Watch Video on YouTube</a><br><br>` +
-          `Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
+          `Check your <strong>Study Calendar</strong> to view your reserved study time block!`,
+        'bot'
+      )
+    } else if (totalCorrect >= 4 && totalCorrect <= 6) {
+      // TIER 2: Score 4 to 6 (Diagnostic Pointers & Short Notes)
+      const newPct = Math.max(50, Math.min(68, scorePct || totalCorrect * 10))
+      setDktScores((prev) => ({
+        ...prev,
+        [subKey]: {
+          pct: newPct,
+          retention: 'Reinforcing (4d decay)',
+          safe: true,
+        },
+      }))
+      if (subKey === 'python') {
+        setIsRemediationScheduled(true)
+        setPythonCritScheduled(true)
+      }
+      setQuizScoreText(`Score: ${scorePct}% · Review Recommended`)
+      setQuizCardBorderColor('#F59E0B')
+      showToast(`Scored ${totalCorrect}/${total}! Memory retention updated to ${newPct}%. Diagnostic pointers & short notes ready.`)
+
+      const pointersHtml = (tierResources.pointers || [])
+        .map((p) => `<li style="margin-bottom:4px;">${p}</li>`)
+        .join('')
+      const notesHtml = (tierResources.shortNotes || [])
+        .map((n) => `<div style="margin-top:6px;padding:8px;background:rgba(255,255,255,0.05);border-radius:6px;"><strong>${n.title}:</strong> ${n.body}</div>`)
+        .join('')
+
+      addChatMessage(
+        `<strong>Tier 2 Assessment (Score: ${totalCorrect}/${total}):</strong><br><br>` +
+          `Memory retention for <strong>${subjectDisplayName}</strong> has updated to <strong>${newPct}% (Reinforcing, 4d decay)</strong>.<br><br>` +
+          `Here are key diagnostic pointers and short notes to reinforce your retention:<br><br>` +
+          `<strong>Actionable Pointers:</strong><ul style="padding-left:18px;margin:6px 0;">${pointersHtml}</ul><br>` +
+          `<strong>High-Yield Short Notes:</strong>${notesHtml}`,
+        'bot'
+      )
+    } else if (totalCorrect >= 7 && totalCorrect <= 8) {
+      // TIER 3: Score 7 to 8 (Cheat Sheet & Lagging Aspect Refinement)
+      const newPct = Math.max(78, Math.min(88, scorePct || totalCorrect * 10))
+      setDktScores((prev) => ({
+        ...prev,
+        [subKey]: {
+          pct: newPct,
+          retention: 'Proficient (10d decay)',
+          safe: true,
+        },
+      }))
+      if (subKey === 'python') {
+        setIsRemediationScheduled(true)
+        setPythonCritScheduled(true)
+      }
+      setQuizScoreText(`Score: ${scorePct}% · Proficient`)
+      setQuizCardBorderColor('#6366F1')
+      showToast(`Scored ${totalCorrect}/${total}! Memory retention updated to ${newPct}%. Cheat sheet unlocked.`)
+
+      const cheatHtml = (tierResources.cheatSheet || [])
+        .map(
+          (c) =>
+            `<div style="margin-top:6px;padding:8px;background:rgba(99,102,241,0.1);border-radius:6px;border:1px solid rgba(99,102,241,0.25);">` +
+            `<strong>${c.category}</strong><br>` +
+            `<ul style="padding-left:16px;margin:4px 0;">` +
+            c.rules.map((r) => `<li>${r}</li>`).join('') +
+            `</ul></div>`
+        )
+        .join('')
+
+      addChatMessage(
+        `<strong>Tier 3 Assessment (Score: ${totalCorrect}/${total}):</strong><br><br>` +
+          `Great progress! Memory retention for <strong>${subjectDisplayName}</strong> increased to <strong>${newPct}% (Proficient, 10d decay)</strong>.<br><br>` +
+          `<div style="background:rgba(99,102,241,0.15);border:1px solid #6366F1;padding:10px 14px;border-radius:8px;color:#c7d2fe;">` +
+          `<strong>Lagging Aspect:</strong> ${tierResources.laggingAspect?.area}<br>` +
+          `<span style="font-size:12px;">${tierResources.laggingAspect?.advice}</span>` +
+          `</div><br>` +
+          `<strong>Topic Quick Cheat Sheet:</strong>${cheatHtml}`,
         'bot'
       )
     } else {
-      if (currentQuizSubject === 'python') {
-        const newScore = Math.max(68, scorePct)
-        setDktScores((prev) => ({
-          ...prev,
-          python: { pct: newScore, retention: 'Stable (Refresher Complete)', safe: true },
-        }))
-        setQuizScoreText(`Score: ${newScore}% · Mastered!`)
-        setQuizCardBorderColor('var(--color-math)')
-      } else if (currentQuizSubject === 'math') {
-        const newScore = Math.max(85, scorePct)
-        setDktScores((prev) => ({
-          ...prev,
-          math: { pct: newScore, retention: 'Mastery (14d decay)', safe: true },
-        }))
-      } else if (currentQuizSubject === 'chem') {
-        const newScore = Math.max(78, scorePct)
-        setDktScores((prev) => ({
-          ...prev,
-          chem: { pct: newScore, retention: 'Proficient (8d decay)', safe: true },
-        }))
+      // TIER 4: Score 9 to 10 (Mastery "You are ready!" & 25 Question Practice Bank)
+      const newPct = Math.max(95, Math.min(100, scorePct || totalCorrect * 10))
+      setDktScores((prev) => ({
+        ...prev,
+        [subKey]: {
+          pct: newPct,
+          retention: 'Mastered (21d decay)',
+          safe: true,
+        },
+      }))
+      if (subKey === 'python') {
+        setIsRemediationScheduled(true)
+        setPythonCritScheduled(true)
       }
+      setQuizScoreText(`Score: ${scorePct}% · Ready for Exam!`)
+      setQuizCardBorderColor('#10B981')
+      showToast(`Scored ${totalCorrect}/${total}! Memory retention elevated to ${newPct}%! You are ready!`)
 
-      showToast('Knowledge graph updated with your adaptive quiz results!')
+      addChatMessage(
+        `<strong>Tier 4 Assessment (Score: ${totalCorrect}/${total}):</strong><br><br>` +
+          `<div style="background:rgba(16,185,129,0.15);border:1.5px solid #10B981;padding:14px;border-radius:10px;color:#a7f3d0;">` +
+          `<div style="font-size:16px;font-weight:800;color:#34d399;margin-bottom:4px;">You are ready!</div>` +
+          `Memory retention for <strong>${subjectDisplayName}</strong> is now at <strong>${newPct}% (Mastered, Safe for Exam)</strong>.<br><br>` +
+          `To lock in full preparation for your upcoming exams, I have unlocked a <strong>25-question high-yield practice bank</strong> in your drill summary. View the quiz summary to test yourself against all 25 practice questions.` +
+          `</div>`,
+        'bot'
+      )
     }
 
     try {
@@ -2868,8 +3326,15 @@ export default function App() {
       } else if (lower.includes('drill') || lower.includes('quiz') || lower.includes('diagnostic')) {
         launchQuiz('python')
       } else if (lower.includes('retention') || lower.includes('memory') || lower.includes('analyze')) {
+        const allSafe = dktScores.math.safe && dktScores.chem.safe && dktScores.python.safe
         addChatMessage(
-          `<strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
+          `<strong>Memory Retention Snapshot:</strong><br>` +
+            `• <strong>Algebra:</strong> ${dktScores.math.pct}% (${dktScores.math.retention})<br>` +
+            `• <strong>Chemistry:</strong> ${dktScores.chem.pct}% (${dktScores.chem.retention})<br>` +
+            `• <strong>Python Loops:</strong> ${dktScores.python.pct}% (${dktScores.python.retention})<br><br>` +
+            (allSafe
+              ? `Outstanding work! All your concept retention levels are currently safe and protected from decay.`
+              : `Doing a quick 15-minute review today will reinforce your recall strength across all topics!`),
           'bot'
         )
       } else if (lower.includes('pomodoro') || lower.includes('timer') || lower.includes('focus')) {
@@ -2903,8 +3368,15 @@ export default function App() {
         toggleTheme()
         addChatMessage('Switched theme mode as requested.', 'bot')
       } else if (lower.includes('retention') || lower.includes('memory')) {
+        const allSafe = dktScores.math.safe && dktScores.chem.safe && dktScores.python.safe
         addChatMessage(
-          `<strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
+          `<strong>Memory Retention Snapshot:</strong><br>` +
+            `• <strong>Algebra:</strong> ${dktScores.math.pct}% (${dktScores.math.retention})<br>` +
+            `• <strong>Chemistry:</strong> ${dktScores.chem.pct}% (${dktScores.chem.retention})<br>` +
+            `• <strong>Python Loops:</strong> ${dktScores.python.pct}% (${dktScores.python.retention})<br><br>` +
+            (allSafe
+              ? `Outstanding work! All your concept retention levels are currently safe and protected from decay.`
+              : `Doing a quick 15-minute review today will reinforce your recall strength across all topics!`),
           'bot'
         )
       } else {
@@ -3710,98 +4182,132 @@ export default function App() {
                 </div>
               </div>
               <span
-                className={`badge ${isRemediationScheduled ? 'badge-done' : 'badge-upcoming'}`}
+                className={`badge ${dktScores.python.safe && dktScores.math.safe && dktScores.chem.safe ? 'badge-done' : 'badge-upcoming'}`}
               >
-                {isRemediationScheduled ? 'All Concepts Stable' : '1 Review Recommended'}
+                {dktScores.python.safe && dktScores.math.safe && dktScores.chem.safe ? 'All Concepts Stable' : '1 Review Recommended'}
               </span>
             </div>
 
             <div className="dkt-grid">
               {/* Maths Concept Card */}
-              <div className="concept-card" style={{ borderTop: '3px solid var(--color-math)' }}>
-                <div className="concept-header">
-                  <span className="concept-name">Maths (Algebra)</span>
-                  <span className="concept-pct" style={{ color: 'var(--color-math)' }}>
-                    {dktScores.math.pct}%
-                  </span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-fill fill-math" style={{ width: `${dktScores.math.pct}%` }} />
-                </div>
-                <div className="decay-risk-bar">
-                  <span>Retention:</span>
-                  <span style={{ color: 'var(--color-math)', fontWeight: 700 }}>
-                    {dktScores.math.retention}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="btn-concept-quiz"
-                  onClick={() => launchQuiz('math')}
-                >
-                  <FileText size={12} className="inline mr-1 text-slate-400" />
-                  <span>Take Math Drill</span>
-                </button>
-              </div>
+              {(() => {
+                const isSafe = dktScores.math.safe
+                const pct = dktScores.math.pct
+                const color = pct >= 80 ? '#10B981' : pct >= 60 ? '#38BDF8' : pct >= 40 ? '#F59E0B' : '#EF4444'
+                return (
+                  <div className="concept-card" style={{ borderTop: `3px solid ${color}` }}>
+                    <div className="concept-header">
+                      <span className="concept-name">Maths (Algebra)</span>
+                      <span className="concept-pct" style={{ color }}>
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="progress-track">
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${pct}%`,
+                          background: pct >= 80 ? 'var(--grad-math)' : pct >= 60 ? 'var(--grad-chem)' : pct >= 40 ? 'linear-gradient(90deg, #F59E0B, #FBBF24)' : 'linear-gradient(90deg, #EF4444, #F87171)',
+                        }}
+                      />
+                    </div>
+                    <div className="decay-risk-bar">
+                      <span>Retention:</span>
+                      <span style={{ color, fontWeight: 700 }}>
+                        {dktScores.math.retention}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-concept-quiz"
+                      onClick={() => launchQuiz('math')}
+                    >
+                      <FileText size={12} className="inline mr-1 text-slate-400" />
+                      <span>{isSafe ? 'Take Math Drill' : 'Take Booster Drill'}</span>
+                    </button>
+                  </div>
+                )
+              })()}
 
               {/* Chemistry Concept Card */}
-              <div className="concept-card" style={{ borderTop: '3px solid var(--color-chem)' }}>
-                <div className="concept-header">
-                  <span className="concept-name">Chemistry (Reactions)</span>
-                  <span className="concept-pct" style={{ color: 'var(--color-chem)' }}>
-                    {dktScores.chem.pct}%
-                  </span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-fill fill-chem" style={{ width: `${dktScores.chem.pct}%` }} />
-                </div>
-                <div className="decay-risk-bar">
-                  <span>Retention:</span>
-                  <span style={{ color: 'var(--color-chem)', fontWeight: 700 }}>
-                    {dktScores.chem.retention}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="btn-concept-quiz"
-                  onClick={() => launchQuiz('chem')}
-                >
-                  <FileText size={12} className="inline mr-1 text-slate-400" />
-                  <span>Take Chem Drill</span>
-                </button>
-              </div>
+              {(() => {
+                const isSafe = dktScores.chem.safe
+                const pct = dktScores.chem.pct
+                const color = pct >= 80 ? '#10B981' : pct >= 60 ? '#38BDF8' : pct >= 40 ? '#F59E0B' : '#EF4444'
+                return (
+                  <div className="concept-card" style={{ borderTop: `3px solid ${color}` }}>
+                    <div className="concept-header">
+                      <span className="concept-name">Chemistry (Reactions)</span>
+                      <span className="concept-pct" style={{ color }}>
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="progress-track">
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${pct}%`,
+                          background: pct >= 80 ? 'var(--grad-math)' : pct >= 60 ? 'var(--grad-chem)' : pct >= 40 ? 'linear-gradient(90deg, #F59E0B, #FBBF24)' : 'linear-gradient(90deg, #EF4444, #F87171)',
+                        }}
+                      />
+                    </div>
+                    <div className="decay-risk-bar">
+                      <span>Retention:</span>
+                      <span style={{ color, fontWeight: 700 }}>
+                        {dktScores.chem.retention}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-concept-quiz"
+                      onClick={() => launchQuiz('chem')}
+                    >
+                      <FileText size={12} className="inline mr-1 text-slate-400" />
+                      <span>{isSafe ? 'Take Chem Drill' : 'Take Booster Drill'}</span>
+                    </button>
+                  </div>
+                )
+              })()}
 
               {/* Python Concept Card */}
-              <div
-                className="concept-card"
-                style={{
-                  borderTop: '3px solid #004D40',
-                }}
-              >
-                <div className="concept-header">
-                  <span className="concept-name">Python (Loops &amp; Logic)</span>
-                  <span className="concept-pct" style={{ color: '#004D40' }}>
-                    {dktScores.python.pct}%
-                  </span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-fill fill-py" style={{ width: `${dktScores.python.pct}%` }} />
-                </div>
-                <div className="decay-risk-bar">
-                  <span>Retention:</span>
-                  <span className="decay-danger" style={{ color: '#004D40' }}>
-                    {dktScores.python.retention}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="btn-concept-quiz"
-                  onClick={() => launchQuiz('python')}
-                >
-                  <Zap size={13} className="inline text-amber-400" />
-                  <span>Take Booster Drill</span>
-                </button>
-              </div>
+              {(() => {
+                const isSafe = dktScores.python.safe
+                const pct = dktScores.python.pct
+                const color = pct >= 80 ? '#10B981' : pct >= 60 ? '#38BDF8' : pct >= 40 ? '#F59E0B' : '#EF4444'
+                return (
+                  <div className="concept-card" style={{ borderTop: `3px solid ${color}` }}>
+                    <div className="concept-header">
+                      <span className="concept-name">Python (Loops &amp; Logic)</span>
+                      <span className="concept-pct" style={{ color }}>
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="progress-track">
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${pct}%`,
+                          background: pct >= 80 ? 'var(--grad-math)' : pct >= 60 ? 'var(--grad-chem)' : pct >= 40 ? 'linear-gradient(90deg, #F59E0B, #FBBF24)' : 'linear-gradient(90deg, #EF4444, #F87171)',
+                        }}
+                      />
+                    </div>
+                    <div className="decay-risk-bar">
+                      <span>Retention:</span>
+                      <span style={{ color, fontWeight: 700 }}>
+                        {dktScores.python.retention}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-concept-quiz"
+                      onClick={() => launchQuiz('python')}
+                    >
+                      {isSafe ? <FileText size={12} className="inline mr-1 text-slate-400" /> : <Zap size={13} className="inline text-amber-400" />}
+                      <span>{isSafe ? 'Take Python Drill' : 'Take Booster Drill'}</span>
+                    </button>
+                  </div>
+                )
+              })()}
             </div>
           </div>
 
@@ -3821,26 +4327,36 @@ export default function App() {
                 <Target size={14} className="inline text-emerald-400" />
                 <span>Focus Areas &amp; Boosters</span>
               </div>
-              <span style={{ fontSize: '11.5px', color: '#004D40', fontWeight: 700 }}>
-                {pendingBoostersCount} Recommendations Available
+              <span style={{ fontSize: '11.5px', color: dktScores.python.safe ? '#10B981' : '#004D40', fontWeight: 700 }}>
+                {dktScores.python.safe ? 'Retention Secure' : `${pendingBoostersCount} Recommendations Available`}
               </span>
             </div>
 
             {/* Booster 1 */}
             <div className="critical-item">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                <Lightbulb size={16} className="text-amber-400" />
+                <Lightbulb size={16} className={dktScores.python.safe ? 'text-emerald-400' : 'text-amber-400'} />
                 <div>
-                  <strong>Quick recap suggested:</strong> A 20-min loop refresher will make your upcoming lab a breeze!
+                  {dktScores.python.safe ? (
+                    <span><strong>Python Loops &amp; Logic:</strong> Retention updated to {dktScores.python.pct}% ({dktScores.python.retention}). Memory trace protected!</span>
+                  ) : (
+                    <span><strong>Quick recap suggested:</strong> A 20-min loop refresher will make your upcoming lab a breeze!</span>
+                  )}
                 </div>
               </div>
               <button
                 type="button"
-                className={`btn-schedule-critical ${pythonCritScheduled ? 'scheduled' : ''}`}
-                onClick={() => triggerAutoSchedule('Python Loop Quick Recap')}
+                className={`btn-schedule-critical ${pythonCritScheduled || dktScores.python.safe ? 'scheduled' : ''}`}
+                onClick={() => {
+                  if (!dktScores.python.safe && !pythonCritScheduled) {
+                    triggerAutoSchedule('Python Loop Quick Recap')
+                  } else {
+                    launchQuiz('python')
+                  }
+                }}
               >
-                {pythonCritScheduled ? <Check size={12} className="inline mr-1" /> : <Zap size={12} className="inline mr-1" />}
-                <span>{pythonCritScheduled ? 'Slotted for 12:00 PM' : 'Squeeze in 20m Practice'}</span>
+                {pythonCritScheduled || dktScores.python.safe ? <Check size={12} className="inline mr-1" /> : <Zap size={12} className="inline mr-1" />}
+                <span>{dktScores.python.safe ? 'Mastery Reinforced' : pythonCritScheduled ? 'Slotted for 12:00 PM' : 'Squeeze in 20m Practice'}</span>
               </button>
             </div>
 
@@ -3998,29 +4514,42 @@ export default function App() {
               <div className="quiz-results-card">
                 {/* 1. Hero Score Banner with Animated Radial Gauge */}
                 {(() => {
-                  const isCritical = (quizFinalResult?.totalCorrect ?? 0) < 2
-                  const isMastered = (quizFinalResult?.scorePct ?? 0) >= 70
+                  const totalCorrect = quizFinalResult?.totalCorrect ?? 0
+                  const isCritical = totalCorrect <= 3
+                  const isTier2 = totalCorrect >= 4 && totalCorrect <= 6
+                  const isTier3 = totalCorrect >= 7 && totalCorrect <= 8
+                  const isTier4 = totalCorrect >= 9
                   const scorePct = quizFinalResult?.scorePct ?? 0
                   const radius = 34
                   const circ = 2 * Math.PI * radius
                   const strokeDashoffset = circ - (scorePct / 100) * circ
 
                   return (
-                    <div className={`quiz-hero-banner ${isCritical ? 'critical' : isMastered ? 'mastered' : ''}`}>
+                    <div className={`quiz-hero-banner ${isCritical ? 'critical' : isTier4 ? 'mastered' : ''}`}>
                       <div className="quiz-hero-glow" />
                       <div className="quiz-hero-left">
-                        <div className={`quiz-hero-badge ${isCritical ? 'critical' : isMastered ? 'mastered' : 'steady'}`}>
-                          <span>{isCritical ? 'Critical Decay Alert' : isMastered ? 'Mastery Confirmed' : 'Concept Reinforced'}</span>
+                        <div className={`quiz-hero-badge ${isCritical ? 'critical' : isTier4 ? 'mastered' : isTier3 ? 'steady' : 'steady'}`}>
+                          <span>
+                            {isCritical
+                              ? 'Critical Decay Alert'
+                              : isTier2
+                              ? 'Targeted Review Recommended'
+                              : isTier3
+                              ? 'Proficient · Refine Lagging Aspect'
+                              : 'Mastery Confirmed · You Are Ready!'}
+                          </span>
                         </div>
                         <h3 className="quiz-hero-title">
                           {quizFinalResult?.totalCorrect} <span className="score-total">/ {quizFinalResult?.total} Questions Correct</span>
                         </h3>
                         <p className="quiz-hero-sub">
                           {isCritical
-                            ? `Score fell below threshold (< 2/5). Automated recovery slot has been reserved to prevent concept decay.`
-                            : isMastered
-                            ? `Outstanding diagnostic performance! Spaced repetition decay interval safely extended.`
-                            : `Solid performance! Review targeted problem types below to lock in complete concept mastery.`}
+                            ? `Score is 3 or less right (${totalCorrect}/10). Automated recovery 1-hour study slot reserved on calendar with recommended YouTube masterclass.`
+                            : isTier2
+                            ? `Score is between 3 and 6 right (${totalCorrect}/10). Diagnostic pointers and key concept short notes provided below to solidify foundations.`
+                            : isTier3
+                            ? `Score is between 6 and 8 right (${totalCorrect}/10). Cheat sheet unlocked with targeted focus on your lagging aspect to lock in mastery.`
+                            : `Score is 9–10 right (${totalCorrect}/10)! You are ready for your exam. 25-question high-yield practice bank unlocked below.`}
                         </p>
                       </div>
 
@@ -4084,7 +4613,7 @@ export default function App() {
                   <div className="quiz-stage-box">
                     <div className="quiz-stage-head">
                       <span className="quiz-stage-pill" style={{ color: quizFinalResult?.adaptiveDifficulty === 'hard' ? '#ffb703' : 'var(--accent-primary)' }}>
-                        Stage 2 · {quizFinalResult?.adaptiveDifficulty?.toUpperCase() || 'ADAPTIVE'}
+                        Stage 2 · {quizFinalResult?.adaptiveDifficulty?.toUpperCase() || 'ADAPTIVE'} (7 Questions)
                       </span>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                         Dynamic Branch
@@ -4094,13 +4623,13 @@ export default function App() {
                       {quizFinalResult?.stage2Correct} <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>/ {quizFinalResult?.stage2Total} Correct</span>
                     </div>
                     <div className="quiz-segment-bars">
-                      {[3, 4].map((idx) => {
+                      {[3, 4, 5, 6, 7, 8, 9].map((idx) => {
                         const ans = quizUserAnswers[idx]
                         return (
                           <div
                             key={idx}
                             className={`quiz-segment-bar ${ans ? (ans.isCorrect ? 'correct' : 'wrong') : ''}`}
-                            title={`Q${idx + 1}: ${ans?.isCorrect ? 'Correct' : 'Incorrect'}`}
+                            title={`Q${idx + 1}: ${ans ? (ans.isCorrect ? 'Correct' : 'Incorrect') : 'Unanswered'}`}
                           />
                         )
                       })}
@@ -4108,70 +4637,69 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 3. Critical Remediation Intervention & YouTube Masterclass Card */}
-                {quizFinalResult && quizFinalResult.totalCorrect < 2 && criticalRemediationInfo && (
+                {/* 3. TIER 1 OUTCOME: <= 3 right (Critical Remediation & YouTube Tutorial) */}
+                {quizFinalResult && quizFinalResult.totalCorrect <= 3 && (
                   <div className="quiz-critical-remediation-box">
                     <div className="quiz-critical-top">
-                      <div className="quiz-critical-icon-wrap">
-                        
-                      </div>
                       <div className="quiz-critical-header-text">
-                        <h4>Critical Intervention Scheduled ({quizFinalResult.totalCorrect}/5 Correct)</h4>
+                        <h4>Critical Intervention Scheduled ({quizFinalResult.totalCorrect}/10 Correct)</h4>
                         <p>
-                          Retention fell into critical decay risk. The smart scheduler reviewed your schedule, avoided upcoming exam days (Sep 15), and auto-reserved a <strong>1-Hour Focused Study Slot</strong> to reinforce this concept.
+                          Retention fell into critical decay risk (3 or less right). The smart scheduler auto-reserved a <strong>1-Hour Focused Study Slot</strong> and recommended a top-rated YouTube tutorial masterclass to rebuild core mastery.
                         </p>
                       </div>
                     </div>
 
                     {/* Calendar Slot Strip */}
-                    <div className="quiz-cal-slot-strip">
-                      <div className="quiz-cal-slot-left">
-                        <div className="quiz-cal-date-chip">
-                          <span className="day-num">{criticalRemediationInfo.dayNumber}</span>
-                          <span className="day-name">Sep</span>
-                        </div>
-                        <div className="quiz-cal-details">
-                          <div className="quiz-cal-title-line">
-                            Dedicated Study Session: {criticalRemediationInfo.subject} - {criticalRemediationInfo.topic}
+                    {criticalRemediationInfo && (
+                      <div className="quiz-cal-slot-strip">
+                        <div className="quiz-cal-slot-left">
+                          <div className="quiz-cal-date-chip">
+                            <span className="day-num">{criticalRemediationInfo.dayNumber}</span>
+                            <span className="day-name">Sep</span>
                           </div>
-                          <div className="quiz-cal-sub-line">
-                            <span><Calendar size={12} className="inline mr-1" /> {criticalRemediationInfo.dayName}</span>
-                            <span>•</span>
-                            <span><Clock size={12} className="inline mr-1" /> {criticalRemediationInfo.timeSlot} (60 min)</span>
+                          <div className="quiz-cal-details">
+                            <div className="quiz-cal-title-line">
+                              Dedicated Study Session: {criticalRemediationInfo.subject} - {criticalRemediationInfo.topic}
+                            </div>
+                            <div className="quiz-cal-sub-line">
+                              <span><Calendar size={12} className="inline mr-1" /> {criticalRemediationInfo.dayName}</span>
+                              <span>•</span>
+                              <span><Clock size={12} className="inline mr-1" /> {criticalRemediationInfo.timeSlot} (60 min)</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <button
-                        type="button"
-                        className="btn-pill"
-                        style={{
-                          background: 'rgba(239, 68, 68, 0.18)',
-                          color: '#f87171',
-                          border: '1px solid rgba(239, 68, 68, 0.45)',
-                          fontWeight: 700,
-                          fontSize: '12px',
-                          padding: '8px 14px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => {
-                          setSelectedCalDay(criticalRemediationInfo.dayNumber)
-                          setCalYear(2026)
-                          setCalMonth(8)
-                          setGcalView('day')
-                          setQuizModalOpen(false)
-                          setCalendarModalOpen(true)
-                        }}
-                      >
-                        <Calendar size={14} className="inline mr-1" /> <span>View on Calendar</span>
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          className="btn-pill"
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.18)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239, 68, 68, 0.45)',
+                            fontWeight: 700,
+                            fontSize: '12px',
+                            padding: '8px 14px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setSelectedCalDay(criticalRemediationInfo.dayNumber)
+                            setCalYear(2026)
+                            setCalMonth(8)
+                            setGcalView('day')
+                            setQuizModalOpen(false)
+                            setCalendarModalOpen(true)
+                          }}
+                        >
+                          <Calendar size={14} className="inline mr-1" /> <span>View on Calendar</span>
+                        </button>
+                      </div>
+                    )}
 
                     {/* YouTube Masterclass Video Card */}
-                    {criticalRemediationInfo.video && (
+                    {(quizTierOutcome?.video || criticalRemediationInfo?.video) && (
                       <div className="quiz-yt-masterclass-card">
                         <div className="quiz-yt-left">
                           <div className="quiz-yt-play-badge">
@@ -4179,23 +4707,205 @@ export default function App() {
                           </div>
                           <div className="quiz-yt-info">
                             <span className="quiz-yt-tag">Recommended Masterclass Video</span>
-                            <div className="quiz-yt-title" title={criticalRemediationInfo.video.title}>
-                              {criticalRemediationInfo.video.title}
+                            <div className="quiz-yt-title" title={(quizTierOutcome?.video || criticalRemediationInfo?.video)?.title}>
+                              {(quizTierOutcome?.video || criticalRemediationInfo?.video)?.title}
                             </div>
                             <span className="quiz-yt-channel">
-                              Channel: <strong>{criticalRemediationInfo.video.channel}</strong> • Verified top-rated lesson
+                              Channel: <strong>{(quizTierOutcome?.video || criticalRemediationInfo?.video)?.channel}</strong> • Verified top-rated lesson
                             </span>
                           </div>
                         </div>
 
                         <a
-                          href={criticalRemediationInfo.video.url}
+                          href={(quizTierOutcome?.video || criticalRemediationInfo?.video)?.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="quiz-yt-btn"
                         >
                           <ExternalLink size={13} className="inline mr-1" /> <span>Watch Tutorial</span>
                         </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. TIER 2 OUTCOME: 4 to 6 right (Diagnostic Pointers & Short Notes) */}
+                {quizFinalResult && quizFinalResult.totalCorrect >= 4 && quizFinalResult.totalCorrect <= 6 && (
+                  <div className="quiz-tier-notes-box">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div className="quiz-tier-badge amber">
+                        <span>Tier 2 · Diagnostic Pointers & Short Notes</span>
+                      </div>
+                      <span style={{ fontSize: '11.5px', color: '#fbbf24', fontWeight: 600 }}>
+                        Score: {quizFinalResult.totalCorrect}/10 Correct
+                      </span>
+                    </div>
+
+                    {/* Actionable Pointers */}
+                    {quizTierOutcome?.pointers && (
+                      <div className="quiz-pointers-list">
+                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                          Diagnostic Pointers
+                        </div>
+                        {quizTierOutcome.pointers.map((pointer, pIdx) => (
+                          <div key={pIdx} className="quiz-pointer-item">
+                            <span style={{ color: '#fbbf24', fontWeight: 800 }}>•</span>
+                            <span>{pointer}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Short Notes Grid */}
+                    {quizTierOutcome?.shortNotes && (
+                      <div className="quiz-short-notes-grid">
+                        {quizTierOutcome.shortNotes.map((note, nIdx) => (
+                          <div key={nIdx} className="quiz-note-card">
+                            <div className="quiz-note-title">{note.title}</div>
+                            <div className="quiz-note-body">{note.body}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. TIER 3 OUTCOME: 7 to 8 right (Cheat Sheet & Lagging Aspect Refinement) */}
+                {quizFinalResult && quizFinalResult.totalCorrect >= 7 && quizFinalResult.totalCorrect <= 8 && (
+                  <div className="quiz-tier-cheatsheet-box">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div className="quiz-tier-badge indigo">
+                        <span>Tier 3 · Cheat Sheet & Lagging Aspect</span>
+                      </div>
+                      <span style={{ fontSize: '11.5px', color: '#818cf8', fontWeight: 600 }}>
+                        Score: {quizFinalResult.totalCorrect}/10 Correct
+                      </span>
+                    </div>
+
+                    {/* Lagging Aspect Alert */}
+                    {quizTierOutcome?.laggingAspect && (
+                      <div className="quiz-lagging-alert">
+                        <AlertCircle size={20} className="text-indigo-400 flex-shrink-0" />
+                        <div>
+                          <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '13px' }}>
+                            Focus Area: {quizTierOutcome.laggingAspect.area}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#c7d2fe', marginTop: '2px' }}>
+                            {quizTierOutcome.laggingAspect.advice}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Topic Cheat Sheet Grid */}
+                    {quizTierOutcome?.cheatSheet && (
+                      <div className="quiz-cheatsheet-grid">
+                        {quizTierOutcome.cheatSheet.map((sheet, sIdx) => (
+                          <div key={sIdx} className="quiz-cheatsheet-card">
+                            <div className="quiz-cheatsheet-category">{sheet.category}</div>
+                            {sheet.rules.map((rule, rIdx) => (
+                              <div
+                                key={rIdx}
+                                className="quiz-cheatsheet-rule"
+                                dangerouslySetInnerHTML={{
+                                  __html: rule.replace(/`([^`]+)`/g, '<code>$1</code>'),
+                                }}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. TIER 4 OUTCOME: 9 to 10 right (Mastery "You are ready!" & 25 Practice Question Bank) */}
+                {quizFinalResult && quizFinalResult.totalCorrect >= 9 && (
+                  <div className="quiz-tier-ready-box">
+                    <div className="quiz-ready-hero">
+                      <div>
+                        <div className="quiz-tier-badge emerald mb-2">
+                          <span>Tier 4 · Concept Mastered</span>
+                        </div>
+                        <div className="quiz-ready-title">You are ready!</div>
+                        <div className="quiz-ready-sub">
+                          You scored {quizFinalResult.totalCorrect}/10. High-yield 25-question practice bank unlocked below for exam prep.
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-pill"
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.2)',
+                          color: '#34d399',
+                          border: '1px solid rgba(16, 185, 129, 0.45)',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          padding: '7px 12px',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => {
+                          const allIds: Record<number, boolean> = {}
+                          const bank = quizTierOutcome?.questionBank || []
+                          const shouldReveal = Object.keys(revealedBankAnswers).length < bank.length
+                          if (shouldReveal) {
+                            bank.forEach((q) => {
+                              allIds[q.id] = true
+                            })
+                          }
+                          setRevealedBankAnswers(allIds)
+                        }}
+                      >
+                        {Object.keys(revealedBankAnswers).length > 0 ? 'Hide All Answers' : 'Reveal All Answers'}
+                      </button>
+                    </div>
+
+                    {/* Scrollable 25-Question Practice Bank */}
+                    {quizTierOutcome?.questionBank && (
+                      <div className="quiz-bank-scroll">
+                        {quizTierOutcome.questionBank.map((qItem) => {
+                          const isRevealed = !!revealedBankAnswers[qItem.id]
+                          return (
+                            <div key={qItem.id} className="quiz-bank-item">
+                              <div className="quiz-bank-q-header">
+                                <span>Question {qItem.id} of 25</span>
+                                <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                                  Hint: {qItem.hint}
+                                </span>
+                              </div>
+                              <div className="quiz-bank-q-text">{qItem.question}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                                {isRevealed ? (
+                                  <div className="quiz-bank-ans">
+                                    <strong>Answer:</strong> {qItem.answer}
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Click to view solution</span>
+                                )}
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#34d399',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    textDecoration: 'underline',
+                                  }}
+                                  onClick={() => {
+                                    setRevealedBankAnswers((prev) => ({
+                                      ...prev,
+                                      [qItem.id]: !prev[qItem.id],
+                                    }))
+                                  }}
+                                >
+                                  {isRevealed ? 'Hide Answer' : 'Show Answer'}
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
