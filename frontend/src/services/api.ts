@@ -277,6 +277,11 @@ export interface CriticalRemediationResponse {
     statusTag: string
     dayNumber: number
   }
+  video?: {
+    title: string
+    channel: string
+    url: string
+  }
 }
 
 export async function scheduleCriticalRemediation(payload: {
@@ -284,6 +289,9 @@ export async function scheduleCriticalRemediation(payload: {
   topic: string
   score: number
   total: number
+  scheduled_date?: string
+  time_slot?: string
+  duration_minutes?: number
   user_id?: number
 }): Promise<CriticalRemediationResponse | null> {
   const uid = payload.user_id ?? getStoredUserId()

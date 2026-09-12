@@ -561,6 +561,9 @@ export default function App() {
     completed: boolean
     alarmActive: boolean
     status: string
+    videoUrl?: string
+    videoTitle?: string
+    videoChannel?: string
   }
 
   type CalTaskItem = {
@@ -572,6 +575,9 @@ export default function App() {
     completed: boolean
     priority?: string
     duration_minutes?: number
+    videoUrl?: string
+    videoTitle?: string
+    videoChannel?: string
   }
 
   // Full-Page Study Calendar State
@@ -810,6 +816,78 @@ export default function App() {
       return `${startH12}${startMStr}–${endH12}${endMStr} ${endAmPm}`
     } else {
       return `${startH12}${startMStr} ${startAmPm}–${endH12}${endMStr} ${endAmPm}`
+    }
+  }
+
+  const getTopicYoutubeVideo = (subject: string, topic: string) => {
+    const sLower = (subject || '').toLowerCase()
+    const tLower = (topic || '').toLowerCase()
+
+    if (sLower.includes('python') || tLower.includes('loop') || tLower.includes('comprehension') || tLower.includes('async')) {
+      if (tLower.includes('async')) {
+        return {
+          title: 'Intro to async Python | Writing a Web Crawler',
+          channel: 'mCoding',
+          url: 'https://www.youtube.com/watch?v=ftmdDlwMwwQ',
+        }
+      }
+      if (tLower.includes('comprehension')) {
+        return {
+          title: 'Python Tutorial: Comprehensions - How they work & why you should use them',
+          channel: 'Corey Schafer',
+          url: 'https://www.youtube.com/watch?v=3dt4OGnU5sM',
+        }
+      }
+      return {
+        title: 'Python Tutorial for Beginners: Loops and Iterations - For/While Loops',
+        channel: 'Corey Schafer',
+        url: 'https://www.youtube.com/watch?v=6iF8Xb7Z3wQ',
+      }
+    }
+
+    if (sLower.includes('math') || tLower.includes('algebra') || tLower.includes('vector') || tLower.includes('matrix')) {
+      return {
+        title: 'Vectors & Linear Transformations | Essence of linear algebra',
+        channel: '3Blue1Brown',
+        url: 'https://www.youtube.com/watch?v=fNk_zzaMoSs',
+      }
+    }
+    if (tLower.includes('calculus') || tLower.includes('derivative') || tLower.includes('integral')) {
+      return {
+        title: 'The Essence of Calculus | Visual Introduction',
+        channel: '3Blue1Brown',
+        url: 'https://www.youtube.com/watch?v=WUvTyaaNkzM',
+      }
+    }
+
+    if (sLower.includes('chem') || tLower.includes('reaction') || tLower.includes('organic') || tLower.includes('nernst')) {
+      if (tLower.includes('nernst') || tLower.includes('electro')) {
+        return {
+          title: 'Nernst Equation Explained, Electrochemistry, Example Problems',
+          channel: 'The Organic Chemistry Tutor',
+          url: 'https://www.youtube.com/watch?v=jousNNceCXs',
+        }
+      }
+      return {
+        title: 'Organic Chemistry Reaction Mechanisms - Addition, Elimination, Substitution',
+        channel: 'The Organic Chemistry Tutor',
+        url: 'https://www.youtube.com/watch?v=Efh5GkVbhEc',
+      }
+    }
+
+    if (sLower.includes('ai') || tLower.includes('transformer') || tLower.includes('attention')) {
+      return {
+        title: 'Attention in transformers, step-by-step | Deep Learning Chapter 6',
+        channel: '3Blue1Brown',
+        url: 'https://www.youtube.com/watch?v=eMlx5fFNoYc',
+      }
+    }
+
+    const query = encodeURIComponent(`${subject} ${topic} tutorial masterclass`)
+    return {
+      title: `Master ${topic} Full Educational Walkthrough`,
+      channel: 'Curated YouTube Tutorial',
+      url: `https://www.youtube.com/results?search_query=${query}`,
     }
   }
 
@@ -1259,6 +1337,7 @@ export default function App() {
     scorePct: number
     adaptiveDifficulty: string
   } | null>(null)
+  const [quizReviewFilter, setQuizReviewFilter] = useState<'all' | 'wrong' | 'correct'>('all')
   const [criticalRemediationInfo, setCriticalRemediationInfo] = useState<{
     scheduledDate: string
     dayName: string
@@ -1266,6 +1345,11 @@ export default function App() {
     topic: string
     subject: string
     dayNumber: number
+    video?: {
+      title: string
+      channel: string
+      url: string
+    }
   } | null>(null)
 
 
@@ -1837,6 +1921,7 @@ export default function App() {
     setIsQuizFinished(false)
     setQuizFinalResult(null)
     setCriticalRemediationInfo(null)
+    setQuizReviewFilter('all')
 
     const subjectName = key === 'math' ? 'Maths' : key === 'chem' ? 'Chemistry' : 'Python'
 
@@ -1991,12 +2076,23 @@ export default function App() {
         : 'task-tag-python'
 
     if (isCritical) {
-      // 1. Scan following days (Day +1 to Day +7, e.g. Sep 13 through Sep 19) for the earliest free schedule
-      let chosenDateKey = '2026-09-16'
-      let chosenDayNumber = 16
-      let chosenDayFormatted = 'Wednesday, Sep 16'
+      // 1. Automatically find the earliest available 1-hour study slot (starting from TODAY, Sep 12)
+      const candidateHours = [
+        { slot: '4:30–5:30 PM', startMin: 990, durationMin: 60 },
+        { slot: '5:30–6:30 PM', startMin: 1050, durationMin: 60 },
+        { slot: '2:30–3:30 PM', startMin: 870, durationMin: 60 },
+        { slot: '10:00–11:00 AM', startMin: 600, durationMin: 60 },
+        { slot: '11:30 AM–12:30 PM', startMin: 690, durationMin: 60 },
+        { slot: '6:30–7:30 PM', startMin: 1110, durationMin: 60 },
+      ]
 
-      for (let dayOffset = 1; dayOffset <= 7; dayOffset++) {
+      let chosenDateKey = '2026-09-12'
+      let chosenDayNumber = 12
+      let chosenDayFormatted = 'Today (Saturday, Sep 12)'
+      let chosenTimeSlot = '4:30–5:30 PM'
+      let foundSlot = false
+
+      for (let dayOffset = 0; dayOffset <= 7; dayOffset++) {
         const candidateDate = new Date(2026, 8, 12 + dayOffset)
         const cYear = candidateDate.getFullYear()
         const cMonth = candidateDate.getMonth()
@@ -2009,26 +2105,49 @@ export default function App() {
           return title.includes('exam') || title.includes('midterm') || title.includes('final')
         })
 
-        // A day is free if it has 0 scheduled tasks and NO exams
-        if (!hasExam && dayTasks.length === 0) {
-          chosenDateKey = cDateKey
-          chosenDayNumber = cDay
-          chosenDayFormatted = candidateDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'short',
-            day: 'numeric',
+        if (hasExam) continue // Never schedule over exams
+
+        for (const candidate of candidateHours) {
+          const slotStart = candidate.startMin
+          const slotEnd = candidate.startMin + candidate.durationMin
+
+          const hasCollision = dayTasks.some((t) => {
+            const { startMinutes, durationMinutes } = parseTimeSlot(t.timeSlot)
+            const tStart = startMinutes
+            const tEnd = startMinutes + (durationMinutes || 60)
+            return slotStart < tEnd && slotEnd > tStart
           })
-          break
+
+          if (!hasCollision) {
+            chosenDateKey = cDateKey
+            chosenDayNumber = cDay
+            chosenDayFormatted =
+              dayOffset === 0
+                ? 'Today (Saturday, Sep 12)'
+                : candidateDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+            chosenTimeSlot = candidate.slot
+            foundSlot = true
+            break
+          }
         }
+
+        if (foundSlot) break
       }
+
+      const topicVideo = getTopicYoutubeVideo(subjectDisplayName, topicDisplayName)
 
       setCriticalRemediationInfo({
         scheduledDate: chosenDateKey,
         dayName: chosenDayFormatted,
-        timeSlot: '10:00–11:00 AM',
+        timeSlot: chosenTimeSlot,
         topic: topicDisplayName,
         subject: subjectDisplayName,
         dayNumber: chosenDayNumber,
+        video: topicVideo,
       })
 
       // 2. Set DKT proficiency to Critical decay risk
@@ -2044,42 +2163,95 @@ export default function App() {
       setQuizScoreText(`Score: ${scorePct}% · Critical Decay Alert!`)
       setQuizCardBorderColor('#EF4444')
 
-      // 3. Add to Calendar on that free following day
+      // 3. Add 1-Hour Study Time Slot directly to Calendar
+      const remediationTaskId = `remediation-${Date.now()}`
       const remediationTask: CalTaskItem = {
-        id: `remediation-${Date.now()}`,
-        title: `🚨 Critical Review: ${subjectDisplayName} - ${topicDisplayName}`,
+        id: remediationTaskId,
+        title: `🚨 Critical 1hr Study: ${subjectDisplayName} - ${topicDisplayName}`,
         subject: subjectDisplayName,
         tagClass: subjectTagClass,
-        timeSlot: '10:00–11:00 AM',
+        timeSlot: chosenTimeSlot,
         completed: false,
         priority: 'high',
         duration_minutes: 60,
+        videoUrl: topicVideo.url,
+        videoTitle: topicVideo.title,
+        videoChannel: topicVideo.channel,
       }
 
       setCalTasksByDate((prev) => {
         const existing = prev[chosenDateKey] || []
         return {
           ...prev,
-          [chosenDateKey]: [...existing, remediationTask],
+          [chosenDateKey]: [...existing.filter((t) => !t.title.includes('Critical 1hr Study')), remediationTask],
         }
       })
 
-      // 4. Send to backend
+      // If scheduled for Today (2026-09-12), also inject into active timeline tasks so it is immediately visible
+      if (chosenDateKey === '2026-09-12') {
+        setTasks((prev) => [
+          ...prev.filter((t) => !t.title.includes('Critical 1hr Study')),
+          {
+            id: remediationTaskId,
+            title: `🚨 Critical 1hr Study: ${subjectDisplayName} - ${topicDisplayName}`,
+            subject: subjectDisplayName,
+            tagClass: subjectTagClass,
+            tagIcon: currentQuizSubject === 'math' ? '📐' : currentQuizSubject === 'chem' ? '⚗️' : '💻',
+            timeSlot: chosenTimeSlot,
+            completed: false,
+            alarmActive: true,
+            status: 'Critical Remediation',
+            videoUrl: topicVideo.url,
+            videoTitle: topicVideo.title,
+            videoChannel: topicVideo.channel,
+          },
+        ])
+      }
+
+      // 4. Send to backend with chosen_date and chosenTimeSlot
       scheduleCriticalRemediation({
         subject: subjectDisplayName,
         topic: topicDisplayName,
         score: totalCorrect,
         total: total,
-      }).catch((e) => console.warn('scheduleCriticalRemediation backend error:', e))
+        scheduled_date: chosenDateKey,
+        time_slot: chosenTimeSlot,
+        duration_minutes: 60,
+      })
+        .then((res) => {
+          if (res?.video && res.video.url) {
+            setCriticalRemediationInfo((prev) => (prev ? { ...prev, video: res.video } : null))
+            setCalTasksByDate((prev) => {
+              const existing = prev[chosenDateKey] || []
+              return {
+                ...prev,
+                [chosenDateKey]: existing.map((t) =>
+                  t.id === remediationTaskId
+                    ? {
+                        ...t,
+                        videoUrl: res.video!.url,
+                        videoTitle: res.video!.title,
+                        videoChannel: res.video!.channel,
+                      }
+                    : t
+                ),
+              }
+            })
+          }
+        })
+        .catch((e) => console.warn('scheduleCriticalRemediation backend error:', e))
 
-      // 5. User Feedback: Warning toast + Tutor Chat reminder message
-      showToast(`🚨 Critical score (${totalCorrect}/${total})! Recovery session scheduled for ${chosenDayFormatted}`, '🚨')
+      // 5. User Feedback: Warning toast + Audio + Tutor Chat reminder message
+      soundSynth.playSuccessBeep()
+      showToast(`🚨 Scored ${totalCorrect}/${total} (< 2)! Added 1-hr study slot & YT video tutorial!`, '📅')
 
       addChatMessage(
-        `🚨 <strong>Critical Review Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
-          `Because your score was below 2 right out of 5, the adaptive system flagged this concept with <strong>Critical Decay Risk</strong>.<br><br>` +
-          `📅 <strong>Automated Schedule:</strong> We scanned your calendar across upcoming days, bypassed your exams (e.g. Sep 15), and found that <strong>${chosenDayFormatted}</strong> is completely open (0 tasks). We have placed a <strong>60-minute Critical Review drill at 10:00 AM</strong> with an active reminder alarm.<br><br>` +
-          `👉 Open your <strong>Study Calendar</strong> to see the scheduled reminder on ${chosenDayFormatted}!`,
+        `🚨 <strong>Critical Diagnostic Alert:</strong> You scored <strong>${totalCorrect} out of ${total}</strong> on <em>${subjectDisplayName} - ${topicDisplayName}</em>.<br><br>` +
+          `Because you scored less than 2 right, I have automatically added a <strong>1-hour study time slot (60 mins)</strong> to your calendar on <strong>${chosenDayFormatted} from ${chosenTimeSlot}</strong> with an active study alarm to guarantee recovery.<br><br>` +
+          `📺 <strong>Mastery Video Tutorial:</strong><br>` +
+          `<em>${topicVideo.title}</em> (${topicVideo.channel})<br>` +
+          `<a href="${topicVideo.url}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:#EF4444;color:#FFFFFF;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;margin-top:8px;">▶️ Watch Video on YouTube ↗</a><br><br>` +
+          `👉 Open your <strong>Study Calendar</strong> to view or move your 1-hour study block!`,
         'bot'
       )
     } else {
@@ -2129,10 +2301,6 @@ export default function App() {
       } else if (actionText.includes('drill') || actionText.includes('Quiz')) {
         launchQuiz('python')
       } else if (actionText.includes('retention')) {
-        addToolExecutionTrace('memory_retention_check', {
-          student_id: 'laksh_01',
-          focus_topic: 'python.nested_loops',
-        })
         addChatMessage(
           `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
           'bot'
@@ -2167,6 +2335,11 @@ export default function App() {
       } else if (lower.includes('theme') || lower.includes('dark') || lower.includes('light')) {
         toggleTheme()
         addChatMessage('Switched theme mode as requested.', 'bot')
+      } else if (lower.includes('retention') || lower.includes('memory')) {
+        addChatMessage(
+          `📉 <strong>Memory Retention Snapshot:</strong><br>• <strong>Algebra:</strong> 84% (Strong &amp; steady)<br>• <strong>Chemistry:</strong> 65% (Healthy retention)<br>• <strong>Python Loops:</strong> 35% (Ready for a booster recap before it fades)<br><br>Doing a 15-minute review today will extend your recall strength by over a week!`,
+          'bot'
+        )
       } else {
         addChatMessage(
           `Got it, Laksh! Noted: "<em>${text}</em>". I'm keeping your schedule smooth, balanced, and stress-free.`,
@@ -2715,6 +2888,27 @@ export default function App() {
                     </div>
                   </div>
                   <div className="task-card-right">
+                    {task.videoUrl && (
+                      <a
+                        href={task.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-timer"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          color: '#EF4444',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontWeight: 700,
+                        }}
+                        title={`Watch ${task.videoTitle || 'Tutorial'} on YouTube`}
+                      >
+                        📺 Video
+                      </a>
+                    )}
                     <button
                       type="button"
                       className="btn-timer"
@@ -3115,6 +3309,7 @@ export default function App() {
           <div className="chat-messages">
             {chatList.map((entry) => {
               if (entry.type === 'trace') {
+                if (entry.toolName === 'memory_retention_check') return null
                 return (
                   <div key={entry.id} className="tool-call-trace">
                     <div className="tool-header">
@@ -3199,7 +3394,7 @@ export default function App() {
           if (e.target === e.currentTarget) setQuizModalOpen(false)
         }}
       >
-        <div className="modal-window" style={{ maxWidth: '580px', width: '92%' }}>
+        <div className="modal-window" style={{ maxWidth: '640px', width: '94%', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
           <div className="modal-header">
             <div style={{ fontWeight: 800, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -3216,7 +3411,7 @@ export default function App() {
             </button>
           </div>
 
-          <div className="modal-body">
+          <div className="modal-body" style={{ overflowY: 'auto', flex: 1, padding: '20px 24px' }}>
             {quizLoading ? (
               <div style={{ padding: '36px 20px', textAlign: 'center' }}>
                 <div style={{ fontSize: '32px', marginBottom: '12px', animation: 'spin 1.5s linear infinite' }}>⚡</div>
@@ -3226,83 +3421,169 @@ export default function App() {
                 </div>
               </div>
             ) : isQuizFinished ? (
-              /* RESULTS & MASTERY SUMMARY SCREEN */
+              /* RESULTS & MASTERY SUMMARY SCREEN (PREMIUM REDESIGN) */
               <div className="quiz-results-card">
-                <div className="quiz-trophy-circle">
-                  {quizFinalResult && quizFinalResult.scorePct >= 70 ? '🏆' : '🎯'}
-                </div>
-                <div>
-                  <h3 className="quiz-results-score">
-                    {quizFinalResult?.totalCorrect} / {quizFinalResult?.total}
-                  </h3>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-primary)', marginTop: '4px' }}>
-                    {quizFinalResult?.scorePct}% Overall Score · {quizFinalResult && quizFinalResult.scorePct >= 70 ? 'Adaptive Drill Mastered!' : 'Keep Practicing!'}
-                  </div>
-                </div>
+                {/* 1. Hero Score Banner with Animated Radial Gauge */}
+                {(() => {
+                  const isCritical = (quizFinalResult?.totalCorrect ?? 0) < 2
+                  const isMastered = (quizFinalResult?.scorePct ?? 0) >= 70
+                  const scorePct = quizFinalResult?.scorePct ?? 0
+                  const radius = 34
+                  const circ = 2 * Math.PI * radius
+                  const strokeDashoffset = circ - (scorePct / 100) * circ
 
-                {/* Stage 1 & Stage 2 Score Breakdown */}
-                <div className="quiz-stage-score-grid">
-                  <div className="quiz-stage-score-card">
-                    <div className="stage-title">Stage 1 (Baseline)</div>
-                    <div className="stage-value">{quizFinalResult?.stage1Correct} / 3</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      {quizFinalResult?.stage1Correct === 3 ? 'Perfect 3/3 ⭐' : quizFinalResult?.stage1Correct === 2 ? 'Proficient 2/3' : 'Foundational'}
-                    </div>
-                  </div>
-                  <div className="quiz-stage-score-card">
-                    <div className="stage-title">Stage 2 ({quizFinalResult?.adaptiveDifficulty?.toUpperCase()})</div>
-                    <div className="stage-value">{quizFinalResult?.stage2Correct} / {quizFinalResult?.stage2Total}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      Adaptive Branch
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  DKT retention score updated &amp; synced to Supabase database.
-                </div>
-
-                {/* Critical Remediation Alert & Action Banner */}
-                {quizFinalResult && quizFinalResult.totalCorrect < 2 && criticalRemediationInfo && (
-                  <div
-                    style={{
-                      marginTop: '16px',
-                      marginBottom: '16px',
-                      padding: '16px 18px',
-                      borderRadius: '12px',
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      border: '1.5px solid #EF4444',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '20px' }}>🚨</span>
-                      <div>
-                        <div style={{ fontWeight: 800, color: '#EF4444', fontSize: '14px' }}>
-                          CRITICAL REMEDIATION TRIGGERED ({quizFinalResult.totalCorrect}/5 Correct)
+                  return (
+                    <div className={`quiz-hero-banner ${isCritical ? 'critical' : isMastered ? 'mastered' : ''}`}>
+                      <div className="quiz-hero-glow" />
+                      <div className="quiz-hero-left">
+                        <div className={`quiz-hero-badge ${isCritical ? 'critical' : isMastered ? 'mastered' : 'steady'}`}>
+                          <span>{isCritical ? '🚨 Critical Decay Alert' : isMastered ? '🏆 Mastery Confirmed' : '⚡ Concept Reinforced'}</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          Score is below threshold (&lt; 2 right out of 5) · Urgent Decay Risk
+                        <h3 className="quiz-hero-title">
+                          {quizFinalResult?.totalCorrect} <span className="score-total">/ {quizFinalResult?.total} Questions Correct</span>
+                        </h3>
+                        <p className="quiz-hero-sub">
+                          {isCritical
+                            ? `Score fell below threshold (< 2/5). Automated recovery slot has been reserved to prevent concept decay.`
+                            : isMastered
+                            ? `Outstanding diagnostic performance! Spaced repetition decay interval safely extended.`
+                            : `Solid performance! Review targeted problem types below to lock in complete concept mastery.`}
+                        </p>
+                      </div>
+
+                      {/* Circular Radial Gauge */}
+                      <div className="quiz-radial-gauge" title={`${scorePct}% score`}>
+                        <svg viewBox="0 0 86 86">
+                          <circle
+                            className="gauge-bg"
+                            cx="43"
+                            cy="43"
+                            r={radius}
+                            strokeWidth="7"
+                            fill="none"
+                          />
+                          <circle
+                            className="gauge-fill"
+                            cx="43"
+                            cy="43"
+                            r={radius}
+                            strokeWidth="7"
+                            fill="none"
+                            strokeDasharray={circ}
+                            strokeDashoffset={strokeDashoffset}
+                          />
+                        </svg>
+                        <div className="quiz-radial-center">
+                          <div className="quiz-radial-pct">{scorePct}%</div>
+                          <div className="quiz-radial-label">Score</div>
                         </div>
                       </div>
                     </div>
-                    <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', margin: '0 0 12px 0', lineHeight: 1.5 }}>
-                      Proficiency fell below the safe retention boundary. The system inspected your schedule, bypassed upcoming exams (Sep 15), and scheduled an intensive 60-min recovery session on <strong>{criticalRemediationInfo.dayName}</strong> at <strong>10:00 AM</strong> where your calendar is completely free.
-                    </p>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  )
+                })()}
+
+                {/* 2. Stage Progression Dual Cards */}
+                <div className="quiz-stages-row">
+                  <div className="quiz-stage-box">
+                    <div className="quiz-stage-head">
+                      <span className="quiz-stage-pill">Stage 1 · Baseline</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {quizFinalResult?.stage1Correct === 3 ? 'Perfect 3/3 ⭐' : quizFinalResult?.stage1Correct === 2 ? 'Proficient 2/3' : 'Foundational'}
+                      </span>
+                    </div>
+                    <div className="quiz-stage-score-val">
+                      {quizFinalResult?.stage1Correct} <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>/ 3 Correct</span>
+                    </div>
+                    <div className="quiz-segment-bars">
+                      {[0, 1, 2].map((idx) => {
+                        const ans = quizUserAnswers[idx]
+                        return (
+                          <div
+                            key={idx}
+                            className={`quiz-segment-bar ${ans ? (ans.isCorrect ? 'correct' : 'wrong') : ''}`}
+                            title={`Q${idx + 1}: ${ans?.isCorrect ? 'Correct' : 'Incorrect'}`}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="quiz-stage-box">
+                    <div className="quiz-stage-head">
+                      <span className="quiz-stage-pill" style={{ color: quizFinalResult?.adaptiveDifficulty === 'hard' ? '#ffb703' : 'var(--accent-primary)' }}>
+                        Stage 2 · {quizFinalResult?.adaptiveDifficulty?.toUpperCase() || 'ADAPTIVE'}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Dynamic Branch
+                      </span>
+                    </div>
+                    <div className="quiz-stage-score-val">
+                      {quizFinalResult?.stage2Correct} <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>/ {quizFinalResult?.stage2Total} Correct</span>
+                    </div>
+                    <div className="quiz-segment-bars">
+                      {[3, 4].map((idx) => {
+                        const ans = quizUserAnswers[idx]
+                        return (
+                          <div
+                            key={idx}
+                            className={`quiz-segment-bar ${ans ? (ans.isCorrect ? 'correct' : 'wrong') : ''}`}
+                            title={`Q${idx + 1}: ${ans?.isCorrect ? 'Correct' : 'Incorrect'}`}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Critical Remediation Intervention & YouTube Masterclass Card */}
+                {quizFinalResult && quizFinalResult.totalCorrect < 2 && criticalRemediationInfo && (
+                  <div className="quiz-critical-remediation-box">
+                    <div className="quiz-critical-top">
+                      <div className="quiz-critical-icon-wrap">
+                        🚨
+                      </div>
+                      <div className="quiz-critical-header-text">
+                        <h4>Critical Intervention Scheduled ({quizFinalResult.totalCorrect}/5 Correct)</h4>
+                        <p>
+                          Retention fell into critical decay risk. The smart scheduler reviewed your schedule, avoided upcoming exam days (Sep 15), and auto-reserved a <strong>1-Hour Focused Study Slot</strong> to reinforce this concept.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Calendar Slot Strip */}
+                    <div className="quiz-cal-slot-strip">
+                      <div className="quiz-cal-slot-left">
+                        <div className="quiz-cal-date-chip">
+                          <span className="day-num">{criticalRemediationInfo.dayNumber}</span>
+                          <span className="day-name">Sep</span>
+                        </div>
+                        <div className="quiz-cal-details">
+                          <div className="quiz-cal-title-line">
+                            🚨 1-Hour Dedicated Study: {criticalRemediationInfo.subject} - {criticalRemediationInfo.topic}
+                          </div>
+                          <div className="quiz-cal-sub-line">
+                            <span>🗓️ {criticalRemediationInfo.dayName}</span>
+                            <span>•</span>
+                            <span>⏰ {criticalRemediationInfo.timeSlot} (60 mins)</span>
+                            <span>•</span>
+                            <span>🔔 Study Alarm Armed</span>
+                          </div>
+                        </div>
+                      </div>
+
                       <button
                         type="button"
                         className="btn-pill"
                         style={{
-                          background: '#EF4444',
-                          color: '#FFFFFF',
+                          background: 'rgba(239, 68, 68, 0.18)',
+                          color: '#f87171',
+                          border: '1px solid rgba(239, 68, 68, 0.45)',
                           fontWeight: 700,
                           fontSize: '12px',
+                          padding: '8px 14px',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          padding: '8px 16px',
-                          border: 'none',
                           cursor: 'pointer',
                         }}
                         onClick={() => {
@@ -3314,35 +3595,123 @@ export default function App() {
                           setCalendarModalOpen(true)
                         }}
                       >
-                        <span>📅 View on Study Calendar</span>
+                        <span>📅 View on Calendar</span>
                       </button>
-                      <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        🔔 Active Reminder Alarm Set
-                      </span>
                     </div>
+
+                    {/* YouTube Masterclass Video Card */}
+                    {criticalRemediationInfo.video && (
+                      <div className="quiz-yt-masterclass-card">
+                        <div className="quiz-yt-left">
+                          <div className="quiz-yt-play-badge">
+                            ▶
+                          </div>
+                          <div className="quiz-yt-info">
+                            <span className="quiz-yt-tag">Recommended Masterclass Video</span>
+                            <div className="quiz-yt-title" title={criticalRemediationInfo.video.title}>
+                              {criticalRemediationInfo.video.title}
+                            </div>
+                            <span className="quiz-yt-channel">
+                              Channel: <strong>{criticalRemediationInfo.video.channel}</strong> • Verified top-rated lesson
+                            </span>
+                          </div>
+                        </div>
+
+                        <a
+                          href={criticalRemediationInfo.video.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="quiz-yt-btn"
+                        >
+                          <span>📺 Watch on YouTube ↗</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Question-by-Question Review Breakdown */}
-                <div className="quiz-review-list">
-                  {quizUserAnswers.map((ans, idx) => (
-                    <div key={idx} className="quiz-review-item">
-                      <span style={{ fontSize: '15px' }}>{ans.isCorrect ? '✅' : '❌'}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ fontWeight: 700 }}>
-                            Question {idx + 1} {idx >= 3 ? `(Stage 2: ${adaptiveDifficulty?.toUpperCase()})` : '(Stage 1: Baseline)'}
-                          </div>
-                          <span style={{ fontSize: '11px', color: ans.isCorrect ? 'var(--color-math)' : 'var(--color-python)' }}>
-                            {ans.isCorrect ? 'Correct' : 'Needs Review'}
-                          </span>
-                        </div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
-                          Selected: {ans.selected_answer}
-                        </div>
-                      </div>
+                {/* 4. Detailed Question-by-Question Review Breakdown with Filter Tabs */}
+                <div className="quiz-review-section">
+                  <div className="quiz-review-header">
+                    <div className="quiz-review-title">Question-By-Question Breakdown</div>
+                    <div className="quiz-filter-pills">
+                      <button
+                        type="button"
+                        className={`quiz-filter-btn ${quizReviewFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => setQuizReviewFilter('all')}
+                      >
+                        All ({quizUserAnswers.length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`quiz-filter-btn ${quizReviewFilter === 'wrong' ? 'active' : ''}`}
+                        onClick={() => setQuizReviewFilter('wrong')}
+                      >
+                        ❌ Needs Review ({quizUserAnswers.filter((a) => !a.isCorrect).length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`quiz-filter-btn ${quizReviewFilter === 'correct' ? 'active' : ''}`}
+                        onClick={() => setQuizReviewFilter('correct')}
+                      >
+                        ✅ Correct ({quizUserAnswers.filter((a) => a.isCorrect).length})
+                      </button>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="quiz-review-list">
+                    {quizUserAnswers
+                      .map((ans, idx) => ({ ans, idx, q: quizQuestions[idx] }))
+                      .filter(({ ans }) => {
+                        if (quizReviewFilter === 'wrong') return !ans.isCorrect
+                        if (quizReviewFilter === 'correct') return ans.isCorrect
+                        return true
+                      })
+                      .map(({ ans, idx, q }) => (
+                        <div key={idx} className={`quiz-review-card ${ans.isCorrect ? 'correct' : 'wrong'}`}>
+                          <div className="quiz-review-card-top">
+                            <div className="quiz-q-num-pill">
+                              <span>{ans.isCorrect ? '✅' : '❌'}</span>
+                              <span>Question {idx + 1}</span>
+                              <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                                ({idx < 3 ? 'Stage 1: Baseline' : `Stage 2: ${adaptiveDifficulty?.toUpperCase() || 'ADAPTIVE'}`})
+                              </span>
+                            </div>
+                            {q?.difficulty && (
+                              <span className={`quiz-difficulty-tag ${q.difficulty}`}>
+                                {q.difficulty}
+                              </span>
+                            )}
+                          </div>
+
+                          {q?.question && (
+                            <div className="quiz-q-text">
+                              {q.question}
+                            </div>
+                          )}
+
+                          <div className="quiz-answers-comparison">
+                            <div className={`quiz-ans-row ${ans.isCorrect ? 'user-correct' : 'user-wrong'}`}>
+                              <span>{ans.isCorrect ? '✓' : '✗'} Your Answer:</span>
+                              <strong>{ans.selected_answer || '(No answer provided)'}</strong>
+                            </div>
+
+                            {!ans.isCorrect && q?.correct_answer && (
+                              <div className="quiz-ans-row correct-ans">
+                                <span>★ Correct Answer:</span>
+                                <strong>{q.correct_answer}</strong>
+                              </div>
+                            )}
+                          </div>
+
+                          {q?.explanation && (
+                            <div className="quiz-explanation-box">
+                              💡 <strong>Key Takeaway:</strong> {q.explanation}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
                 </div>
               </div>
             ) : quizQuestions.length > 0 ? (
@@ -3451,14 +3820,42 @@ export default function App() {
             </button>
 
             {isQuizFinished ? (
-              <button
-                type="button"
-                className="quiz-next-btn"
-                onClick={() => launchQuiz(currentQuizSubject)}
-              >
-                <span>Take Another Adaptive Drill</span>
-                <span>🔄</span>
-              </button>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {criticalRemediationInfo && (
+                  <button
+                    type="button"
+                    className="btn-pill"
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239, 68, 68, 0.45)',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                    onClick={() => {
+                      setSelectedCalDay(criticalRemediationInfo.dayNumber)
+                      setCalYear(2026)
+                      setCalMonth(8)
+                      setGcalView('day')
+                      setQuizModalOpen(false)
+                      setCalendarModalOpen(true)
+                    }}
+                  >
+                    <span>📅 Open in Calendar</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="quiz-next-btn"
+                  onClick={() => launchQuiz(currentQuizSubject)}
+                >
+                  <span>Take Another Adaptive Drill</span>
+                  <span>🔄</span>
+                </button>
+              </div>
             ) : selectedQuizOpt !== null ? (
               quizStage === 1 && currentQuestionIdx === 2 ? (
                 /* Question 3 answered: Branch to Stage 2 */
@@ -4517,6 +4914,26 @@ export default function App() {
                               <div className="cal-task-sub">
                                 <span className={`task-tag ${t.tagClass}`}>{t.subject}</span>
                                 <span>⏰ {t.timeSlot}</span>
+                                {t.videoUrl && (
+                                  <a
+                                    href={t.videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      fontSize: '11px',
+                                      color: '#EF4444',
+                                      fontWeight: 700,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                      textDecoration: 'none',
+                                      marginLeft: '6px',
+                                    }}
+                                  >
+                                    📺 Video Tutorial ↗
+                                  </a>
+                                )}
                               </div>
                             </div>
                             <span className={`badge ${t.completed ? 'badge-done' : 'badge-upcoming'}`}>
@@ -4585,6 +5002,57 @@ export default function App() {
                     </span>
                   </div>
                 </div>
+
+                {gcalActiveEvent.videoUrl && (
+                  <div
+                    style={{
+                      margin: '12px 0 6px 0',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        📺 Recommended Masterclass Video
+                      </div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+                        {gcalActiveEvent.videoTitle || 'Curated Tutorial Lesson'}
+                      </div>
+                      {gcalActiveEvent.videoChannel && (
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          Channel: {gcalActiveEvent.videoChannel}
+                        </div>
+                      )}
+                    </div>
+                    <a
+                      href={gcalActiveEvent.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#EF4444',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '11.5px',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
+                      }}
+                    >
+                      ▶️ Watch on YouTube ↗
+                    </a>
+                  </div>
+                )}
 
                 {/* Quick Reschedule / Move Controls */}
                 <div className="gcal-quick-move-row">

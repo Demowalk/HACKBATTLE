@@ -109,6 +109,9 @@ class CriticalRemediationRequest(BaseModel):
     topic: str = "Nested Loops & Recursion"
     score: int = 1
     total: int = 5
+    scheduled_date: Optional[str] = None
+    time_slot: Optional[str] = None
+    duration_minutes: Optional[int] = 60
 
 load_dotenv()
 # Also check backend/.env if not loaded
@@ -1245,6 +1248,97 @@ def check_quiz_answers(
 def debug_quiz_answers():
     return quiz_questions
 
+def get_curated_youtube_video(subject: str, topic: str) -> dict:
+    """Returns verified high-yield YouTube tutorial video metadata for a given topic."""
+    s_lower = (subject or "").lower()
+    t_lower = (topic or "").lower()
+
+    # Python topics
+    if "python" in s_lower or "loop" in t_lower or "comprehension" in t_lower or "async" in t_lower:
+        if "async" in t_lower:
+            return {
+                "title": "Intro to async Python | Writing a Web Crawler",
+                "channel": "mCoding",
+                "url": "https://www.youtube.com/watch?v=ftmdDlwMwwQ",
+            }
+        if "comprehension" in t_lower:
+            return {
+                "title": "Python Tutorial: Comprehensions - How they work & why you should use them",
+                "channel": "Corey Schafer",
+                "url": "https://www.youtube.com/watch?v=3dt4OGnU5sM",
+            }
+        return {
+            "title": "Python Tutorial for Beginners: Loops and Iterations - For/While Loops",
+            "channel": "Corey Schafer",
+            "url": "https://www.youtube.com/watch?v=6iF8Xb7Z3wQ",
+        }
+    
+    # Maths topics
+    if "math" in s_lower or "algebra" in t_lower or "vector" in t_lower or "matrix" in t_lower:
+        return {
+            "title": "Vectors & Linear Transformations | Essence of linear algebra",
+            "channel": "3Blue1Brown",
+            "url": "https://www.youtube.com/watch?v=fNk_zzaMoSs",
+        }
+    if "calculus" in t_lower or "derivative" in t_lower or "integral" in t_lower:
+        return {
+            "title": "The Essence of Calculus | Visual Introduction",
+            "channel": "3Blue1Brown",
+            "url": "https://www.youtube.com/watch?v=WUvTyaaNkzM",
+        }
+
+    # Chemistry topics
+    if "chem" in s_lower or "reaction" in t_lower or "organic" in t_lower or "nernst" in t_lower:
+        if "nernst" in t_lower or "electro" in t_lower:
+            return {
+                "title": "Nernst Equation Explained, Electrochemistry, Example Problems",
+                "channel": "The Organic Chemistry Tutor",
+                "url": "https://www.youtube.com/watch?v=jousNNceCXs",
+            }
+        return {
+            "title": "Organic Chemistry Reaction Mechanisms - Addition, Elimination, Substitution",
+            "channel": "The Organic Chemistry Tutor",
+            "url": "https://www.youtube.com/watch?v=Efh5GkVbhEc",
+        }
+
+    # AI / Machine Learning
+    if "ai" in s_lower or "transformer" in t_lower or "attention" in t_lower:
+        return {
+            "title": "Attention in transformers, step-by-step | Deep Learning Chapter 6",
+            "channel": "3Blue1Brown",
+            "url": "https://www.youtube.com/watch?v=eMlx5fFNoYc",
+        }
+
+    # Dynamic Live YouTube Video Lookup
+    import urllib.request, urllib.parse, re, ssl
+    try:
+        ctx = ssl._create_unverified_context()
+        search_query = f"{subject} {topic} tutorial masterclass"
+        search_url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote(search_query)
+        req = urllib.request.Request(
+            search_url,
+            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        )
+        html = urllib.request.urlopen(req, context=ctx, timeout=3.0).read().decode("utf-8")
+        video_ids = re.findall(r'\"videoId\":\"([a-zA-Z0-9_-]{11})\"', html)
+        titles = re.findall(r'\"title\":\{\"runs\":\[\{\"text\":\"([^\"]+)\"\}\]', html)
+        if video_ids:
+            return {
+                "title": titles[0] if titles else f"Master {topic} Educational Tutorial",
+                "channel": "YouTube Educational Creator",
+                "url": f"https://www.youtube.com/watch?v={video_ids[0]}",
+            }
+    except Exception:
+        pass
+
+    import urllib.parse
+    query = urllib.parse.quote(f"{subject} {topic} tutorial masterclass")
+    return {
+        "title": f"Master {topic} Full Educational Walkthrough",
+        "channel": "Curated YouTube Tutorial",
+        "url": f"https://www.youtube.com/results?search_query={query}",
+    }
+
 @app.post("/tasks/schedule-critical-remediation")
 def schedule_critical_remediation(
     req: CriticalRemediationRequest,
@@ -1314,11 +1408,19 @@ def schedule_critical_remediation(
         else:
             free_slot = candidate_dates[0]
 
-    chosen_date_str = free_slot["date"]
-    chosen_day_name = free_slot["dt"].strftime("%A, %b %d")
+    if req.scheduled_date:
+        chosen_date_str = req.scheduled_date
+        try:
+            chosen_day_name = datetime.strptime(req.scheduled_date, "%Y-%m-%d").strftime("%A, %b %d")
+        except Exception:
+            chosen_day_name = req.scheduled_date
+    else:
+        chosen_date_str = free_slot["date"]
+        chosen_day_name = free_slot["dt"].strftime("%A, %b %d")
 
-    task_title = f"🚨 Critical Review: {req.subject} - {req.topic}"
-    time_slot = "10:00–11:00 AM"
+    duration_mins = req.duration_minutes or 60
+    time_slot = req.time_slot or "4:30–5:30 PM"
+    task_title = f"🚨 Critical 1hr Study: {req.subject} - {req.topic}"
 
     # 1. Update Concept Mastery in DB if available
     if DATABASE_AVAILABLE and db:
@@ -1384,7 +1486,8 @@ def schedule_critical_remediation(
             "isCritical": True,
             "statusTag": "Critical Remediation",
             "dayNumber": int(chosen_date_str.split("-")[2]),
-        }
+        },
+        "video": get_curated_youtube_video(req.subject, req.topic),
     }
 
 
