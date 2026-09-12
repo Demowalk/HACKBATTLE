@@ -3,6 +3,7 @@ import json
 from dotenv import load_dotenv
 from groq import Groq
 from fastapi import FastAPI
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
@@ -17,6 +18,7 @@ class GeneratePlanRequest(BaseModel):
 
 class GenerateQuizRequest(BaseModel):
     subject: str
+    topic: str
     difficulty: str
     count: int
 
@@ -91,8 +93,8 @@ Respond ONLY with a valid JSON array, no other text. Example format:
 """
     return prompt
 
-def build_quiz_prompt(subject, difficulty, count):
-    prompt = f"""You are a quiz generator AI. Create {count} multiple-choice questions for the subject "{subject}" at {difficulty} difficulty.
+def build_quiz_prompt(subject, topic, difficulty, count):
+    prompt = f"""You are a quiz generator AI. Create {count} multiple-choice questions for the subject "{subject}", specifically on the topic "{topic}", at {difficulty} difficulty.
 
 Each question must have exactly 4 options, with only one correct answer.
 
@@ -144,7 +146,7 @@ quiz_questions = []
 
 @app.post("/generate-quiz")
 def generate_quiz(request: GenerateQuizRequest):
-    prompt = build_quiz_prompt(request.subject, request.difficulty, request.count)
+    prompt = build_quiz_prompt(request.subject, request.topic, request.difficulty, request.count)
 
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
@@ -163,6 +165,7 @@ def generate_quiz(request: GenerateQuizRequest):
         new_question = {
             "id": next_id,
             "subject": request.subject,
+            "topic": request.topic,
             "question": ai_question["question"],
             "options": ai_question["options"],
             "correct_answer": ai_question["correct_answer"]
@@ -175,6 +178,7 @@ def generate_quiz(request: GenerateQuizRequest):
         frontend_questions.append({
             "id": q["id"],
             "subject": q["subject"],
+            "topic": q["topic"],
             "question": q["question"],
             "options": q["options"]
         })
@@ -208,3 +212,17 @@ def check_quiz_answers(request: QuizAnswersRequest):
 @app.get("/debug/quiz-answers")
 def debug_quiz_answers():
     return quiz_questions
+
+@app.get("/tasks/export-calendar")
+def export_calendar():
+    ics_lines = ["BEGIN:VCALENDAR", "VERSION:2.0"]
+    for task in tasks:
+        ics_lines.append("BEGIN:VEVENT")
+        ics_lines.append(f"SUMMARY:{task['subject']} - {task['topic']}")
+        ics_lines.append(f"DESCRIPTION:Priority: {task['priority']}, Duration: {task['duration_minutes']} minutes")
+        ics_lines.append("END:VEVENT")
+    ics_lines.append("END:VCALENDAR")
+
+    ics_content = "\n".join(ics_lines)
+
+    return Response(content=ics_content, media_type="text/calendar")
